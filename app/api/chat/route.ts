@@ -1,5 +1,5 @@
 import { streamText } from 'ai';
-import { getCurrentSessionFromCookie } from '@/lib/session';
+import { getOrCreateSession } from '@/lib/session';
 import { db, chatMessages, activityLogs } from '@/lib/db';
 import { buildSystemContext } from '@/lib/ai/context';
 import { buildAdmissionSystemPrompt, searchDocuments, formatDocumentsForContext } from '@/lib/services/rag-engine';
@@ -9,28 +9,27 @@ import { anthropic } from '@ai-sdk/anthropic';
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
-    const session = await getCurrentSessionFromCookie();
+    const session = await getOrCreateSession();
 
-    if (!session) {
-      return new Response('Unauthorized', { status: 401 });
-    }
-
-    // Save user message to database
+    // Save user message to database (non-blocking if DB down)
     if (messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage.role === 'user') {
-        await db.insert(chatMessages).values({
-          sessionId: session.id,
-          role: 'user',
-          content: lastMessage.content,
-        });
+        try {
+          await db.insert(chatMessages).values({
+            sessionId: session.id,
+            role: 'user',
+            content: lastMessage.content,
+          });
 
-        // Log activity
-        await db.insert(activityLogs).values({
-          sessionId: session.id,
-          action: 'chat_message',
-          metadata: { messageLength: lastMessage.content.length },
-        });
+          await db.insert(activityLogs).values({
+            sessionId: session.id,
+            action: 'chat_message',
+            metadata: { messageLength: lastMessage.content.length },
+          });
+        } catch (dbErr) {
+          console.warn('Chat message DB logging error:', dbErr);
+        }
       }
     }
 
@@ -48,7 +47,18 @@ export async function POST(req: Request) {
     }
 
     // Determine which AI provider to use
-    const provider = (process.env.AI_PROVIDER || 'ollama') as string;
+    let provider = (process.env.AI_PROVIDER || 'ollama') as string;
+
+    if (provider === 'openai' && !process.env.OPENAI_API_KEY) {
+      console.warn('[Chat] OPENAI_API_KEY is missing. Falling back to local Ollama instantly.');
+      provider = 'ollama';
+    }
+
+    if (provider === 'anthropic' && !process.env.ANTHROPIC_API_KEY) {
+      console.warn('[Chat] ANTHROPIC_API_KEY is missing. Falling back to local Ollama instantly.');
+      provider = 'ollama';
+    }
+
     let model;
 
     if (provider === 'openai') {
@@ -103,11 +113,15 @@ export async function POST(req: Request) {
         fullContent += chunk;
       }
 
-      await db.insert(chatMessages).values({
-        sessionId: session.id,
-        role: 'assistant',
-        content: fullContent,
-      });
+      try {
+        await db.insert(chatMessages).values({
+          sessionId: session.id,
+          role: 'assistant',
+          content: fullContent,
+        });
+      } catch (dbErr) {
+        console.warn('Assistant DB insert error:', dbErr);
+      }
     }
 
     return result.toTextStreamResponse();
@@ -171,7 +185,7 @@ async function streamOllamaChat(
               if (data.message?.content) {
                 fullContent += data.message.content;
                 controller.enqueue(
-                  new TextEncoder().encode(`0:"${data.message.content}"\n`),
+                  new TextEncoder().encode(data.message.content),
                 );
               }
             } catch (e) {
@@ -180,13 +194,17 @@ async function streamOllamaChat(
           }
         }
 
-        // Save to database
+        // Save to database (non-blocking if DB down)
         if (fullContent) {
-          await db.insert(chatMessages).values({
-            sessionId,
-            role: 'assistant',
-            content: fullContent,
-          });
+          try {
+            await db.insert(chatMessages).values({
+              sessionId,
+              role: 'assistant',
+              content: fullContent,
+            });
+          } catch (dbErr) {
+            console.warn('Ollama assistant DB insert error:', dbErr);
+          }
         }
 
         controller.close();

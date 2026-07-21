@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "seed:db": "tsx scripts/seed-db.ts",
     "seed:embeddings": "tsx scripts/seed-embeddings.ts",
-    "seed": "tsx scripts/seed-db.ts && tsx scripts/seed-embeddings.ts"
+    "seed": "tsx scripts/seed-db.ts && tsx scripts/seed-embeddings.ts",
+    "clean:qdrant": "tsx scripts/clean-legacy-qdrant.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.16",
@@ -28,7 +29,7 @@
     "mammoth": "^1.12.0",
     "next": "16.2.6",
     "ollama": "^0.6.3",
-    "pdf-parse": "^2.4.5",
+    "pdf-parse": "^1.1.1",
     "pg": "^8.22.0",
     "react": "^19",
     "react-dom": "^19",
@@ -40,6 +41,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^24",
+    "@types/pdf-parse": "^1.1.5",
     "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",

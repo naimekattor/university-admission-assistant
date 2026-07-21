@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     const university = formData.get('university') as string || 'Unknown';
+    const unit = formData.get('unit') as string || 'auto';
     const year = parseInt(formData.get('year') as string) || new Date().getFullYear();
     const documentType = (formData.get('documentType') as string || 'circular') as 'circular' | 'prospectus' | 'faq' | 'notice' | 'regulation';
 
@@ -45,13 +46,14 @@ export async function POST(req: NextRequest) {
       originalFileName: file.name,
       filePath: `/uploads/circulars/${safeName}`,
       university,
+      unit,
       year,
       documentType,
     });
 
     return NextResponse.json({
       success: true,
-      message: `Processed ${result.documentsCount} document(s) into ${result.chunksCount} chunks`,
+      message: `Processed ${result.documentsCount} document(s) [Unit: ${result.detectedUnit}] into ${result.chunksCount} chunks`,
       ...result,
     });
   } catch (error: any) {

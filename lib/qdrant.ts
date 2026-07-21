@@ -10,9 +10,11 @@ export const qdrantClient = new QdrantClient({
   apiKey: process.env.QDRANT_API_KEY,
 });
 
-export const UNIVERSITY_COLLECTION = 'university-embeddings';
-export const PROGRAM_COLLECTION = 'program-embeddings';
-export const ADMISSION_DOCS_COLLECTION = 'admission-docs';
+const COLLECTION_PREFIX = process.env.QDRANT_COLLECTION_PREFIX || 'uaa_';
+
+export const UNIVERSITY_COLLECTION = process.env.QDRANT_UNIVERSITY_COLLECTION || `${COLLECTION_PREFIX}university-embeddings`;
+export const PROGRAM_COLLECTION = process.env.QDRANT_PROGRAM_COLLECTION || `${COLLECTION_PREFIX}program-embeddings`;
+export const ADMISSION_DOCS_COLLECTION = process.env.QDRANT_ADMISSION_DOCS_COLLECTION || `${COLLECTION_PREFIX}admission-docs`;
 
 export async function ensureCollection(name: string) {
   const collections = await qdrantClient.getCollections();

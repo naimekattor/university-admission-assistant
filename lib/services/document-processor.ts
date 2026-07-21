@@ -11,6 +11,7 @@ export type DocumentType = 'circular' | 'prospectus' | 'faq' | 'notice' | 'regul
 export interface ProcessedDocument {
   id: string;
   university: string;
+  unit?: string;
   year: number;
   source: string;
   page: number;
@@ -20,17 +21,36 @@ export interface ProcessedDocument {
   filePath: string;
 }
 
+export function detectUnitFromText(text: string): string {
+  const t = text.toLowerCase();
+  if (t.includes('ক ইউনিট') || t.includes('ka unit') || t.includes('a unit') || t.includes('science group') || t.includes('বিজ্ঞান')) {
+    return 'Ka Unit (Science / A Unit)';
+  }
+  if (t.includes('খ ইউনিট') || t.includes('kha unit') || t.includes('b unit') || t.includes('humanities') || t.includes('मानविक') || t.includes('মানবিক')) {
+    return 'Kha Unit (Arts / B Unit)';
+  }
+  if (t.includes('গ ইউনিট') || t.includes('ga unit') || t.includes('c unit') || t.includes('business studies') || t.includes('ব্যবসায়')) {
+    return 'Ga Unit (Commerce / C Unit)';
+  }
+  if (t.includes('ঘ ইউনিট') || t.includes('gha unit') || t.includes('d unit') || t.includes('সমন্বিত')) {
+    return 'Gha Unit (Combined / D Unit)';
+  }
+  if (t.includes('চ ইউনিট') || t.includes('cha unit') || t.includes('fine arts') || t.includes('চারুকলা')) {
+    return 'Cha Unit (Fine Arts)';
+  }
+  return 'All Units';
+}
+
 export async function extractTextFromFile(
   buffer: Buffer,
   mimeType: string,
 ): Promise<string> {
   if (mimeType === 'application/pdf') {
-    const { PDFParse } = await import('pdf-parse');
-    const pdf = new PDFParse({ data: buffer }) as any;
-    await pdf.load();
-    const result = (await pdf.getText()) as { text: string };
-    pdf.destroy();
-    return result.text || '';
+    // Import directly from lib/pdf-parse.js to bypass index.js module.parent check and test file reading
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const pdfParse = require('pdf-parse/lib/pdf-parse.js');
+    const data = await pdfParse(buffer);
+    return data.text || '';
   }
 
   if (
@@ -54,7 +74,8 @@ export async function extractTextFromFile(
 }
 
 export function chunkText(text: string, maxChunkSize = 1000, overlap = 100): string[] {
-  const paragraphs = text.split(/\n\s*\n/);
+  // Split by double newlines or Bangla dari (।) / newlines
+  const paragraphs = text.split(/\n\s*\n|(?<=।)\n+/);
   const chunks: string[] = [];
   let currentChunk = '';
 
@@ -85,16 +106,18 @@ export async function processAndUploadDocument(params: {
   originalFileName: string;
   filePath: string;
   university: string;
+  unit?: string;
   year: number;
   documentType: DocumentType;
-}): Promise<{ documentsCount: number; chunksCount: number }> {
-  const { buffer, mimeType, originalFileName, filePath, university, year, documentType } = params;
+}): Promise<{ documentsCount: number; chunksCount: number; detectedUnit: string }> {
+  const { buffer, mimeType, originalFileName, filePath, university, unit, year, documentType } = params;
 
   const rawText = await extractTextFromFile(buffer, mimeType);
   if (!rawText.trim()) {
     throw new Error('No text content could be extracted from the file');
   }
 
+  const detectedUnit = (!unit || unit === 'auto' || unit === '') ? detectUnitFromText(rawText) : unit;
   const chunks = chunkText(rawText);
   const docId = uuidv4();
 
@@ -112,6 +135,7 @@ export async function processAndUploadDocument(params: {
         docId,
         chunkIndex: i,
         university,
+        unit: detectedUnit,
         year,
         source: originalFileName,
         page: Math.floor(i / 3) + 1,
@@ -125,5 +149,5 @@ export async function processAndUploadDocument(params: {
 
   await qdrantClient.upsert(ADMISSION_DOCS_COLLECTION, { points });
 
-  return { documentsCount: 1, chunksCount: points.length };
+  return { documentsCount: 1, chunksCount: points.length, detectedUnit };
 }

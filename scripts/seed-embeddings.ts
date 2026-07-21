@@ -11,9 +11,11 @@ const EMBEDDING_DIMENSION = 768;
 const QDRANT_URL = process.env.QDRANT_URL || 'http://localhost:6333';
 const DATABASE_URL = process.env.DATABASE_URL!;
 
-const UNIVERSITY_COLLECTION = 'university-embeddings';
-const PROGRAM_COLLECTION = 'program-embeddings';
-const ADMISSION_DOCS_COLLECTION = 'admission-docs';
+const COLLECTION_PREFIX = process.env.QDRANT_COLLECTION_PREFIX || 'uaa_';
+
+const UNIVERSITY_COLLECTION = process.env.QDRANT_UNIVERSITY_COLLECTION || `${COLLECTION_PREFIX}university-embeddings`;
+const PROGRAM_COLLECTION = process.env.QDRANT_PROGRAM_COLLECTION || `${COLLECTION_PREFIX}program-embeddings`;
+const ADMISSION_DOCS_COLLECTION = process.env.QDRANT_ADMISSION_DOCS_COLLECTION || `${COLLECTION_PREFIX}admission-docs`;
 
 async function generateEmbeddings(texts: string[]): Promise<number[][]> {
   const res = await fetch(`${OLLAMA_BASE_URL}/api/embed`, {
