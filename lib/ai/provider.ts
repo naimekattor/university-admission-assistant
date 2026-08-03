@@ -1,11 +1,17 @@
 import { LanguageModel } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { anthropic } from '@ai-sdk/anthropic';
+import { groq } from '@ai-sdk/groq';
 
-export type AIProvider = 'ollama' | 'openai' | 'anthropic';
+export type AIProvider = 'ollama' | 'openai' | 'anthropic' | 'groq';
 
 export function getAIModel(): LanguageModel {
   let provider = (process.env.AI_PROVIDER || 'ollama') as AIProvider;
+
+  if (provider === 'groq' && !process.env.GROQ_API_KEY) {
+    console.warn('[AI] GROQ_API_KEY is not configured. Falling back to local Ollama instantly.');
+    provider = 'ollama';
+  }
 
   if (provider === 'openai' && !process.env.OPENAI_API_KEY) {
     console.warn('[AI] OPENAI_API_KEY is not configured. Falling back to local Ollama instantly.');
@@ -20,6 +26,8 @@ export function getAIModel(): LanguageModel {
   console.log('[AI] Using provider:', provider);
 
   switch (provider) {
+    case 'groq':
+      return groq('llama-3.3-70b-versatile');
     case 'openai':
       return openai('gpt-4-turbo');
 

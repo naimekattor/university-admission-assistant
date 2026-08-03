@@ -89,15 +89,47 @@ export async function searchPrograms(queryText: string, limit = 5) {
 
 export async function searchDocuments(queryText: string, limit = 5) {
   try {
+    console.log(`[RAG Search] Generating embedding for query: "${queryText}"`);
     const vector = await generateEmbedding(queryText);
+    console.log(`[RAG Search] Searching Qdrant collection "${ADMISSION_DOCS_COLLECTION}"...`);
     const result = await qdrantClient.search(ADMISSION_DOCS_COLLECTION, {
       vector,
       limit,
       with_payload: true,
     });
+    console.log(`[RAG Search] Qdrant returned ${result.length} matching document chunk(s).`);
     return result;
   } catch (error) {
-    console.error('Error searching documents:', error);
+    console.error('[RAG Search] Error searching documents:', error);
     return [];
   }
 }
+
+export async function listAllDocuments(limit = 200) {
+  try {
+    await ensureCollection(ADMISSION_DOCS_COLLECTION);
+    const scrollResult = await qdrantClient.scroll(ADMISSION_DOCS_COLLECTION, {
+      limit,
+      with_payload: true,
+      with_vector: false,
+    });
+    return scrollResult.points || [];
+  } catch (error) {
+    console.error('[Qdrant] Error listing documents:', error);
+    return [];
+  }
+}
+
+export async function deleteDocumentPoints(pointIds: string[]) {
+  try {
+    if (!pointIds || pointIds.length === 0) return { success: true, count: 0 };
+    await qdrantClient.delete(ADMISSION_DOCS_COLLECTION, {
+      points: pointIds,
+    });
+    return { success: true, count: pointIds.length };
+  } catch (error) {
+    console.error('[Qdrant] Error deleting document points:', error);
+    throw error;
+  }
+}
+

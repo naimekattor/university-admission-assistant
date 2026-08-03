@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { processAndUploadDocument } from '@/lib/services/document-processor';
+import { isAdminAuthenticated } from '@/lib/admin-auth';
 
 const UPLOAD_DIR = join(process.cwd(), 'public', 'uploads', 'circulars');
 
@@ -17,6 +18,11 @@ const ALLOWED_MIME_TYPES = [
 ];
 
 export async function POST(req: NextRequest) {
+  const auth = await isAdminAuthenticated();
+  if (!auth) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File | null;

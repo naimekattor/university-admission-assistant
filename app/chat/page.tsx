@@ -56,9 +56,31 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Load user's previous chat session history on mount
+  useEffect(() => {
+    fetchChatHistory();
+  }, []);
+
+  const fetchChatHistory = async () => {
+    try {
+      const res = await fetch('/api/chat');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.messages) && data.messages.length > 0) {
+          setMessages(data.messages);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to load chat history:', err);
+    } finally {
+      setIsHistoryLoading(false);
+    }
+  };
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -142,10 +164,15 @@ export default function ChatPage() {
     }
   };
 
-  const handleNewChat = () => {
+  const handleNewChat = async () => {
     if (isLoading) return;
     setMessages([]);
     setInput('');
+    try {
+      await fetch('/api/chat', { method: 'DELETE' });
+    } catch (err) {
+      console.warn('Failed to clear server chat history:', err);
+    }
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
@@ -340,7 +367,7 @@ export default function ChatPage() {
                 return (
                   <div
                     key={index}
-                    className={`flex gap-3.5 md:gap-4 ${
+                    className={`message-bubble flex gap-3.5 md:gap-4 ${
                       isUser ? 'justify-end' : 'justify-start'
                     }`}
                   >
@@ -362,20 +389,23 @@ export default function ChatPage() {
                       }`}
                     >
                       {isThinking ? (
-                        <div className="flex items-center gap-2 py-0.5 px-1 text-muted-foreground">
-                          <span className="text-xs font-medium">AI is typing</span>
-                          <div className="flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]" />
-                            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]" />
-                            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" />
+                        /* Animated typing dots indicator */
+                        <div className="flex items-center gap-3 py-1 px-1">
+                          <span className="text-xs font-medium text-muted-foreground">AI is thinking</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="typing-dot" />
+                            <span className="typing-dot" />
+                            <span className="typing-dot" />
                           </div>
                         </div>
                       ) : (
-                        <div className="whitespace-pre-wrap break-words">
+                        /* Streaming text with blinking caret cursor */
+                        <div
+                          className={`whitespace-pre-wrap break-words ${
+                            isLastAssistant ? 'streaming-cursor' : ''
+                          }`}
+                        >
                           {msg.content}
-                          {isLastAssistant && (
-                            <span className="inline-block w-1.5 h-4 ml-1 bg-primary animate-pulse align-middle" />
-                          )}
                         </div>
                       )}
                     </div>

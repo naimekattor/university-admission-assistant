@@ -41,16 +41,14 @@ export function detectUnitFromText(text: string): string {
   return 'All Units';
 }
 
+import { extractBanglaPdfText } from '@/lib/services/vision-pdf-extractor';
+
 export async function extractTextFromFile(
   buffer: Buffer,
   mimeType: string,
 ): Promise<string> {
   if (mimeType === 'application/pdf') {
-    // Import directly from lib/pdf-parse.js to bypass index.js module.parent check and test file reading
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const pdfParse = require('pdf-parse/lib/pdf-parse.js');
-    const data = await pdfParse(buffer);
-    return data.text || '';
+    return await extractBanglaPdfText(buffer);
   }
 
   if (
@@ -73,9 +71,52 @@ export async function extractTextFromFile(
   throw new Error(`Unsupported file type: ${mimeType}`);
 }
 
+export function normalizeExtractedText(text: string): string {
+  if (!text) return '';
+
+  // 1. Convert CRLF / CR to standard \n
+  const clean = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+  // 2. If text already contains Markdown table syntax (|), headers (#), or lists (- / *), preserve line structure
+  const hasMarkdownStructure = /\||- |\* |#|^\s*\d+[\.\)]/m.test(clean);
+  if (hasMarkdownStructure) {
+    return clean
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l, i, arr) => l !== '' || (i > 0 && arr[i - 1] !== ''))
+      .join('\n');
+  }
+
+  // 3. Fallback paragraph merging for plain raw text
+  const lines = clean.split('\n').map((l) => l.trim()).filter(Boolean);
+  const mergedParagraphs: string[] = [];
+  let currentBuffer = '';
+
+  for (const line of lines) {
+    if (!currentBuffer) {
+      currentBuffer = line;
+    } else {
+      const lastChar = currentBuffer.slice(-1);
+      if (['।', '.', '?', '!', ':'].includes(lastChar) || line.startsWith('|') || line.startsWith('#') || line.startsWith('-')) {
+        mergedParagraphs.push(currentBuffer);
+        currentBuffer = line;
+      } else {
+        currentBuffer += ' ' + line;
+      }
+    }
+  }
+
+  if (currentBuffer) {
+    mergedParagraphs.push(currentBuffer);
+  }
+
+  return mergedParagraphs.join('\n\n').replace(/[ \t]+/g, ' ').trim();
+}
+
 export function chunkText(text: string, maxChunkSize = 1000, overlap = 100): string[] {
+  const normalized = normalizeExtractedText(text);
   // Split by double newlines or Bangla dari (।) / newlines
-  const paragraphs = text.split(/\n\s*\n|(?<=।)\n+/);
+  const paragraphs = normalized.split(/\n\s*\n|(?<=।)\n+/);
   const chunks: string[] = [];
   let currentChunk = '';
 
@@ -97,7 +138,7 @@ export function chunkText(text: string, maxChunkSize = 1000, overlap = 100): str
     chunks.push(currentChunk.trim());
   }
 
-  return chunks.length > 0 ? chunks : [text.trim()];
+  return chunks.length > 0 ? chunks : [normalized.trim()];
 }
 
 export async function processAndUploadDocument(params: {
@@ -113,12 +154,14 @@ export async function processAndUploadDocument(params: {
   const { buffer, mimeType, originalFileName, filePath, university, unit, year, documentType } = params;
 
   const rawText = await extractTextFromFile(buffer, mimeType);
-  if (!rawText.trim()) {
+  const normalizedText = normalizeExtractedText(rawText);
+
+  if (!normalizedText.trim()) {
     throw new Error('No text content could be extracted from the file');
   }
 
-  const detectedUnit = (!unit || unit === 'auto' || unit === '') ? detectUnitFromText(rawText) : unit;
-  const chunks = chunkText(rawText);
+  const detectedUnit = (!unit || unit === 'auto' || unit === '') ? detectUnitFromText(normalizedText) : unit;
+  const chunks = chunkText(normalizedText);
   const docId = uuidv4();
 
   await ensureCollection(ADMISSION_DOCS_COLLECTION);

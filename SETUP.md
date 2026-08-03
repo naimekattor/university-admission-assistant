@@ -5,7 +5,7 @@ This guide will help you set up the EduGuide application from scratch.
 ## System Requirements
 
 - Node.js 18 or higher
-- pnpm (recommended) or npm/yarn
+- pnpm (required)
 - PostgreSQL 12+
 - Docker (optional, for running PostgreSQL and Qdrant in containers)
 

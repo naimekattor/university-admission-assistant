@@ -6,10 +6,15 @@ import { QdrantClient } from '@qdrant/js-client-rest';
 const QDRANT_URL = process.env.QDRANT_URL || 'http://localhost:6333';
 const QDRANT_API_KEY = process.env.QDRANT_API_KEY;
 
+const COLLECTION_PREFIX = process.env.QDRANT_COLLECTION_PREFIX || 'uaa_';
+
 const legacyCollections = [
   'admission-docs',
   'university-embeddings',
   'program-embeddings',
+  `${COLLECTION_PREFIX}admission-docs`,
+  `${COLLECTION_PREFIX}university-embeddings`,
+  `${COLLECTION_PREFIX}program-embeddings`,
 ];
 
 async function cleanLegacyCollections() {
