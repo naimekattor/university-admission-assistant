@@ -32,9 +32,10 @@ interface DocumentItem {
   type: string;
   originalFileName: string;
   filePath: string;
-  page: number;
-  snippet: string;
-  fullTextLength: number;
+  page?: number;
+  snippet?: string;
+  fullTextLength?: number;
+  chunkCount?: number;
 }
 
 interface SessionItem {
@@ -218,28 +219,44 @@ export default function AdminPage() {
     }
   };
 
-  const handleDeleteDocument = async (pointId: string, fileName?: string) => {
-    const confirmMsg = fileName
-      ? `Are you sure you want to remove all chunks for file "${fileName}"?`
-      : 'Are you sure you want to remove this vector chunk?';
-    
-    if (!confirm(confirmMsg)) return;
+  // Document delete modal & toast state
+  const [docToDelete, setDocToDelete] = useState<{ id: string; fileName: string; filePath?: string } | null>(null);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; title: string; message: string } | null>(null);
 
-    setDeletingId(pointId);
+  const showToast = (type: 'success' | 'error', title: string, message: string) => {
+    setToast({ type, title, message });
+    setTimeout(() => setToast(null), 6000);
+  };
+
+  const handleDeleteDocument = (pointId: string, fileName?: string, filePath?: string) => {
+    setDocToDelete({ id: pointId, fileName: fileName || 'Unknown Document', filePath });
+  };
+
+  const executeDeleteDocument = async () => {
+    if (!docToDelete) return;
+    const { id, fileName, filePath } = docToDelete;
+    setDeletingId(id);
+    setDocToDelete(null);
+
     try {
       const res = await fetch('/api/admin/documents', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(fileName ? { fileName } : { pointIds: [pointId] }),
+        body: JSON.stringify({ docId: id, fileName, filePath }),
       });
       const data = await res.json();
       if (res.ok) {
+        showToast(
+          'success',
+          'Document Purged Successfully',
+          data.message || `Document "${fileName}" was removed from PostgreSQL, Qdrant vectors, and server storage.`
+        );
         fetchDashboardData();
       } else {
-        alert(data.error || 'Failed to delete');
+        showToast('error', 'Deletion Failed', data.error || 'Failed to delete document');
       }
-    } catch (err) {
-      alert('Failed to delete document');
+    } catch (err: any) {
+      showToast('error', 'Deletion Error', err.message || 'Failed to delete document');
     } finally {
       setDeletingId(null);
     }
@@ -335,7 +352,7 @@ export default function AdminPage() {
       doc.originalFileName.toLowerCase().includes(docSearch.toLowerCase()) ||
       doc.university.toLowerCase().includes(docSearch.toLowerCase()) ||
       doc.unit.toLowerCase().includes(docSearch.toLowerCase()) ||
-      doc.snippet.toLowerCase().includes(docSearch.toLowerCase());
+      (doc.snippet || '').toLowerCase().includes(docSearch.toLowerCase());
     const matchesUni = selectedUniFilter ? doc.university === selectedUniFilter : true;
     return matchesSearch && matchesUni;
   });
@@ -662,9 +679,13 @@ export default function AdminPage() {
             </div>
 
             {/* Document Management Table */}
+            {/* Document Management Table */}
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                <h3 className="text-base font-semibold text-white">Uploaded Vector Document Chunks</h3>
+                <div>
+                  <h3 className="text-base font-semibold text-white">Uploaded Documents & Circulars</h3>
+                  <p className="text-zinc-500 text-xs mt-0.5">Manage raw files, inspect uploaded documents, and remove vector indexes</p>
+                </div>
                 <div className="flex items-center gap-3">
                   <select
                     value={selectedUniFilter}
@@ -689,44 +710,54 @@ export default function AdminPage() {
 
               {filteredDocs.length === 0 ? (
                 <div className="text-center py-8 text-zinc-500 text-sm">
-                  No indexed document chunks found.
+                  No uploaded documents found.
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-zinc-950 text-zinc-400 uppercase tracking-wider font-mono border-b border-zinc-800">
                       <tr>
-                        <th className="p-3">File / Source</th>
+                        <th className="p-3">Document Name</th>
                         <th className="p-3">University</th>
                         <th className="p-3">Unit</th>
-                        <th className="p-3">Type</th>
-                        <th className="p-3">Snippet Preview</th>
+                        <th className="p-3">Type & Year</th>
+                        <th className="p-3">Chunks Count</th>
                         <th className="p-3 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
                       {filteredDocs.map((doc) => (
                         <tr key={doc.id} className="hover:bg-zinc-800/30 transition-colors">
-                          <td className="p-3 font-mono font-medium text-blue-400 max-w-[200px] truncate" title={doc.originalFileName}>
-                            {doc.originalFileName}
+                          <td className="p-3 font-mono font-medium text-blue-400 max-w-[240px] truncate" title={doc.originalFileName}>
+                            📄 {doc.originalFileName}
                           </td>
                           <td className="p-3">{doc.university}</td>
                           <td className="p-3 text-zinc-400">{doc.unit}</td>
                           <td className="p-3">
                             <span className="px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 text-[10px] uppercase">
-                              {doc.type}
+                              {doc.type} ({doc.year})
                             </span>
                           </td>
-                          <td className="p-3 text-zinc-400 max-w-[300px] truncate" title={doc.snippet}>
-                            {doc.snippet}
+                          <td className="p-3 font-mono text-purple-400 font-semibold">
+                            {doc.chunkCount ? `${doc.chunkCount} chunk(s)` : 'Indexed'}
                           </td>
                           <td className="p-3 text-right space-x-2">
+                            {doc.filePath && (
+                              <a
+                                href={doc.filePath.startsWith('/') ? doc.filePath : `/${doc.filePath}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-blue-400 hover:text-blue-300 text-xs px-2.5 py-1 bg-blue-500/10 hover:bg-blue-500/20 rounded border border-blue-500/20 inline-block"
+                              >
+                                👁️ View File
+                              </a>
+                            )}
                             <button
-                              onClick={() => handleDeleteDocument(doc.id, doc.originalFileName)}
+                              onClick={() => handleDeleteDocument(doc.id, doc.originalFileName, doc.filePath)}
                               disabled={deletingId === doc.id}
-                              className="text-red-400 hover:text-red-300 text-xs px-2 py-1 bg-red-500/10 hover:bg-red-500/20 rounded border border-red-500/20"
+                              className="text-red-400 hover:text-red-300 text-xs px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 rounded border border-red-500/20"
                             >
-                              {deletingId === doc.id ? 'Deleting...' : 'Remove File'}
+                              {deletingId === doc.id ? 'Deleting...' : '🗑️ Remove Document'}
                             </button>
                           </td>
                         </tr>
@@ -834,6 +865,70 @@ export default function AdminPage() {
                 </Button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {docToDelete && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-4">
+              <div className="flex items-center gap-3 text-red-400">
+                <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-xl">
+                  🗑️
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Confirm Document Deletion</h3>
+                  <p className="text-xs text-zinc-400">Permanently purge file from storage & database</p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 space-y-2">
+                <p className="font-medium text-white">Are you sure you want to remove document:</p>
+                <p className="font-mono text-blue-400 break-all bg-blue-500/5 p-2 rounded border border-blue-500/10">
+                  "{docToDelete.fileName}"
+                </p>
+                <p className="text-[11px] text-zinc-400 pt-1 leading-relaxed">
+                  This action will delete all vector chunks from <strong className="text-zinc-200">Qdrant</strong>, delete metadata from <strong className="text-zinc-200">PostgreSQL</strong>, and remove the physical file from server storage.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  onClick={() => setDocToDelete(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-medium text-zinc-400 hover:text-white bg-zinc-800/60 hover:bg-zinc-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={executeDeleteDocument}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-red-600 hover:bg-red-500 shadow-lg shadow-red-600/20 transition-colors"
+                >
+                  Delete Document Everywhere
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Floating Toast Notification */}
+        {toast && (
+          <div className={`fixed bottom-6 right-6 z-50 p-4 rounded-2xl border shadow-2xl backdrop-blur-xl flex items-start gap-3 max-w-md ${
+            toast.type === 'success'
+              ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-200'
+              : 'bg-red-950/90 border-red-500/40 text-red-200'
+          }`}>
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold ${
+              toast.type === 'success' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+            }`}>
+              {toast.type === 'success' ? '✓' : '⚠️'}
+            </div>
+            <div className="flex-1 pr-2">
+              <h4 className="font-semibold text-xs text-white">{toast.title}</h4>
+              <p className="text-[11px] opacity-90 mt-0.5 leading-relaxed">{toast.message}</p>
+            </div>
+            <button onClick={() => setToast(null)} className="text-zinc-400 hover:text-white text-xs p-1">
+              ✕
+            </button>
           </div>
         )}
 

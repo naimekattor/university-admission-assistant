@@ -42,6 +42,7 @@ export function detectUnitFromText(text: string): string {
 }
 
 import { extractBanglaPdfText } from '@/lib/services/vision-pdf-extractor';
+import { db, documents } from '../db';
 
 export async function extractTextFromFile(
   buffer: Buffer,
@@ -166,9 +167,10 @@ export async function processAndUploadDocument(params: {
 
   await ensureCollection(ADMISSION_DOCS_COLLECTION);
 
+  console.log(`[Document Processor] Generating embeddings for ${chunks.length} chunk(s) from "${originalFileName}"...`);
+
   const points = [];
   for (let i = 0; i < chunks.length; i++) {
-    const chunkId = `${docId}-chunk-${i}`;
     const vector = await generateEmbedding(chunks[i]);
 
     points.push({
@@ -190,7 +192,25 @@ export async function processAndUploadDocument(params: {
     });
   }
 
+  // Insert document record into PostgreSQL
+  try {
+    await db.insert(documents).values({
+      originalFileName,
+      filePath,
+      university,
+      unit: detectedUnit,
+      year,
+      documentType,
+      chunkCount: points.length,
+    });
+    console.log(`[Document Processor] Recorded document metadata in PostgreSQL for "${originalFileName}".`);
+  } catch (dbErr: any) {
+    console.warn(`[Document Processor] PostgreSQL document insertion warning:`, dbErr.message || dbErr);
+  }
+
+  // Upsert vector points into Qdrant Vector DB
   await qdrantClient.upsert(ADMISSION_DOCS_COLLECTION, { points });
+  console.log(`[Document Processor] Successfully stored ${points.length} vector points in Qdrant collection "${ADMISSION_DOCS_COLLECTION}".`);
 
   return { documentsCount: 1, chunksCount: points.length, detectedUnit };
 }
