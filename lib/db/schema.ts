@@ -1,5 +1,6 @@
 import { pgTable, text, timestamp, integer, boolean, jsonb, uuid } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+import { year } from 'drizzle-orm/mysql-core';
 
 // Sessions - for anonymous user tracking
 export const sessions = pgTable('sessions', {
@@ -105,3 +106,15 @@ export const eligibilityCriteriaRelations = relations(eligibilityCriteria, ({ on
     references: [programs.id],
   }),
 }));
+
+//documents table 
+export const documents = pgTable('documents',{
+  id: uuid('id').primaryKey().defaultRandom(),
+  originalFileName: text('original_file_name').notNull(),
+  university: text('university').notNull(),
+  unit: text('unit'),
+  year: integer('year'),
+  documentType: text('document_type'),
+  chunkCount: integer('chunk_count').default(0),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
