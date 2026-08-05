@@ -142,6 +142,8 @@ export function chunkText(text: string, maxChunkSize = 1000, overlap = 100): str
   return chunks.length > 0 ? chunks : [normalized.trim()];
 }
 
+import { normalizeTextWithGroq } from '@/lib/services/groq-normalizer';
+
 export async function processAndUploadDocument(params: {
   buffer: Buffer;
   mimeType: string;
@@ -155,11 +157,14 @@ export async function processAndUploadDocument(params: {
   const { buffer, mimeType, originalFileName, filePath, university, unit, year, documentType } = params;
 
   const rawText = await extractTextFromFile(buffer, mimeType);
-  const normalizedText = normalizeExtractedText(rawText);
+  const cleanRawText = normalizeExtractedText(rawText);
 
-  if (!normalizedText.trim()) {
+  if (!cleanRawText.trim()) {
     throw new Error('No text content could be extracted from the file');
   }
+
+  // Run Groq Llama 3.3 70B Versatile normalization for headings, OCR artifacts, and Markdown tables
+  const normalizedText = await normalizeTextWithGroq(cleanRawText);
 
   const detectedUnit = (!unit || unit === 'auto' || unit === '') ? detectUnitFromText(normalizedText) : unit;
   const chunks = chunkText(normalizedText);

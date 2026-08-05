@@ -67,14 +67,28 @@ async function extractWithOllamaVision(pdfBuffer: Buffer): Promise<string> {
   return data.response ? data.response.trim() : '';
 }
 
+import { extractWithSuryaOCR } from '@/lib/services/surya-ocr';
+
 /**
  * Unified Bangla PDF extraction service:
- * 1. Primary: Gemini 1.5 Flash Vision API
- * 2. Secondary Fallback: Ollama Local Vision (llama3.2-vision)
- * 3. Final Fallback: Standard pdf-parse
+ * 1. Primary: Surya OCR Python Microservice (if running locally at http://127.0.0.1:8000)
+ * 2. Secondary: Gemini 2.0 Flash Vision API
+ * 3. Tertiary Fallback: Ollama Local Vision (llama3.2-vision)
+ * 4. Final Fallback: Standard pdf-parse
  */
 export async function extractBanglaPdfText(pdfBuffer: Buffer): Promise<string> {
-  // Step 1: Try Gemini Vision API
+  // Step 1: Try local Python Surya OCR Microservice
+  try {
+    const suryaText = await extractWithSuryaOCR(pdfBuffer);
+    if (suryaText && suryaText.length > 20) {
+      console.log('[Vision PDF Extractor] Successfully extracted text using local Surya OCR Microservice.');
+      return suryaText;
+    }
+  } catch (err) {
+    console.warn('[Vision PDF Extractor] Surya OCR microservice skipped or unavailable:', err);
+  }
+
+  // Step 2: Try Gemini Vision API
   if (process.env.GEMINI_API_KEY) {
     try {
       console.log('[Vision PDF Extractor] Attempting extraction via Gemini Flash Vision...');
@@ -93,7 +107,7 @@ export async function extractBanglaPdfText(pdfBuffer: Buffer): Promise<string> {
     console.log('[Vision PDF Extractor] GEMINI_API_KEY not set. Skipping Gemini Vision.');
   }
 
-  // Step 2: Fallback to Ollama Local Vision
+  // Step 3: Fallback to Ollama Local Vision
   try {
     console.log('[Vision PDF Extractor] Attempting fallback extraction via Ollama Local Vision...');
     const ollamaText = await extractWithOllamaVision(pdfBuffer);
@@ -108,7 +122,7 @@ export async function extractBanglaPdfText(pdfBuffer: Buffer): Promise<string> {
     );
   }
 
-  // Step 3: Final Fallback to standard pdf-parse
+  // Step 4: Final Fallback to standard pdf-parse
   console.log('[Vision PDF Extractor] Falling back to standard pdf-parse parser.');
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const pdfParse = require('pdf-parse/lib/pdf-parse.js');
