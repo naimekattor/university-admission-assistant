@@ -67,25 +67,25 @@ async function extractWithOllamaVision(pdfBuffer: Buffer): Promise<string> {
   return data.response ? data.response.trim() : '';
 }
 
-import { extractWithSuryaOCR } from '@/lib/services/surya-ocr';
+import { extractWithEasyOCR } from '@/lib/services/easy-ocr';
 
 /**
  * Unified Bangla PDF extraction service:
- * 1. Primary: Surya OCR Python Microservice (if running locally at http://127.0.0.1:8000)
- * 2. Secondary: Gemini 2.0 Flash Vision API
+ * 1. Primary: EasyOCR Python Microservice (400 DPI, bn+en at http://127.0.0.1:8000)
+ * 2. Secondary: Gemini 2.0 Flash Vision API (Fix formatting, Markdown tables)
  * 3. Tertiary Fallback: Ollama Local Vision (llama3.2-vision)
  * 4. Final Fallback: Standard pdf-parse
  */
 export async function extractBanglaPdfText(pdfBuffer: Buffer): Promise<string> {
-  // Step 1: Try local Python Surya OCR Microservice
+  // Step 1: Try local Python EasyOCR Microservice (400 DPI, bn+en)
   try {
-    const suryaText = await extractWithSuryaOCR(pdfBuffer);
-    if (suryaText && suryaText.length > 20) {
-      console.log('[Vision PDF Extractor] Successfully extracted text using local Surya OCR Microservice.');
-      return suryaText;
+    const easyOcrText = await extractWithEasyOCR(pdfBuffer);
+    if (easyOcrText && easyOcrText.length > 20) {
+      console.log('[Vision PDF Extractor] Successfully extracted text using local EasyOCR Microservice (400 DPI, bn+en).');
+      return easyOcrText;
     }
   } catch (err) {
-    console.warn('[Vision PDF Extractor] Surya OCR microservice skipped or unavailable:', err);
+    console.warn('[Vision PDF Extractor] EasyOCR microservice skipped or unavailable:', err);
   }
 
   // Step 2: Try Gemini Vision API
