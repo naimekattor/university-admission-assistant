@@ -1,6 +1,15 @@
+import sys
 import os
 import io
 import logging
+
+# Force UTF-8 encoding for stdout/stderr on Windows to avoid 'charmap' codec errors with tqdm (\u2588) or Bangla characters
+os.environ["PYTHONIOENCODING"] = "utf-8"
+if hasattr(sys.stdout, 'buffer'):
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+if hasattr(sys.stderr, 'buffer'):
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -137,8 +146,9 @@ async def run_ocr_endpoint(file: UploadFile = File(...)):
         }
 
     except Exception as e:
-        logger.error(f"EasyOCR error: {e}")
-        raise HTTPException(status_code=500, detail=f"OCR execution failed: {e}")
+        err_msg = str(e).encode('utf-8', 'replace').decode('utf-8')
+        logger.error(f"EasyOCR error: {err_msg}")
+        raise HTTPException(status_code=500, detail=f"OCR execution failed: {err_msg}")
 
 
 if __name__ == "__main__":
