@@ -42,7 +42,7 @@ export default function LandingPage() {
             <Link href="/chat">
               <BorderBeamButton
                 size="lg"
-                variant=""
+                variant="primary"
                 className="bg-white text-green-700 border-2 border-green-500 shadow-xl"
               >
                 Start Chatting <ArrowRight className="w-5 h-5" />
@@ -179,7 +179,7 @@ export default function LandingPage() {
           <Link href="/chat">
             <BorderBeamButton
               size="lg"
-              variant=""
+              variant="primary"
               className="bg-white text-green-700 border-2 border-green-500 shadow-xl"
             >
               Start Chatting Now <ArrowRight className="w-5 h-5" />

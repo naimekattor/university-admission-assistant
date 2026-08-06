@@ -114,32 +114,70 @@ export function normalizeExtractedText(text: string): string {
   return mergedParagraphs.join('\n\n').replace(/[ \t]+/g, ' ').trim();
 }
 
-export function chunkText(text: string, maxChunkSize = 1000, overlap = 100): string[] {
+export interface ChunkResult {
+  text: string;
+  page: number;
+}
+
+export function chunkTextWithStructure(
+  text: string,
+  maxChunkSize = 1200,
+  overlap = 150
+): ChunkResult[] {
   const normalized = normalizeExtractedText(text);
-  // Split by double newlines or Bangla dari (।) / newlines
-  const paragraphs = normalized.split(/\n\s*\n|(?<=।)\n+/);
-  const chunks: string[] = [];
-  let currentChunk = '';
+  
+  // Split document by page markers: "--- Page N ---" or "## --- Page N ---"
+  const pageParts = normalized.split(/(?=(?:#{1,3}\s*)?--- Page \d+ ---)/i);
+  const chunks: ChunkResult[] = [];
 
-  for (const para of paragraphs) {
-    const trimmed = para.trim();
-    if (!trimmed) continue;
+  for (const pagePart of pageParts) {
+    const trimmedPart = pagePart.trim();
+    if (!trimmedPart) continue;
 
-    if (currentChunk.length + trimmed.length > maxChunkSize && currentChunk.length > 0) {
-      chunks.push(currentChunk.trim());
-      const words = currentChunk.split(/\s+/);
-      const overlapWords = words.slice(-Math.floor(overlap / 5)).join(' ');
-      currentChunk = overlapWords + '\n\n' + trimmed;
-    } else {
-      currentChunk += (currentChunk ? '\n\n' : '') + trimmed;
+    // Match page number from header
+    const pageMatch = trimmedPart.match(/(?:#{1,3}\s*)?--- Page (\d+) ---/i);
+    const currentPage = pageMatch ? parseInt(pageMatch[1], 10) : 1;
+
+    // Clean page header from text body if present
+    const cleanContent = trimmedPart.replace(/(?:#{1,3}\s*)?--- Page \d+ ---\n?/gi, '').trim();
+    if (!cleanContent) continue;
+
+    // Split page content into blocks by headers or Markdown table headers
+    const blocks = cleanContent.split(/(?=\n#{1,3}\s|\n\|[^\n]+\|\n\|[-:\s|]+\|)/);
+    let currentChunk = '';
+    let currentHeader = '';
+
+    for (const block of blocks) {
+      const trimmedBlock = block.trim();
+      if (!trimmedBlock) continue;
+
+      // Extract current section header if available
+      const headerMatch = trimmedBlock.match(/^(#{1,3}\s+[^\n]+)/);
+      if (headerMatch) {
+        currentHeader = headerMatch[1];
+      }
+
+      // Check if block is a Markdown table
+      const isTable = trimmedBlock.startsWith('|') || trimmedBlock.includes('\n|');
+
+      if (currentChunk.length + trimmedBlock.length > maxChunkSize && currentChunk.length > 0 && !isTable) {
+        chunks.push({ text: currentChunk.trim(), page: currentPage });
+        currentChunk = currentHeader ? `${currentHeader}\n\n${trimmedBlock}` : trimmedBlock;
+      } else {
+        currentChunk += (currentChunk ? '\n\n' : '') + trimmedBlock;
+      }
+    }
+
+    if (currentChunk.trim()) {
+      chunks.push({ text: currentChunk.trim(), page: currentPage });
     }
   }
 
-  if (currentChunk.trim()) {
-    chunks.push(currentChunk.trim());
-  }
+  return chunks.length > 0 ? chunks : [{ text: normalized.trim(), page: 1 }];
+}
 
-  return chunks.length > 0 ? chunks : [normalized.trim()];
+export function chunkText(text: string, maxChunkSize = 1000, overlap = 100): string[] {
+  return chunkTextWithStructure(text, maxChunkSize, overlap).map((c) => c.text);
 }
 
 import { normalizeTextWithGroq } from '@/lib/services/groq-normalizer';
@@ -167,16 +205,17 @@ export async function processAndUploadDocument(params: {
   const normalizedText = await normalizeTextWithGroq(cleanRawText);
 
   const detectedUnit = (!unit || unit === 'auto' || unit === '') ? detectUnitFromText(normalizedText) : unit;
-  const chunks = chunkText(normalizedText);
+  const structuredChunks = chunkTextWithStructure(normalizedText);
   const docId = uuidv4();
 
   await ensureCollection(ADMISSION_DOCS_COLLECTION);
 
-  console.log(`[Document Processor] Generating embeddings for ${chunks.length} chunk(s) from "${originalFileName}"...`);
+  console.log(`[Document Processor] Generating embeddings for ${structuredChunks.length} chunk(s) from "${originalFileName}"...`);
 
   const points = [];
-  for (let i = 0; i < chunks.length; i++) {
-    const vector = await generateEmbedding(chunks[i]);
+  for (let i = 0; i < structuredChunks.length; i++) {
+    const chunkObj = structuredChunks[i];
+    const vector = await generateEmbedding(chunkObj.text);
 
     points.push({
       id: uuidv4(),
@@ -188,11 +227,12 @@ export async function processAndUploadDocument(params: {
         unit: detectedUnit,
         year,
         source: originalFileName,
-        page: Math.floor(i / 3) + 1,
-        text: chunks[i],
+        page: chunkObj.page,
+        text: chunkObj.text,
         type: documentType,
         originalFileName,
         filePath,
+        hasTable: chunkObj.text.includes('|'),
       },
     });
   }

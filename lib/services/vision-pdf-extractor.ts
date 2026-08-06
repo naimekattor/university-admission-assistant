@@ -1,128 +1,129 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { PDFDocument } from 'pdf-lib';
 
 /**
- * Extract Bangla & English PDF text using Google Gemini 2.0 Flash Vision API.
+ * Utility to pause execution for rate-limiting
  */
-async function extractWithGemini(pdfBuffer: Buffer): Promise<string> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not configured in environment variables.');
-  }
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  const genAI = new GoogleGenerativeAI(apiKey);
+/**
+ * High-precision PDF text extractor using Google Gemini 2.0 Flash Vision API.
+ * Includes automatic retry with exponential backoff on 429 Rate Limit.
+ */
+async function extractSinglePageWithGemini(
+  genAI: GoogleGenerativeAI,
+  pagePdfBuffer: Buffer,
+  pageNumber: number,
+  maxRetries = 4,
+): Promise<string> {
   const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  const base64Data = pagePdfBuffer.toString('base64');
 
-  const base64Data = pdfBuffer.toString('base64');
-  const prompt = `You are an expert OCR system specialized in bilingual Bangla (বাংলা) and English university admission circulars and prospectuses.
+  const prompt = `You are a high-precision document OCR and extractor specializing in bilingual Bangla (বাংলা) and English university admission circulars and prospectuses.
 
-Please extract ALL text from this document with 100% precision:
-1. Preserve all Bangla text (বাংলা হরফ/যুক্তবর্ণ) and English text exactly as written.
-2. Keep all tables, subject-wise GPA cutoffs, seat numbers, unit names (ক, খ, গ, ঘ, চ), marks, dates, and fees formatted in clean Markdown tables or bullet lists.
-3. Preserve numbers (both Bangla digits ১,২,৩ and English digits 1,2,3).
-4. Do NOT translate Bangla to English or English to Bangla.
-5. Do NOT summarize or omit any section. Output the exact complete extracted text.
+Please extract ALL text from Page ${pageNumber} of this PDF document with 100% precision:
+1. PAGE MARKER: Prefix the text with "--- Page ${pageNumber} ---" at the top.
+2. BILINGUAL TEXT: Preserve all Bangla text (বাংলা হরফ/যুক্তবর্ণ) and English text exactly as written. Do NOT translate or summarize.
+3. MARKDOWN TABLES: Format all tabular data (department-wise seat counts, GPA cutoffs, subject prerequisites, marks, dates, fee structures) into clean Markdown tables using pipe syntax (|).
+4. PRESERVE NUMBERS & UNITS: Keep all numbers (both Bangla digits ১,২,৩ and English digits 1,2,3), unit letters (ক, খ, গ, ঘ, চ / A, B, C, D), and course names 100% accurate.
+5. COMPLETE OUTPUT: Extract every single paragraph, table row, and header.
 
-Output ONLY the extracted Markdown text.`;
+Output ONLY the extracted Markdown text:`;
 
-  const result = await model.generateContent([
-    {
-      inlineData: {
-        data: base64Data,
-        mimeType: 'application/pdf',
-      },
-    },
-    prompt,
-  ]);
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await model.generateContent([
+        {
+          inlineData: {
+            data: base64Data,
+            mimeType: 'application/pdf',
+          },
+        },
+        prompt,
+      ]);
 
-  const responseText = result.response.text();
-  return responseText ? responseText.trim() : '';
-}
+      const responseText = result.response.text();
+      return responseText ? responseText.trim() : '';
+    } catch (err: any) {
+      const is429 = err?.status === 429 || err?.message?.includes('429') || err?.message?.includes('Quota exceeded');
 
-/**
- * Extract Bangla PDF text using local Ollama Vision API (e.g. llama3.2-vision or qwen2-vl).
- */
-async function extractWithOllamaVision(pdfBuffer: Buffer): Promise<string> {
-  const baseUrl = process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434';
-  const visionModel = process.env.OLLAMA_VISION_MODEL || 'llama3.2-vision';
-  const base64Data = pdfBuffer.toString('base64');
+      if (is429 && attempt < maxRetries) {
+        // Extract retryDelay from error object or calculate backoff (4s, 8s, 16s)
+        const retryDelaySec = err?.errorDetails?.[2]?.retryDelay ? parseInt(err.errorDetails[2].retryDelay, 10) : attempt * 4;
+        const waitMs = Math.max((retryDelaySec || 4) * 1000, 3000);
 
-  const prompt = `Extract all text from this bilingual Bangla and English admission circular accurately. Preserve numbers, tables, units (Ka, Kha, Ga), and formatting in clean Markdown.`;
-
-  const response = await fetch(`${baseUrl}/api/generate`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: visionModel,
-      prompt: prompt,
-      images: [base64Data],
-      stream: false,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Ollama Vision HTTP error ${response.status}: ${response.statusText}`);
+        console.warn(
+          `[Vision PDF Extractor] Page ${pageNumber} hit 429 Rate Limit (Attempt ${attempt}/${maxRetries}). Retrying in ${Math.round(waitMs / 1000)}s...`,
+        );
+        await sleep(waitMs);
+      } else {
+        throw err;
+      }
+    }
   }
 
-  const data = await response.json();
-  return data.response ? data.response.trim() : '';
+  return '';
 }
 
-import { extractWithEasyOCR } from '@/lib/services/easy-ocr';
-
 /**
- * Unified Bangla PDF extraction service:
- * 1. Primary: EasyOCR Python Microservice (400 DPI, bn+en at http://127.0.0.1:8000)
- * 2. Secondary: Gemini 2.0 Flash Vision API (Fix formatting, Markdown tables)
- * 3. Tertiary Fallback: Ollama Local Vision (llama3.2-vision)
- * 4. Final Fallback: Standard pdf-parse
+ * Unified PDF extraction service:
+ * 1. Primary: Google Gemini 2.0 Flash Vision API (Page-by-page processing via pdf-lib with 429 Retry)
+ * 2. Fallback: Native Node.js pdf-parse engine
  */
 export async function extractBanglaPdfText(pdfBuffer: Buffer): Promise<string> {
-  // Step 1: Try local Python EasyOCR Microservice (400 DPI, bn+en)
-  try {
-    const easyOcrText = await extractWithEasyOCR(pdfBuffer);
-    if (easyOcrText && easyOcrText.length > 20) {
-      console.log('[Vision PDF Extractor] Successfully extracted text using local EasyOCR Microservice (400 DPI, bn+en).');
-      return easyOcrText;
-    }
-  } catch (err) {
-    console.warn('[Vision PDF Extractor] EasyOCR microservice skipped or unavailable:', err);
-  }
+  const apiKey = process.env.GEMINI_API_KEY;
 
-  // Step 2: Try Gemini Vision API
-  if (process.env.GEMINI_API_KEY) {
+  if (apiKey) {
     try {
-      console.log('[Vision PDF Extractor] Attempting extraction via Gemini Flash Vision...');
-      const geminiText = await extractWithGemini(pdfBuffer);
-      if (geminiText && geminiText.length > 20) {
-        console.log('[Vision PDF Extractor] Successfully extracted text using Gemini Vision.');
-        return geminiText;
+      console.log('[Vision PDF Extractor] Loading PDF document with pdf-lib...');
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const srcPdf = await PDFDocument.load(pdfBuffer);
+      const pageCount = srcPdf.getPageCount();
+
+      console.log(`[Vision PDF Extractor] Processing ${pageCount} page(s) via Gemini 2.0 Flash Vision API (page-by-page)...`);
+      const extractedPages: string[] = [];
+
+      for (let i = 0; i < pageCount; i++) {
+        try {
+          const singlePagePdf = await PDFDocument.create();
+          const [copiedPage] = await singlePagePdf.copyPages(srcPdf, [i]);
+          singlePagePdf.addPage(copiedPage);
+
+          const singlePageBytes = await singlePagePdf.save();
+          const singlePageBuffer = Buffer.from(singlePageBytes);
+
+          console.log(`[Vision PDF Extractor] Extracting Page ${i + 1}/${pageCount} via Gemini Vision...`);
+          const pageText = await extractSinglePageWithGemini(genAI, singlePageBuffer, i + 1);
+
+          if (pageText) {
+            extractedPages.push(pageText);
+          }
+
+          // Small delay between page extractions to stay smoothly within 15 RPM Free Tier limit
+          if (i < pageCount - 1) {
+            await sleep(1500);
+          }
+        } catch (pageErr) {
+          console.warn(`[Vision PDF Extractor] Gemini extraction failed on page ${i + 1}:`, pageErr instanceof Error ? pageErr.message : pageErr);
+        }
+      }
+
+      if (extractedPages.length > 0) {
+        const fullText = extractedPages.join('\n\n');
+        console.log(`[Vision PDF Extractor] Successfully extracted ${fullText.length} characters across ${extractedPages.length}/${pageCount} pages.`);
+        return fullText;
       }
     } catch (err) {
       console.warn(
-        '[Vision PDF Extractor] Gemini Vision failed or quota exceeded:',
+        '[Vision PDF Extractor] Gemini Vision multi-page extraction failed, attempting fallback:',
         err instanceof Error ? err.message : err,
       );
     }
   } else {
-    console.log('[Vision PDF Extractor] GEMINI_API_KEY not set. Skipping Gemini Vision.');
+    console.warn('[Vision PDF Extractor] GEMINI_API_KEY not found in environment variables.');
   }
 
-  // Step 3: Fallback to Ollama Local Vision
-  try {
-    console.log('[Vision PDF Extractor] Attempting fallback extraction via Ollama Local Vision...');
-    const ollamaText = await extractWithOllamaVision(pdfBuffer);
-    if (ollamaText && ollamaText.length > 20) {
-      console.log('[Vision PDF Extractor] Successfully extracted text using Ollama Local Vision.');
-      return ollamaText;
-    }
-  } catch (err) {
-    console.warn(
-      '[Vision PDF Extractor] Ollama Local Vision failed:',
-      err instanceof Error ? err.message : err,
-    );
-  }
-
-  // Step 4: Final Fallback to standard pdf-parse
+  // Fallback to standard pdf-parse parser
   console.log('[Vision PDF Extractor] Falling back to standard pdf-parse parser.');
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const pdfParse = require('pdf-parse/lib/pdf-parse.js');

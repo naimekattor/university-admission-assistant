@@ -74,12 +74,12 @@ export async function POST(req: Request) {
     console.log(`\n--- [CHAT REQUEST START] ---`);
     console.log(`[Chat API] Processing message: "${userQuery}"`);
 
-    // Search for relevant documents using RAG (fetch top 2 chunks as per architecture design)
-    const relevantDocs = await searchDocuments(userQuery, undefined, undefined, 2);
+    // Search for relevant documents using RAG (fetch top 6 relevant chunks)
+    const relevantDocs = await searchDocuments(userQuery, undefined, undefined, 6);
     const ragContext = formatDocumentsForContext(relevantDocs);
     
     console.log(`[Chat API] RAG Context injected: ${relevantDocs.length > 0 ? `${relevantDocs.length} chunk(s) included` : 'None (No relevant docs found)'}`);
-    
+    console.log(relevantDocs);
     // Detect language of user input
     const isPureEnglish = /^[a-zA-Z0-9\s\.,\?!'"\(\)\-\:\;\$\%\&\*\#\@\+\/\=\_\<\>\n\r]+$/.test(userQuery.trim());
     const hasBanglaScript = /[\u0980-\u09FF]/.test(userQuery);

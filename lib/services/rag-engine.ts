@@ -74,11 +74,28 @@ export const mockDocumentChunks: DocumentChunk[] = [
   },
 ];
 
+function generateCrossLingualKeywords(query: string): string {
+  let expanded = query;
+  if (/আসন|সিট|কোটা|seat|capacity/i.test(query)) {
+    expanded += ' seat capacity department seats total seats allocation CSE EEE Civil';
+  }
+  if (/ক ইউনিট|A unit|বিজ্ঞান/i.test(query)) {
+    expanded += ' Ka Unit A Unit Science Engineering eligibility criteria';
+  }
+  if (/ফি|খরচ|fee|cost|tuition/i.test(query)) {
+    expanded += ' fee structure cost of study tuition registration fee';
+  }
+  if (/তারিখ|সময়|পরীক্ষা|date|schedule/i.test(query)) {
+    expanded += ' admission schedule exam date timeline deadline';
+  }
+  return expanded;
+}
+
 export async function searchDocuments(
   query: string,
   university?: string,
   documentType?: string,
-  limit = 2
+  limit = 6
 ): Promise<DocumentChunk[]> {
   let results = mockDocumentChunks;
 
@@ -92,13 +109,34 @@ export async function searchDocuments(
   }
 
   try {
-    // Pipeline Step: Fetch Top 20 Candidates from Qdrant Vector Search
+    // Pipeline Step 1: Multi-Query Search (Original + Cross-lingual expanded query)
+    const expandedQuery = generateCrossLingualKeywords(query);
     const topCandidatesCount = 20;
-    const qdrantResults = await qdrantSearchDocs(query, topCandidatesCount);
-    
-    if (qdrantResults.length > 0) {
-      let qdrantDocs: DocumentChunk[] = qdrantResults
-        .filter(r => r.payload)
+
+    const [primaryResults, expandedResults] = await Promise.all([
+      qdrantSearchDocs(query, topCandidatesCount),
+      expandedQuery !== query ? qdrantSearchDocs(expandedQuery, topCandidatesCount) : Promise.resolve([]),
+    ]);
+
+    // Combine and deduplicate candidates by point ID
+    const candidatesMap = new Map<string, any>();
+
+    [...primaryResults, ...expandedResults].forEach((r) => {
+      if (!r.payload) return;
+      const pointId = (r.payload.id || r.payload.docId || r.id) as string;
+      if (!candidatesMap.has(pointId)) {
+        candidatesMap.set(pointId, { ...r, score: r.score || 0 });
+      } else {
+        // Boost score if point matched both primary and cross-lingual queries
+        const existing = candidatesMap.get(pointId);
+        existing.score = Math.max(existing.score, r.score || 0) + 0.1;
+      }
+    });
+
+    const combinedResults = Array.from(candidatesMap.values());
+
+    if (combinedResults.length > 0) {
+      let qdrantDocs: (DocumentChunk & { rawScore: number; hybridScore: number })[] = combinedResults
         .map(r => ({
           id: (r.payload!.id || r.payload!.docId) as string,
           university: r.payload!.university as string,
@@ -108,16 +146,11 @@ export async function searchDocuments(
           page: (r.payload!.page as number) || 1,
           text: r.payload!.text as string,
           type: (r.payload!.type as DocumentChunk['type']) || 'circular',
+          rawScore: r.score || 0,
+          hybridScore: r.score || 0,
         }));
 
-      // Pipeline Step: Reranker / Heuristic Prioritization (Prioritize Page 1 circular chunks for schedule queries)
-      const isDateOrGeneralQuery = /কবে|তারিখ|সময়|পরীক্ষা|সময়|date|schedule|when/i.test(query);
-      if (isDateOrGeneralQuery) {
-        const page1Docs = qdrantDocs.filter(d => d.page === 1);
-        const otherDocs = qdrantDocs.filter(d => d.page !== 1);
-        qdrantDocs = [...page1Docs, ...otherDocs];
-      }
-
+      // Filter by university & documentType if specified
       if (university) {
         qdrantDocs = qdrantDocs.filter(d => d.university.toLowerCase() === university.toLowerCase());
       }
@@ -125,11 +158,36 @@ export async function searchDocuments(
         qdrantDocs = qdrantDocs.filter(d => d.type === documentType);
       }
 
-      // Pipeline Step: Return Top 2 Chunks to LLM
+      // Pipeline Step 2: Hybrid BM25 & Quantitative Re-scoring
+      const queryLower = query.toLowerCase();
+      const keywords = queryLower.split(/\s+/).filter(w => w.length > 2);
+      const isSeatOrNumQuery = /seat|আসন|সিট|dept|department|capacity| quota|কোটা|gpa|mark|fee|ফি|খরচ|তারিখ|date|schedule/i.test(queryLower);
+
+      qdrantDocs = qdrantDocs.map((doc) => {
+        const textLower = doc.text.toLowerCase();
+        
+        let keywordBonus = 0;
+        for (const kw of keywords) {
+          if (textLower.includes(kw)) {
+            keywordBonus += 0.05;
+          }
+        }
+
+        const hasTable = textLower.includes('|');
+        const tableBoost = (isSeatOrNumQuery && hasTable) ? 0.25 : 0;
+
+        const hybridScore = doc.rawScore + keywordBonus + tableBoost;
+        return { ...doc, hybridScore };
+      });
+
+      // Sort by hybrid score descending
+      qdrantDocs.sort((a, b) => b.hybridScore - a.hybridScore);
+
+      console.log(`[RAG Engine] Multi-query hybrid re-scoring complete. Returning top ${Math.min(limit, qdrantDocs.length)} chunks.`);
       return qdrantDocs.slice(0, limit);
     }
-  } catch {
-    console.warn('Qdrant search failed, falling back to mock data');
+  } catch (err) {
+    console.warn('[RAG Engine] Qdrant vector search failed, falling back to mock data:', err);
   }
 
   const queryLower = query.toLowerCase();
@@ -146,7 +204,7 @@ export async function getUniversityContext(
   university: string,
   topic?: string
 ): Promise<string> {
-  const docs = await searchDocuments(topic || '', university, undefined, 2);
+  const docs = await searchDocuments(topic || '', university, undefined, 6);
 
   if (docs.length === 0) {
     return `No specific information found for ${university}. General admission guidelines apply.`;
