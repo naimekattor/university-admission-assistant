@@ -12,7 +12,8 @@
     "seed:db": "tsx scripts/seed-db.ts",
     "seed:embeddings": "tsx scripts/seed-embeddings.ts",
     "seed": "tsx scripts/seed-db.ts && tsx scripts/seed-embeddings.ts",
-    "clean:qdrant": "tsx scripts/clean-legacy-qdrant.ts"
+    "clean:qdrant": "tsx scripts/clean-legacy-qdrant.ts",
+    "test:claude": "tsx scripts/test-claude-api.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.16",
