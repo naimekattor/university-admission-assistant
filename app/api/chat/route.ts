@@ -270,10 +270,9 @@ async function tryStreamGemini(messages: any[], systemPrompt: string, userQuery:
     },
   });
 }
-
 async function tryStreamGrok(messages: any[], systemPrompt: string, apiKey: string, sessionId: string): Promise<Response> {
   const result = streamText({
-    model: groq('llama-3.3-70b-versatile'),
+    model: groq(process.env.GROQ_MODEL || 'llama-3.3-70b-versatile'),
     system: systemPrompt,
     messages: messages.map((m: any) => ({
       role: m.role,
