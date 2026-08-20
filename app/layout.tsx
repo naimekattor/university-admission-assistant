@@ -1,10 +1,11 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import { Navbar } from '@/components/navbar'
 
 export const metadata: Metadata = {
-  title: 'EduGuide - University Admission Assistant for Bangladesh',
-  description: 'AI-powered assistant to help HSC students find the right university and program in Bangladesh',
+  title: 'EduGuide - AI-Powered University Admission Preparation for Bangladesh',
+  description: 'AI-powered personal admission coach for Bangladeshi students preparing for BUET, DU, Medical, and Engineering admission tests.',
   generator: 'v0.app',
   icons: {
     icon: [
@@ -26,11 +27,8 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  colorScheme: 'light dark',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: 'white' },
-    { media: '(prefers-color-scheme: dark)', color: 'black' },
-  ],
+  colorScheme: 'dark',
+  themeColor: '#020617',
 }
 
 export default function RootLayout({
@@ -39,9 +37,10 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="bg-background">
-      <body className="antialiased">
-        {children}
+    <html lang="en" className="bg-slate-950 text-slate-100">
+      <body className="antialiased min-h-screen flex flex-col bg-slate-950 text-slate-100">
+        <Navbar />
+        <main className="flex-1">{children}</main>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

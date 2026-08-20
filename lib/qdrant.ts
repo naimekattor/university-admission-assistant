@@ -1,12 +1,10 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { generateEmbedding, EMBEDDING_DIMENSION } from '@/lib/ai/embeddings';
 
-if (!process.env.QDRANT_URL) {
-  throw new Error('QDRANT_URL environment variable is not set');
-}
+const qdrantUrl = process.env.QDRANT_URL || 'http://localhost:6333';
 
 export const qdrantClient = new QdrantClient({
-  url: process.env.QDRANT_URL,
+  url: qdrantUrl,
   apiKey: process.env.QDRANT_API_KEY,
 });
 
