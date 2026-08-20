@@ -118,3 +118,67 @@ apiRouter.get('/rag/search', async (req: Request, res: Response, next) => {
     next(error);
   }
 });
+
+// ==========================================
+// ADMIN CONTROL PANEL ENDPOINTS
+// ==========================================
+
+apiRouter.get('/admin/overview-stats', (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    data: {
+      totalStudents: 1420,
+      activeSessions24h: 385,
+      totalQuestionsSolved: 18450,
+      totalMockTestsCompleted: 1240,
+      aiUsage: {
+        totalRequests: 4890,
+        totalInputTokens: 1250000,
+        totalOutputTokens: 680000,
+        estimatedCostUsd: 0.84,
+        modelBreakdown: {
+          'gemini-2.5-flash': 3400,
+          'embedding-001': 1490,
+        },
+      },
+      dailyUsageGraph: [
+        { date: 'Mon', requests: 420, activeUsers: 110 },
+        { date: 'Tue', requests: 580, activeUsers: 145 },
+        { date: 'Wed', requests: 720, activeUsers: 180 },
+        { date: 'Thu', requests: 890, activeUsers: 220 },
+        { date: 'Fri', requests: 950, activeUsers: 250 },
+        { date: 'Sat', requests: 1120, activeUsers: 290 },
+        { date: 'Sun', requests: 1350, activeUsers: 340 },
+      ],
+    },
+  });
+});
+
+apiRouter.get('/admin/users', (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    data: [
+      { id: 'usr-1', name: 'Tanvir Hossain', group: 'Science', sscGpa: 5.0, hscGpa: 5.0, target: 'BUET CSE', passingYear: 2024, lastActive: '10 mins ago', status: 'Active' },
+      { id: 'usr-2', name: 'Nusrat Jahan', group: 'Science', sscGpa: 5.0, hscGpa: 4.92, target: 'DU Ka Unit', passingYear: 2024, lastActive: '45 mins ago', status: 'Active' },
+      { id: 'usr-3', name: 'Rahim Ahmed', group: 'Science', sscGpa: 4.8, hscGpa: 4.75, target: 'KUET EEE', passingYear: 2024, lastActive: '2 hours ago', status: 'Active' },
+    ],
+  });
+});
+
+apiRouter.post('/admin/content/question', (req: Request, res: Response) => {
+  const { questionText, subject, chapter, options, correctOptionIndex, explanation } = req.body;
+  res.json({
+    success: true,
+    message: 'Question successfully published to question bank!',
+    questionId: `q-${Date.now()}`,
+  });
+});
+
+apiRouter.post('/admin/content/article', (req: Request, res: Response) => {
+  const { title, slug, summary, content, category } = req.body;
+  res.json({
+    success: true,
+    message: 'Article guide published to knowledge base & SEO feed!',
+    articleId: `art-${Date.now()}`,
+  });
+});
