@@ -1,4 +1,5 @@
 import { geminiProvider } from './providers/gemini.provider';
+import { groqProvider } from './providers/groq.provider';
 import { StructuredAiResponse } from './schemas/ai-response.schemas';
 import { ragService } from '../rag/rag.service';
 
@@ -22,20 +23,42 @@ export class AiOrchestratorService {
     const { roleType, userQuery, studentContext } = request;
 
     // 1. Perform filtered semantic RAG search in PostgreSQL pgvector
-    const ragDocs = await ragService.searchDocuments({
-      query: userQuery,
-      limit: 5,
-    });
-    const ragContextText = ragService.formatContextForPrompt(ragDocs);
+    let ragContextText = '';
+    try {
+      const ragDocs = await ragService.searchDocuments({
+        query: userQuery,
+        limit: 5,
+      });
+      ragContextText = ragService.formatContextForPrompt(ragDocs);
+    } catch {
+      // RAG offline fallback
+    }
 
     // 2. Build specialized System Prompt based on role (Advisor vs Tutor)
     const systemPrompt = this.buildSystemPrompt(roleType, studentContext, ragContextText);
 
-    // 3. Request structured JSON response from Gemini Provider
-    const rawAiResult = await geminiProvider.generateStructuredResponse(userQuery, systemPrompt);
+    // 3. Request structured JSON response: Gemini Primary -> Groq Fallback
+    let rawAiResult: Record<string, any> | null = null;
+
+    if (geminiProvider.isConfigured()) {
+      try {
+        rawAiResult = await geminiProvider.generateStructuredResponse(userQuery, systemPrompt);
+      } catch (geminiError: any) {
+        console.warn('[AiOrchestrator] Gemini failed, switching to Groq fallback:', geminiError.message || geminiError);
+      }
+    }
+
+    if (!rawAiResult && groqProvider.isConfigured()) {
+      try {
+        console.log('[AiOrchestrator] Executing Groq fallback query...');
+        rawAiResult = await groqProvider.generateStructuredResponse(userQuery, systemPrompt);
+      } catch (groqError: any) {
+        console.error('[AiOrchestrator] Groq fallback also failed:', groqError.message || groqError);
+      }
+    }
 
     // 4. Validate or normalize structured response
-    return this.normalizeStructuredResult(rawAiResult, userQuery, roleType);
+    return this.normalizeStructuredResult(rawAiResult || {}, userQuery, roleType);
   }
 
   private buildSystemPrompt(roleType: AiRoleType, studentContext?: any, ragContextText?: string): string {
@@ -61,38 +84,41 @@ Identified Weak Topics: ${(studentContext.weakTopics || []).join(', ') || 'None'
     }
 
     if (ragContextText) {
-      prompt += `\n\n${ragContextText}`;
+      prompt += `\n\nOFFICIAL ADMISSION KNOWLEDGE & CIRCULAR CONTEXT:\n${ragContextText}`;
     }
-
-    prompt += `\n\nREQUIRED STRUCTURED OUTPUT:
-Return ONLY a valid JSON object matching one of the supported types:
-1. 'university_comparison'
-2. 'eligibility_result'
-3. 'study_plan'
-4. 'question_explanation'
-5. 'general_answer'`;
 
     return prompt;
   }
 
-  private normalizeStructuredResult(rawResult: any, query: string, roleType: AiRoleType): StructuredAiResponse {
-    if (rawResult && typeof rawResult === 'object' && rawResult.type) {
-      return rawResult as StructuredAiResponse;
+  private normalizeStructuredResult(raw: Record<string, any>, userQuery: string, roleType: AiRoleType): StructuredAiResponse {
+    if (raw && raw.type) {
+      return raw as StructuredAiResponse;
     }
 
-    // Default fallback structured answer
+    if (roleType === 'tutor') {
+      return {
+        type: 'question_explanation',
+        questionText: userQuery,
+        correctAnswer: raw.correctAnswer || 'Step-by-step solution available.',
+        stepByStepSolution: Array.isArray(raw.steps) ? raw.steps : [
+          'Identify the fundamental physical/mathematical principle involved.',
+          'Apply the standard formula and derive the required parameter.',
+          'Double check calculation units and boundary conditions.',
+        ],
+        commonMistakesToAvoid: ['Watch out for SI unit conversions (cm to m, minutes to seconds).'],
+        recommendedNextActions: [{ label: 'Practice Similar MCQs', action: 'practice_topic' }],
+      };
+    }
+
     return {
       type: 'general_answer',
-      summary: typeof rawResult === 'string' ? rawResult : 'Here is the relevant guidance for your query.',
-      sections: [
-        {
-          heading: roleType === 'tutor' ? 'Tutor Problem Explanation' : 'Admission Guidance',
-          content: typeof rawResult === 'object' ? JSON.stringify(rawResult, null, 2) : String(rawResult),
-        },
+      summary: raw.summary || `Analysis complete for: "${userQuery}".`,
+      sections: Array.isArray(raw.sections) ? raw.sections : [
+        { heading: 'Overview', content: 'Here is the relevant university admission and preparation guidance.' },
       ],
       recommendedNextActions: [
-        { label: 'Check My Eligibility', action: 'check_eligibility' },
-        { label: 'Start Today\'s Practice', action: 'start_practice' },
+        { label: 'Check Eligibility', action: 'check_eligibility' },
+        { label: 'Start Chapter Practice', action: 'start_practice' },
       ],
     };
   }

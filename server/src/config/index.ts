@@ -14,6 +14,10 @@ export const ENV = {
   GEMINI_EMBEDDING_DIMENSION: Number(process.env.GEMINI_EMBEDDING_DIMENSION || 768),
   GEMINI_EMBEDDING_VERSION: 'v1',
 
+  // Groq AI Configuration (Fallback Provider)
+  GROQ_API_KEY: process.env.GROQ_API_KEY || '',
+  GROQ_MODEL: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+
   // JWT Secret
   JWT_SECRET: process.env.JWT_SECRET || 'eduguide_secret_jwt_key_2026',
 };
