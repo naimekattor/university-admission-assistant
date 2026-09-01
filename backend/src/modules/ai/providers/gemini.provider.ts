@@ -3,6 +3,7 @@ import { ENV } from '../../../config';
 
 export class GeminiProvider {
   private client: GoogleGenAI | null = null;
+  private embeddingCache = new Map<string, number[]>();
 
   constructor() {
     if (ENV.GEMINI_API_KEY) {
@@ -73,15 +74,22 @@ export class GeminiProvider {
   }
 
   public async generateEmbedding(text: string): Promise<number[]> {
+    const trimmed = text.trim();
+    if (this.embeddingCache.has(trimmed)) {
+      return this.embeddingCache.get(trimmed)!;
+    }
+
     if (!this.client) {
       // Deterministic 768-dim pseudo vector for dev mode without key
-      return new Array(ENV.GEMINI_EMBEDDING_DIMENSION).fill(0).map((_, i) => Math.sin(i + text.length) * 0.1);
+      const pseudo = new Array(ENV.GEMINI_EMBEDDING_DIMENSION).fill(0).map((_, i) => Math.sin(i + trimmed.length) * 0.1);
+      this.embeddingCache.set(trimmed, pseudo);
+      return pseudo;
     }
 
     try {
       const response: any = await this.client.models.embedContent({
         model: ENV.GEMINI_EMBEDDING_MODEL,
-        contents: text,
+        contents: trimmed,
         config: {
           outputDimensionality: ENV.GEMINI_EMBEDDING_DIMENSION,
         },
@@ -89,17 +97,21 @@ export class GeminiProvider {
 
       const values = response?.embedding?.values || response?.embeddings?.[0]?.values;
       if (values && Array.isArray(values) && values.length > 0) {
-        if (values.length === ENV.GEMINI_EMBEDDING_DIMENSION) {
-          return values;
-        }
-        // If dimensionality differs, slice to expected dimension
-        return values.slice(0, ENV.GEMINI_EMBEDDING_DIMENSION);
+        const finalVector = values.length === ENV.GEMINI_EMBEDDING_DIMENSION ? values : values.slice(0, ENV.GEMINI_EMBEDDING_DIMENSION);
+        this.embeddingCache.set(trimmed, finalVector);
+        return finalVector;
       }
     } catch (error: any) {
-      console.warn(`[GeminiProvider] Embedding error with model "${ENV.GEMINI_EMBEDDING_MODEL}":`, error.message || error);
+      // Graceful fallback on rate limits/quota exhaustion
+      const is429 = error?.status === 429 || error?.message?.includes('429') || error?.message?.includes('Quota exceeded');
+      if (!is429) {
+        console.warn(`[GeminiProvider] Embedding notice with model "${ENV.GEMINI_EMBEDDING_MODEL}":`, error.message || error);
+      }
     }
 
-    return new Array(ENV.GEMINI_EMBEDDING_DIMENSION).fill(0).map((_, i) => Math.sin(i + text.length) * 0.1);
+    const fallbackVector = new Array(ENV.GEMINI_EMBEDDING_DIMENSION).fill(0).map((_, i) => Math.sin(i + trimmed.length) * 0.1);
+    this.embeddingCache.set(trimmed, fallbackVector);
+    return fallbackVector;
   }
 }
 

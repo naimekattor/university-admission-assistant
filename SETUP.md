@@ -33,6 +33,11 @@ GROQ_MODEL=openai/gpt-oss-120b
 
 GEMINI_API_KEY=your_gemini_api_key
 GEMINI_CHAT_MODEL=gemini-3.6-flash
+
+# Embeddings: 'huggingface' | 'gemini' | 'ollama' | 'auto'
+EMBEDDING_PROVIDER=auto
+HUGGINGFACE_API_KEY=your_huggingface_api_key
+HUGGINGFACE_EMBEDDING_MODEL=sentence-transformers/paraphrase-multilingual-mpnet-base-v2
 GEMINI_EMBEDDING_MODEL=gemini-embedding-001
 ```
 

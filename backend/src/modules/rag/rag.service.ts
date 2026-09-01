@@ -1,6 +1,7 @@
 import { db, schema } from '../../db';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, ilike } from 'drizzle-orm';
 import { geminiProvider } from '../ai/providers/gemini.provider';
+import { huggingFaceProvider } from '../ai/providers/huggingface.provider';
 
 export interface RagSearchOptions {
   query: string;
@@ -31,8 +32,10 @@ export class RagService {
 
     if (this.pgvectorAvailable !== false) {
       try {
-        // 1. Generate query embedding using Gemini provider
-        const queryVector = await geminiProvider.generateEmbedding(query);
+        // 1. Generate query embedding using Hugging Face or Gemini provider
+        const queryVector = huggingFaceProvider.isConfigured()
+          ? await huggingFaceProvider.generateEmbedding(query)
+          : await geminiProvider.generateEmbedding(query);
         const vectorLiteral = `[${queryVector.join(',')}]`;
 
         // 2. Query PostgreSQL document_chunks using pgvector cosine distance operator <=>
@@ -77,9 +80,53 @@ export class RagService {
         }
       } catch (error: any) {
         // Mark pgvector as unavailable for current session to avoid repeated slow failed queries in dev
+        if (this.pgvectorAvailable === null) {
+          console.log('[RagService] Local PostgreSQL pgvector not initialized; using active knowledge base.');
+        }
         this.pgvectorAvailable = false;
-        console.log('[RagService] Local PostgreSQL pgvector not initialized yet; using verified admission knowledge base.');
       }
+    }
+
+    // 2b. Database text search fallback (when pgvector extension is not installed)
+    try {
+      let textConditions = [];
+      if (university) textConditions.push(eq(schema.documentChunks.university, university));
+      if (unit) textConditions.push(eq(schema.documentChunks.unit, unit));
+
+      const keywords = query.split(/\s+/).filter((w) => w.length > 2);
+      if (keywords.length > 0) {
+        const keywordPattern = `%${keywords.slice(0, 2).join('%')}%`;
+        textConditions.push(ilike(schema.documentChunks.content, keywordPattern));
+      }
+
+      const dbChunks = await db
+        .select({
+          id: schema.documentChunks.id,
+          university: schema.documentChunks.university,
+          unit: schema.documentChunks.unit,
+          source: schema.documentChunks.source,
+          page: schema.documentChunks.page,
+          content: schema.documentChunks.content,
+          contentType: schema.documentChunks.contentType,
+        })
+        .from(schema.documentChunks)
+        .where(textConditions.length > 0 ? and(...textConditions) : undefined)
+        .limit(limit);
+
+      if (dbChunks && dbChunks.length > 0) {
+        return dbChunks.map((r) => ({
+          id: r.id,
+          university: r.university || 'General',
+          unit: r.unit || undefined,
+          source: r.source,
+          page: r.page || 1,
+          content: r.content,
+          contentType: r.contentType || 'circular',
+          score: 0.9,
+        }));
+      }
+    } catch {
+      // Fall through to mock chunks
     }
 
     // 3. Fallback verified admission knowledge base for dev/offline mode

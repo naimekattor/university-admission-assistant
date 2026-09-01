@@ -18,8 +18,10 @@ export const ENV = {
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
   GEMINI_CHAT_MODEL: process.env.GEMINI_CHAT_MODEL || 'gemini-3.6-flash',
   
-  // Embedding Configuration: 'gemini-embedding-001' (Google Free Tier) or 'bge-m3' (Local Free)
+  // Embedding Configuration: 'huggingface' (Free Cloud), 'gemini', 'ollama', or 'auto'
   EMBEDDING_PROVIDER: (process.env.EMBEDDING_PROVIDER || 'auto').toLowerCase(),
+  HUGGINGFACE_API_KEY: process.env.HUGGINGFACE_API_KEY || process.env.HF_TOKEN || '',
+  HUGGINGFACE_EMBEDDING_MODEL: process.env.HUGGINGFACE_EMBEDDING_MODEL || 'sentence-transformers/paraphrase-multilingual-mpnet-base-v2',
   GEMINI_EMBEDDING_MODEL: process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001',
   OLLAMA_EMBEDDING_MODEL: process.env.OLLAMA_EMBEDDING_MODEL || 'bge-m3',
   GEMINI_EMBEDDING_DIMENSION: Number(process.env.GEMINI_EMBEDDING_DIMENSION || 768),

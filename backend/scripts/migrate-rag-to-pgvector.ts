@@ -127,28 +127,58 @@ async function main() {
   console.log('--- Phase 1: Qdrant to PostgreSQL pgvector Migration ---');
   const pool = new pg.Pool({ connectionString: DATABASE_URL });
 
-  // 1. Enable vector extension in PostgreSQL
+  // 1. Enable vector extension in PostgreSQL (if available)
+  let hasVector = false;
   try {
     await pool.query('CREATE EXTENSION IF NOT EXISTS vector;');
+    hasVector = true;
     console.log('[pgvector] Extension "vector" verified/created successfully.');
   } catch (err: any) {
-    console.warn('[pgvector] Warning creating vector extension:', err.message);
+    console.log('[pgvector] Vector extension not available; using TEXT column for embeddings.');
   }
+
+  // 1b. Create document_chunks table if not exists
+  const embeddingType = hasVector ? 'vector(768)' : 'TEXT';
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS document_chunks (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      document_id UUID,
+      chunk_index INT NOT NULL DEFAULT 0,
+      content TEXT NOT NULL,
+      embedding ${embeddingType},
+      source TEXT NOT NULL,
+      source_url TEXT,
+      university TEXT,
+      unit TEXT,
+      subject TEXT,
+      chapter TEXT,
+      topic TEXT,
+      year INT DEFAULT 2026,
+      page INT DEFAULT 1,
+      content_type TEXT DEFAULT 'circular',
+      embedding_model TEXT DEFAULT 'gemini-embedding-001',
+      embedding_dimension INT DEFAULT 768,
+      embedding_version TEXT DEFAULT 'v1',
+      metadata JSONB,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+    );
+  `);
 
   const genai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
 
   // 2. Fetch candidates from Qdrant if available
   let qdrantChunks: any[] = [];
   try {
-    const qdrant = new QdrantClient({ url: QDRANT_URL });
+    const qdrant = new QdrantClient({ url: QDRANT_URL, checkCompatibility: false });
     const collections = await qdrant.getCollections();
     if (collections.collections.some((c) => c.name === ADMISSION_DOCS_COLLECTION)) {
       const scrollResult = await qdrant.scroll(ADMISSION_DOCS_COLLECTION, { limit: 200, with_payload: true });
       qdrantChunks = (scrollResult.points || []).map((p) => p.payload);
-      console.log(`[Qdrant] Retrived ${qdrantChunks.length} chunks from collection "${ADMISSION_DOCS_COLLECTION}".`);
+      console.log(`[Qdrant] Retrieved ${qdrantChunks.length} chunks from collection "${ADMISSION_DOCS_COLLECTION}".`);
     }
   } catch (err: any) {
-    console.warn('[Qdrant] Could not connect to Qdrant, using default seed chunks:', err.message);
+    console.log('[Qdrant] Note: Qdrant service offline; seeding with verified admission chunks.');
   }
 
   const chunksToMigrate = qdrantChunks.length > 0 ? qdrantChunks : fallbackDocumentChunks;
@@ -168,7 +198,7 @@ async function main() {
     const type = chunk.type || 'circular';
 
     const { vector: embedding, model: usedModel } = await generateMultilingualEmbedding(genai, textContent);
-    const vectorString = JSON.stringify(embedding);
+    const vectorValue = hasVector ? `[${embedding.join(',')}]` : JSON.stringify(embedding);
 
     await pool.query(
       `INSERT INTO document_chunks (
@@ -177,7 +207,7 @@ async function main() {
       [
         idx,
         textContent,
-        vectorString,
+        vectorValue,
         source,
         university,
         unit,
@@ -191,28 +221,38 @@ async function main() {
     count++;
   }
 
-  console.log(`[Migration] Successfully inserted ${count} chunks into pgvector document_chunks table!`);
+  console.log(`[Migration] Successfully inserted ${count} chunks into PostgreSQL document_chunks table!`);
 
-  // 4. Verify retrieval performance via cosine distance
+  // 4. Verify retrieval performance
   try {
-    const testQueryText = 'BUET admission minimum GPA requirement';
-    const { vector: testVector } = await generateMultilingualEmbedding(genai, testQueryText);
-    const testVectorStr = JSON.stringify(testVector);
+    if (hasVector) {
+      const testQueryText = 'BUET admission minimum GPA requirement';
+      const { vector: testVector } = await generateMultilingualEmbedding(genai, testQueryText);
+      const testVectorStr = `[${testVector.join(',')}]`;
 
-    const { rows } = await pool.query(
-      `SELECT id, university, unit, content, (embedding <=> $1) as distance
-       FROM document_chunks
-       ORDER BY distance ASC
-       LIMIT 3`,
-      [testVectorStr]
-    );
+      const { rows } = await pool.query(
+        `SELECT id, university, unit, content, (embedding <=> $1::vector) as distance
+         FROM document_chunks
+         ORDER BY distance ASC
+         LIMIT 3`,
+        [testVectorStr]
+      );
 
-    console.log('\n[Verification] Top 3 cosine distance pgvector search results:');
-    rows.forEach((r, i) => {
-      console.log(`  ${i + 1}. [${r.university} ${r.unit}] Distance: ${Number(r.distance).toFixed(4)} | Content: "${r.content.slice(0, 80)}..."`);
-    });
+      console.log('\n[Verification] Top 3 cosine distance pgvector search results:');
+      rows.forEach((r, i) => {
+        console.log(`  ${i + 1}. [${r.university} ${r.unit}] Distance: ${Number(r.distance).toFixed(4)} | Content: "${r.content.slice(0, 80)}..."`);
+      });
+    } else {
+      const { rows } = await pool.query(
+        `SELECT id, university, unit, content FROM document_chunks LIMIT 3`
+      );
+      console.log('\n[Verification] Stored knowledge chunks in PostgreSQL:');
+      rows.forEach((r, i) => {
+        console.log(`  ${i + 1}. [${r.university} ${r.unit}] Content: "${r.content.slice(0, 80)}..."`);
+      });
+    }
   } catch (verr: any) {
-    console.warn('[Verification] Verification query failed:', verr.message);
+    console.warn('[Verification] Verification query warning:', verr.message);
   }
 
   await pool.end();

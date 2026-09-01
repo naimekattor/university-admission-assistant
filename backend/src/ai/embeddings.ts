@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { huggingFaceProvider } from '../modules/ai/providers/huggingface.provider';
 
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434';
 const OLLAMA_EMBEDDING_MODEL = process.env.OLLAMA_EMBEDDING_MODEL || process.env.EMBEDDING_MODEL || 'bge-m3';
@@ -8,11 +9,24 @@ const EMBEDDING_PROVIDER = (process.env.EMBEDDING_PROVIDER || 'auto').toLowerCas
 
 /**
  * Generate high-quality Bengali/English vector embeddings using:
- * 1. Google Gemini Free Tier (`gemini-embedding-001` - 768 dimensions)
- * 2. Local Free via Ollama (`BAAI/bge-m3` - Multilingual State-of-the-Art)
+ * 1. Hugging Face Free Cloud Inference (`sentence-transformers/paraphrase-multilingual-mpnet-base-v2` - 768 dimensions)
+ * 2. Google Gemini Free Tier (`gemini-embedding-001` - 768 dimensions)
+ * 3. Local Free via Ollama (`BAAI/bge-m3` - Multilingual State-of-the-Art)
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
-  // Strategy A: Google Gemini gemini-embedding-001 (Free Tier)
+  // Strategy A: Hugging Face Free Cloud Inference (768-dim)
+  if ((EMBEDDING_PROVIDER === 'huggingface' || EMBEDDING_PROVIDER === 'hf' || EMBEDDING_PROVIDER === 'auto') && huggingFaceProvider.isConfigured()) {
+    try {
+      const emb = await huggingFaceProvider.generateEmbedding(text);
+      if (emb && Array.isArray(emb) && emb.length > 0) {
+        return emb;
+      }
+    } catch (hfErr: any) {
+      console.warn('[Embeddings] Hugging Face embedding failed, trying next provider:', hfErr.message || hfErr);
+    }
+  }
+
+  // Strategy B: Google Gemini gemini-embedding-001 (Free Tier)
   if ((EMBEDDING_PROVIDER === 'google' || EMBEDDING_PROVIDER === 'gemini' || EMBEDDING_PROVIDER === 'auto') && GEMINI_API_KEY) {
     try {
       const genai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
