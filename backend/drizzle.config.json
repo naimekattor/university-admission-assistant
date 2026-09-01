@@ -1,0 +1,7 @@
+{
+  "schema": "./src/db/schema.ts",
+  "dialect": "postgresql",
+  "dbCredentials": {
+    "url": "postgresql://postgres:postgres@localhost:5432/admission_db"
+  }
+}
