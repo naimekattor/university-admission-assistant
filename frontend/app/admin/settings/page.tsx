@@ -36,11 +36,11 @@ export default function AdminSettingsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
                 <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Gemini Chat Reasoning Model</label>
-                <input defaultValue="gemini-2.5-flash" className="eg-input font-mono" />
+                <input defaultValue="gemini-3.6-flash" className="eg-input font-mono" />
               </div>
               <div>
                 <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Embedding Model</label>
-                <input defaultValue="embedding-001" className="eg-input font-mono" />
+                <input defaultValue="gemini-embedding-001" className="eg-input font-mono" />
               </div>
               <div>
                 <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Embedding Vector Dimension</label>

@@ -12,7 +12,7 @@ export const ENV = {
 
   // Groq AI Configuration (Primary Fast Chat Model)
   GROQ_API_KEY: process.env.GROQ_API_KEY || '',
-  GROQ_MODEL: process.env.GROQ_MODEL || 'groq/compound-mini',
+  GROQ_MODEL: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
 
   // Google Gemini AI Configuration
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',

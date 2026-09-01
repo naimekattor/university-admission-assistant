@@ -3,27 +3,33 @@ import { GoogleGenAI } from '@google/genai';
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434';
 const OLLAMA_EMBEDDING_MODEL = process.env.OLLAMA_EMBEDDING_MODEL || process.env.EMBEDDING_MODEL || 'bge-m3';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || 'text-embedding-004';
+const GEMINI_EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001';
 const EMBEDDING_PROVIDER = (process.env.EMBEDDING_PROVIDER || 'auto').toLowerCase();
 
 /**
  * Generate high-quality Bengali/English vector embeddings using:
- * 1. Google Gemini Free Tier (`text-embedding-004` - 768 dimensions)
+ * 1. Google Gemini Free Tier (`gemini-embedding-001` - 768 dimensions)
  * 2. Local Free via Ollama (`BAAI/bge-m3` - Multilingual State-of-the-Art)
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
-  // Strategy A: Google Gemini text-embedding-004 (Free Tier)
+  // Strategy A: Google Gemini gemini-embedding-001 (Free Tier)
   if ((EMBEDDING_PROVIDER === 'google' || EMBEDDING_PROVIDER === 'gemini' || EMBEDDING_PROVIDER === 'auto') && GEMINI_API_KEY) {
     try {
       const genai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
       const response: any = await genai.models.embedContent({
         model: GEMINI_EMBEDDING_MODEL,
         contents: text,
+        config: {
+          outputDimensionality: EMBEDDING_DIMENSION,
+        },
       });
 
       const values = response?.embedding?.values || response?.embeddings?.[0]?.values;
-      if (values && values.length > 0) {
-        return values;
+      if (values && Array.isArray(values) && values.length > 0) {
+        if (values.length === EMBEDDING_DIMENSION) {
+          return values;
+        }
+        return values.slice(0, EMBEDDING_DIMENSION);
       }
     } catch (googleErr: any) {
       console.warn(`[Embeddings] Google ${GEMINI_EMBEDDING_MODEL} failed, falling back to local BAAI/bge-m3:`, googleErr.message || googleErr);

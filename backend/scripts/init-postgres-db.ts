@@ -8,6 +8,23 @@ const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://postgres:postgres
 async function initPostgres() {
   console.log('--- Initializing PostgreSQL & pgvector for EduGuide ---');
   
+  // Step 0: Ensure admission_db database exists
+  try {
+    const rootUrl = DATABASE_URL.replace(/\/admission_db(?:\?.*)?$/, '/postgres');
+    const rootPool = new pg.Pool({ connectionString: rootUrl });
+    const rootClient = await rootPool.connect();
+    const dbCheck = await rootClient.query("SELECT 1 FROM pg_database WHERE datname = 'admission_db'");
+    if (dbCheck.rowCount === 0) {
+      console.log('Database "admission_db" does not exist. Creating it now...');
+      await rootClient.query('CREATE DATABASE admission_db');
+      console.log('✓ Database "admission_db" created successfully.');
+    }
+    rootClient.release();
+    await rootPool.end();
+  } catch (dbErr: any) {
+    console.log('ℹ Note during DB existence check:', dbErr.message);
+  }
+
   const pool = new pg.Pool({ connectionString: DATABASE_URL });
 
   try {
@@ -38,7 +55,7 @@ async function initPostgres() {
         year INT DEFAULT 2026,
         page INT DEFAULT 1,
         content_type TEXT DEFAULT 'circular',
-        embedding_model TEXT DEFAULT 'text-embedding-004',
+        embedding_model TEXT DEFAULT 'gemini-embedding-001',
         embedding_dimension INT DEFAULT 768,
         embedding_version TEXT DEFAULT 'v1',
         metadata JSONB,

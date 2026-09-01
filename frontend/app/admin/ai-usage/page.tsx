@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 
 export default function AdminAiUsagePage() {
   const models = [
-    { name: 'gemini-2.5-flash', role: 'AI Admission Advisor & Tutor Reasoning', totalCalls: 3400, promptTokens: 850000, completionTokens: 420000, cost: '$0.58', latency: '650ms' },
+    { name: 'gemini-3.6-flash', role: 'AI Admission Advisor & Tutor Reasoning', totalCalls: 3400, promptTokens: 850000, completionTokens: 420000, cost: '$0.58', latency: '650ms' },
     { name: 'embedding-001', role: 'pgvector RAG Document Search Embeddings', totalCalls: 1490, promptTokens: 400000, completionTokens: 0, cost: '$0.26', latency: '120ms' },
   ];
 

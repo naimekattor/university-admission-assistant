@@ -7,7 +7,7 @@ export class GroqProvider {
 
   constructor() {
     const apiKey = ENV.GROQ_API_KEY || process.env.GROQ_API_KEY || '';
-    this.model = ENV.GROQ_MODEL || process.env.GROQ_MODEL || 'groq/compound-mini';
+    this.model = ENV.GROQ_MODEL || process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
     if (apiKey) {
       this.client = new Groq({ apiKey });
     }

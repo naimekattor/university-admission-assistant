@@ -27,7 +27,7 @@ export function getAIModel(): LanguageModel {
 
   switch (provider) {
     case 'groq':
-      return groq(process.env.GROQ_MODEL || 'llama-3.3-70b-versatile');
+      return groq(process.env.GROQ_MODEL || 'openai/gpt-oss-120b');
     case 'openai':
       return openai('gpt-4-turbo');
 

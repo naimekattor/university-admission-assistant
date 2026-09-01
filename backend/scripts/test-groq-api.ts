@@ -1,3 +1,6 @@
+import { config } from 'dotenv';
+config();
+
 import { groq } from '@ai-sdk/groq';
 import { generateText } from 'ai';
 
@@ -15,7 +18,7 @@ async function testGroqApi() {
     return;
   }
 
-  const modelName = 'groq/compound-mini';
+  const modelName = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
   console.log(`🤖 Model Target: ${modelName}`);
 
   try {

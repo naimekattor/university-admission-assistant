@@ -91,7 +91,7 @@ ${textChunk}
 Output ONLY the cleaned, normalized Markdown text:`;
 
   const response = await generateText({
-    model: groq(process.env.GROQ_MODEL || 'llama-3.3-70b-versatile'),
+    model: groq(process.env.GROQ_MODEL || 'openai/gpt-oss-120b'),
     prompt,
     temperature: 0.1,
   });

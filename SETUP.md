@@ -29,10 +29,11 @@ CORS_ORIGIN=*
 # AI Provider: 'groq' | 'gemini'
 AI_PROVIDER=groq
 GROQ_API_KEY=your_groq_api_key
-GROQ_MODEL=llama-3.3-70b-versatile
+GROQ_MODEL=openai/gpt-oss-120b
 
 GEMINI_API_KEY=your_gemini_api_key
-GEMINI_CHAT_MODEL=gemini-2.5-flash
+GEMINI_CHAT_MODEL=gemini-3.6-flash
+GEMINI_EMBEDDING_MODEL=gemini-embedding-001
 ```
 
 ### Frontend Environment (`frontend/.env.local`)

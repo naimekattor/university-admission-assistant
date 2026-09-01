@@ -16,7 +16,7 @@ async function extractSinglePageWithGemini(
   pageNumber: number,
   maxRetries = 3,
 ): Promise<string> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  const model = genAI.getGenerativeModel({ model: process.env.GEMINI_CHAT_MODEL || 'gemini-3.6-flash' });
   const base64Data = pagePdfBuffer.toString('base64');
 
   const prompt = `You are a high-precision document OCR system specializing in bilingual Bangla (বাংলা) and English university admission circulars and prospectuses.

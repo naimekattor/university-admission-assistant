@@ -30,7 +30,7 @@ export async function GET() {
       totalOutputTokens: 680000,
       estimatedCostUsd: 0.84,
       modelBreakdown: {
-        'gemini-2.5-flash': 3400,
+        'gemini-3.6-flash': 3400,
         'embedding-001': 1490,
       },
     },

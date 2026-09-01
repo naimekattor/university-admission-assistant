@@ -11,22 +11,26 @@ const QDRANT_COLLECTION_PREFIX = process.env.QDRANT_COLLECTION_PREFIX || 'uaa_';
 const ADMISSION_DOCS_COLLECTION = process.env.QDRANT_ADMISSION_DOCS_COLLECTION || `${QDRANT_COLLECTION_PREFIX}admission-docs`;
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || 'text-embedding-004';
+const GEMINI_EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001';
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434';
 const OLLAMA_EMBEDDING_MODEL = process.env.OLLAMA_EMBEDDING_MODEL || 'bge-m3';
 const EMBEDDING_PROVIDER = (process.env.EMBEDDING_PROVIDER || 'auto').toLowerCase();
 
 async function generateMultilingualEmbedding(genai: GoogleGenAI | null, text: string): Promise<{ vector: number[]; model: string }> {
-  // Option 1: Google Gemini text-embedding-004 (Free Tier - 768 dimensions)
+  // Option 1: Google Gemini gemini-embedding-001 (Free Tier - 768 dimensions)
   if ((EMBEDDING_PROVIDER === 'google' || EMBEDDING_PROVIDER === 'gemini' || EMBEDDING_PROVIDER === 'auto') && genai && GEMINI_API_KEY) {
     try {
       const response: any = await genai.models.embedContent({
         model: GEMINI_EMBEDDING_MODEL,
         contents: text,
+        config: {
+          outputDimensionality: 768,
+        },
       });
       const values = response?.embedding?.values || response?.embeddings?.[0]?.values;
-      if (values && values.length > 0) {
-        return { vector: values, model: GEMINI_EMBEDDING_MODEL };
+      if (values && Array.isArray(values) && values.length > 0) {
+        const sliced = values.length === 768 ? values : values.slice(0, 768);
+        return { vector: sliced, model: GEMINI_EMBEDDING_MODEL };
       }
     } catch (err: any) {
       console.warn(`[Embeddings] Google ${GEMINI_EMBEDDING_MODEL} failed, trying local BAAI/bge-m3:`, err.message);
