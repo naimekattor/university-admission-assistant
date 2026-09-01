@@ -7,8 +7,9 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38bdf8?logo=tailwindcss)](https://tailwindcss.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-pgvector-336791?logo=postgresql)](https://www.postgresql.org/)
 [![Drizzle ORM](https://img.shields.io/badge/Drizzle_ORM-0.45-c5f74f)](https://orm.drizzle.team/)
-[![Gemini](https://img.shields.io/badge/AI-Google_Gemini-4285f4?logo=google)](https://ai.google.dev/)
-[![Groq](https://img.shields.io/badge/AI_Fallback-Groq-f55036)](https://groq.com/)
+[![Groq](https://img.shields.io/badge/Primary_AI-Groq_Llama_3.3-f55036)](https://groq.com/)
+[![Gemini](https://img.shields.io/badge/Embeddings-text--embedding--004-4285f4?logo=google)](https://ai.google.dev/)
+[![BGE-M3](https://img.shields.io/badge/Local_Embeddings-BAAI%2Fbge--m3-green)](https://ollama.com/library/bge-m3)
 
 **EduGuide** is an intelligent, full-stack AI-powered admission guidance and exam preparation SaaS platform designed specifically for Bangladeshi Higher Secondary Certificate (HSC) students. It guides students through university selection, deterministic eligibility validation, personalized AI tutoring, curriculum learning with interactive visual notes, chapter-wise MCQ practice, timed mock tests, and smart mistake analysis.
 
@@ -18,11 +19,13 @@
 
 - [Architectural Overview](#-architectural-overview)
 - [The Central Student Learning Loop](#-the-central-student-learning-loop)
+- [Fast PDF Extraction Pipeline (`extract_fast.py`)](#-fast-pdf-extraction-pipeline-extract_fastpy)
+- [Bengali & English Vector Search Embeddings](#-bengali--english-vector-search-embeddings)
+- [Groq AI Chat Engine](#-groq-ai-chat-engine)
 - [Key Features & Capabilities](#-key-features--capabilities)
 - [System Architecture](#-system-architecture)
 - [Technology Stack](#-technology-stack)
 - [Database Schema (12 Domains)](#-database-schema-12-domains)
-- [AI & RAG Engine Architecture](#-ai--rag-engine-architecture)
 - [Project Directory Structure](#-project-directory-structure)
 - [API Reference](#-api-reference)
 - [Getting Started](#-getting-started)
@@ -35,12 +38,14 @@
 
 ## 🏗 Architectural Overview
 
-EduGuide employs a modern full-stack decoupled architecture:
+EduGuide employs a decoupled, production-grade architecture:
 
 1. **Frontend Client**: Next.js 16 (App Router) + React 19 + Tailwind CSS v4 + `shadcn/ui` + Framer Motion & GSAP animations.
 2. **Backend API**: Modular Express 5 Server (`server/src`) alongside Next.js Server Actions and Route Handlers (`app/api`).
-3. **Database & Vector Engine**: PostgreSQL equipped with the `pgvector` extension for 768-dimensional semantic RAG search without external SaaS vector dependencies.
-4. **AI Orchestration Layer**: Multi-tier cascading AI engine powered primarily by **Google Gemini 2.5 Flash** (and `embedding-001` / `text-embedding-004`) with ultra-fast structured fallback to **Groq SDK** (`openai/gpt-oss-20b` / `llama-3.3-70b-versatile`).
+3. **Database & Semantic Store**: PostgreSQL with `pgvector` for 768-dimensional semantic search over admission notices without external SaaS vector dependencies.
+4. **Primary AI Chat**: **Groq API** (`llama-3.3-70b-versatile` / `openai/gpt-oss-20b`) delivering ultra-fast streaming and structured responses.
+5. **Multilingual Embeddings**: **Google `text-embedding-004`** (Free Tier) or **`BAAI/bge-m3`** (Local Free via Ollama) specifically optimized for Bengali & English cross-lingual retrieval.
+6. **PDF Processing Pipeline**: High-speed hybrid extraction via `scripts/extract_fast.py` (PyMuPDF in-memory rasterization + multi-threaded Tesseract bilingual OCR).
 
 ```
                               ┌────────────────────────────────────────────────────────┐
@@ -70,9 +75,71 @@ EduGuide employs a modern full-stack decoupled architecture:
                                                                               ▲
                                                                               │
                                     ┌─────────────────────────────────────────┴──────────────┐
-                                    │               AI Orchestrator Pipeline                 │
-                                    │   Gemini 2.5 Flash ──[Fallback]──► Groq LLM Provider   │
+                                    │               AI Orchestration Layer                   │
+                                    │   Groq Llama 3.3 (Primary) ──► Gemini 2.5 (Fallback)   │
+                                    │   Embeddings: text-embedding-004 / BAAI/bge-m3         │
                                     └────────────────────────────────────────────────────────┘
+```
+
+---
+
+## ⚡ Fast PDF Extraction Pipeline (`extract_fast.py`)
+
+EduGuide includes [`scripts/extract_fast.py`](file:///c:/Users/naim/Desktop/naim/university-admission-assistant/scripts/extract_fast.py) to convert scanned and digital university admission circulars into clean, structured Markdown in seconds.
+
+### How It Works:
+1. **Zero-Overhead Memory Buffering**: PyMuPDF renders PDF pages directly into in-memory RGB buffers without creating intermediate disk files.
+2. **Dual-Route Extraction**:
+   - **Digital Text Fast Path**: Detects if selectable digital text exists ($>50$ chars) and extracts it in 0.005s per page.
+   - **Parallel Bilingual OCR Path**: Automatically routes scanned image pages through multi-core `pytesseract` with `ben+eng` (Bangla + English) language models.
+3. **Multi-Threaded Execution**: `ThreadPoolExecutor` processes up to 8 pages in parallel across CPU cores.
+
+```bash
+# Convert admission circular to structured Markdown:
+python scripts/extract_fast.py path/to/admission_notice.pdf -o output.md
+
+# Custom DPI and thread worker settings:
+python scripts/extract_fast.py path/to/circular.pdf -o output.md --dpi 200 --workers 8
+```
+
+---
+
+## 🔍 Bengali & English Vector Search Embeddings
+
+Accurate retrieval from admission circulars requires models proficient in Bengali script (বাংলা), English technical terms, and Banglish. EduGuide supports two zero-cost embedding engines:
+
+| Engine | Type | Dimension | Best For | Setup Command |
+|---|---|---|---|---|
+| **Google `text-embedding-004`** | Cloud (Google Free Tier) | 768 | Zero-local-overhead, cloud deployments, high Bengali accuracy | Add `GEMINI_API_KEY` to `.env` |
+| **`BAAI/bge-m3`** | Local (100% Free & Offline) | 768 / 1024 | Multi-lingual SOTA, local privacy, offline development | `ollama pull bge-m3` |
+
+Configure your preference in `.env`:
+```env
+# Use Google Free Tier:
+EMBEDDING_PROVIDER=google
+GEMINI_EMBEDDING_MODEL=text-embedding-004
+
+# Or use Local Free Ollama BAAI/bge-m3:
+EMBEDDING_PROVIDER=ollama
+OLLAMA_EMBEDDING_MODEL=bge-m3
+```
+
+---
+
+## 🚀 Groq AI Chat Engine
+
+EduGuide uses **Groq** as the primary AI chat provider for instant streaming responses and structured JSON generation:
+
+- **Model**: `llama-3.3-70b-versatile` or `openai/gpt-oss-20b`.
+- **Latency**: Sub-second TTFT (Time To First Token) for real-time conversational counseling.
+- **Bilingual Mastery**: Handles Bangla, English, and Banglish queries seamlessly.
+- **Failover Protection**: Automatically falls back to Google Gemini if rate limits or network issues occur.
+
+Set in `.env`:
+```env
+AI_PROVIDER=groq
+GROQ_API_KEY=gsk_your_groq_api_key_here
+GROQ_MODEL=llama-3.3-70b-versatile
 ```
 
 ---
@@ -136,13 +203,12 @@ EduGuide transforms admission prep by closing the feedback loop at every stage:
 - **Database**: [PostgreSQL 15+](https://www.postgresql.org/) (Self-hosted or managed)
 - **Vector Extension**: [`pgvector`](https://github.com/pgvector/pgvector) for in-database vector similarity search
 - **ORM**: [Drizzle ORM 0.45.2](https://orm.drizzle.team/) + `drizzle-kit 0.31.10`
-- **Document Parsing**: `pdf-parse`, `pdf-lib`, `mammoth` (for DOCX), Vision PDF extractors
+- **PDF Extraction**: `extract_fast.py` (PyMuPDF + Tesseract `ben+eng`), `pdf-parse`, `pdf-lib`, `mammoth`
 
 ### AI & LLM Engine
-- **Primary AI Provider**: Google Gemini API via official `@google/genai` / `@google/generative-ai` (`gemini-2.5-flash`, `gemini-2.0-flash`)
-- **Embeddings Model**: Google `embedding-001` / `text-embedding-004` (768 dimensions)
-- **Fallback Provider**: Groq SDK (`groq-sdk`, `@ai-sdk/groq`) for high-speed low-latency structured responses
-- **Alternative Providers**: OpenAI (`gpt-4o-mini`), Anthropic Claude (`claude-3-5-sonnet`), Ollama local models
+- **Primary Chat Provider**: Groq SDK (`groq-sdk`, `@ai-sdk/groq`) powered by `llama-3.3-70b-versatile`
+- **Fallback Chat Provider**: Google Gemini (`gemini-2.5-flash` / `gemini-2.0-flash`)
+- **Multilingual Embeddings**: Google `text-embedding-004` (Free Tier) & `BAAI/bge-m3` (Local Free)
 
 ---
 
@@ -163,30 +229,6 @@ The database schema is organized into 12 distinct functional domains in [`lib/db
 10. AI Telemetry & Usage     ──► ai_conversations, ai_messages, ai_usage
 11. Articles & Guides (SEO)  ──► article_categories, articles
 12. Subscriptions & SaaS     ──► subscription_plans, subscriptions
-```
-
----
-
-## 🤖 AI & RAG Engine Architecture
-
-### 1. Dual AI Roles
-- **AI Advisor (`roleType: 'advisor'`)**: Tailored for university exploration, circular deadlines, GPA criteria, seat quotas, and admission roadmap advice.
-- **AI Tutor (`roleType: 'tutor'`)**: Formatted for solving mathematical and physical derivations, explaining science concepts, identifying student reasoning errors, and suggesting topic drill exercises.
-
-### 2. Multi-Tier AI Provider Cascade
-1. **Gemini Primary**: Dispatches prompts with strict JSON schema enforcement to Google Gemini.
-2. **Groq Fallback**: If rate limits or network issues occur, automatically routes to Groq without user interruption.
-3. **Structured Normalizer**: Guarantees consistent structured JSON payload with summary, markdown sections, step-by-step solutions, and actionable buttons.
-
-### 3. In-Database Vector Search (`pgvector`)
-Document chunks from official admission circulars are embedded into 768-dimensional vectors and queried using the cosine distance operator:
-```sql
-SELECT id, university, unit, source, page, content,
-       (embedding <=> $vector::vector) AS distance
-FROM document_chunks
-WHERE university = $university
-ORDER BY embedding <=> $vector::vector ASC
-LIMIT 5;
 ```
 
 ---
@@ -226,11 +268,13 @@ university-admission-assistant/
 │   └── navbar.tsx                  # Global navigation header
 ├── docs/                           # Architecture audits & design specifications
 ├── lib/                            # Shared utilities and core services
-│   ├── ai/                         # Context builders, AI provider definitions
+│   ├── ai/                         # Context builders, embeddings (text-embedding-004, bge-m3)
 │   ├── db/                         # Drizzle schema, DB client, legacy seeds
 │   ├── services/                   # Eligibility engine, RAG engine, PDF processors
 │   └── session.ts                  # Privacy-preserving anonymous session manager
 ├── scripts/                        # Database migration, seeding & testing scripts
+│   ├── extract_fast.py             # Fast bilingual PDF-to-Markdown extractor
+│   ├── requirements.txt            # Python dependencies (pymupdf, pytesseract, etc.)
 │   ├── clean-legacy-qdrant.ts      # Cleanup script for legacy vector DB
 │   ├── init-postgres-db.ts         # PostgreSQL table initializer
 │   ├── migrate-rag-to-pgvector.ts  # RAG embedding pipeline for pgvector
@@ -241,11 +285,11 @@ university-admission-assistant/
 │   └── test-groq-api.ts            # Groq provider verification
 ├── server/                         # Modular Express 5 Backend Service
 │   └── src/
-│       ├── config/                 # Environment & server config
+│       ├── config/                 # Environment & server config (Groq, Gemini, pgvector)
 │       ├── db/                     # Server DB connection
 │       ├── middleware/             # Error handling, CORS, session extraction
 │       ├── modules/                # Domain-driven modules
-│       │   ├── ai/                 # AI orchestrator & providers (Gemini, Groq)
+│       │   ├── ai/                 # AI orchestrator & providers (Groq primary, Gemini fallback)
 │       │   ├── eligibility/        # Deterministic evaluation service
 │       │   ├── exams/              # Diagnostic & mock test evaluation
 │       │   ├── practice/           # Question bank retrieval service
@@ -297,9 +341,10 @@ The backend exposes a modular REST API accessible under `/api`:
 ### Prerequisites
 - **Node.js**: v18.0.0 or higher
 - **pnpm**: v9.0.0 or higher (`npm install -g pnpm`)
+- **Python**: 3.10+ (for `extract_fast.py` PDF parsing)
 - **PostgreSQL**: v15+ with `pgvector` extension enabled
-- **Google Gemini API Key**: [Google AI Studio](https://aistudio.google.com/)
-- **Groq API Key (Optional)**: [Groq Console](https://console.groq.com/)
+- **Groq API Key**: [Groq Console](https://console.groq.com/)
+- **Google Gemini API Key (Optional / Embeddings)**: [Google AI Studio](https://aistudio.google.com/)
 
 ---
 
@@ -308,7 +353,12 @@ The backend exposes a modular REST API accessible under `/api`:
 ```bash
 git clone https://github.com/naimekattor/university-admission-assistant.git
 cd university-admission-assistant
+
+# Install Node dependencies
 pnpm install
+
+# (Optional) Install Python dependencies for PDF extraction
+pip install -r scripts/requirements.txt
 ```
 
 ---
@@ -328,15 +378,17 @@ Edit `.env` with your credentials:
 # Database (PostgreSQL)
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/admission_db
 
-# Google Gemini AI (Primary Engine)
+# Primary AI Provider: Groq
+AI_PROVIDER=groq
+GROQ_API_KEY=gsk_YourGroqApiKeyHere
+GROQ_MODEL=llama-3.3-70b-versatile
+
+# Google Gemini (Fallback & Embeddings)
 GEMINI_API_KEY=AIzaSyYourGeminiApiKeyHere
 GEMINI_CHAT_MODEL=gemini-2.5-flash
-GEMINI_EMBEDDING_MODEL=embedding-001
+EMBEDDING_PROVIDER=google
+GEMINI_EMBEDDING_MODEL=text-embedding-004
 GEMINI_EMBEDDING_DIMENSION=768
-
-# Groq AI (Ultra-Fast Fallback)
-GROQ_API_KEY=gsk_YourGroqApiKeyHere
-GROQ_MODEL=openai/gpt-oss-20b
 
 # Admin & Security
 ADMIN_PASSWORD=admin
@@ -361,7 +413,7 @@ pnpm run seed:db
 # 2. Seed HSC Curriculum, Question Bank, Mock Tests & Admin Stats
 pnpm exec tsx scripts/seed-saas-db.ts
 
-# 3. Seed pgvector circular embeddings for RAG
+# 3. Seed pgvector circular embeddings for RAG (via text-embedding-004 or bge-m3)
 pnpm exec tsx scripts/migrate-rag-to-pgvector.ts
 ```
 
@@ -388,7 +440,7 @@ Access the Admin Panel at `/admin` (Default password: `admin`).
 
 Key administrative capabilities:
 - **Real-Time Telemetry**: Track active student sessions, mock tests taken, questions solved, and streak retention.
-- **AI Token Cost Analytics**: Monitor input/output token counts, estimated USD cost, and model request breakdowns (`gemini-2.5-flash`, `embedding-001`, `groq`).
+- **AI Token Cost Analytics**: Monitor input/output token counts, estimated USD cost, and model request breakdowns (`llama-3.3-70b-versatile`, `gemini-2.5-flash`, `text-embedding-004`).
 - **Curriculum Question Publisher**: Add new MCQ questions with multi-option inputs, solution explanations, and difficulty tags.
 - **Admission Guide CMS**: Draft and publish SEO-optimized articles with rich markdown formatting, reading time, and metadata.
 

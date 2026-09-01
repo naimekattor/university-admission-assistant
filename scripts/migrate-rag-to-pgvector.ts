@@ -11,27 +11,49 @@ const QDRANT_COLLECTION_PREFIX = process.env.QDRANT_COLLECTION_PREFIX || 'uaa_';
 const ADMISSION_DOCS_COLLECTION = process.env.QDRANT_ADMISSION_DOCS_COLLECTION || `${QDRANT_COLLECTION_PREFIX}admission-docs`;
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || 'embedding-001';
+const GEMINI_EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || 'text-embedding-004';
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434';
+const OLLAMA_EMBEDDING_MODEL = process.env.OLLAMA_EMBEDDING_MODEL || 'bge-m3';
+const EMBEDDING_PROVIDER = (process.env.EMBEDDING_PROVIDER || 'auto').toLowerCase();
 
-async function generateGeminiEmbedding(genai: GoogleGenAI | null, text: string): Promise<number[]> {
-  if (genai && GEMINI_API_KEY) {
+async function generateMultilingualEmbedding(genai: GoogleGenAI | null, text: string): Promise<{ vector: number[]; model: string }> {
+  // Option 1: Google Gemini text-embedding-004 (Free Tier - 768 dimensions)
+  if ((EMBEDDING_PROVIDER === 'google' || EMBEDDING_PROVIDER === 'gemini' || EMBEDDING_PROVIDER === 'auto') && genai && GEMINI_API_KEY) {
     try {
       const response: any = await genai.models.embedContent({
         model: GEMINI_EMBEDDING_MODEL,
         contents: text,
       });
       const values = response?.embedding?.values || response?.embeddings?.[0]?.values;
-      if (values) {
-        return values;
+      if (values && values.length > 0) {
+        return { vector: values, model: GEMINI_EMBEDDING_MODEL };
       }
     } catch (err: any) {
-      console.warn(`[Gemini Embedding] Failed to generate embedding via ${GEMINI_EMBEDDING_MODEL}:`, err.message);
+      console.warn(`[Embeddings] Google ${GEMINI_EMBEDDING_MODEL} failed, trying local BAAI/bge-m3:`, err.message);
     }
   }
 
-  // Fallback 768-dim pseudo-vector if API key not supplied during offline dev migration
+  // Option 2: BAAI/bge-m3 Local Free via Ollama
+  try {
+    const res = await fetch(`${OLLAMA_BASE_URL}/api/embed`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: OLLAMA_EMBEDDING_MODEL, input: text }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data.embeddings && data.embeddings.length > 0) {
+        return { vector: data.embeddings[0], model: OLLAMA_EMBEDDING_MODEL };
+      }
+    }
+  } catch (ollamaErr: any) {
+    // Continue to fallback
+  }
+
+  // Fallback 768-dim pseudo-vector if offline during dev migration
   const mockVector = new Array(768).fill(0).map((_, i) => Math.sin(i + text.length) * 0.1);
-  return mockVector;
+  return { vector: mockVector, model: 'pseudo-768' };
 }
 
 const fallbackDocumentChunks = [
@@ -141,7 +163,7 @@ async function main() {
     const page = chunk.page || 1;
     const type = chunk.type || 'circular';
 
-    const embedding = await generateGeminiEmbedding(genai, textContent);
+    const { vector: embedding, model: usedModel } = await generateMultilingualEmbedding(genai, textContent);
     const vectorString = JSON.stringify(embedding);
 
     await pool.query(
@@ -158,7 +180,7 @@ async function main() {
         year,
         page,
         type,
-        GEMINI_EMBEDDING_MODEL,
+        usedModel,
         768,
       ]
     );
@@ -170,7 +192,7 @@ async function main() {
   // 4. Verify retrieval performance via cosine distance
   try {
     const testQueryText = 'BUET admission minimum GPA requirement';
-    const testVector = await generateGeminiEmbedding(genai, testQueryText);
+    const { vector: testVector } = await generateMultilingualEmbedding(genai, testQueryText);
     const testVectorStr = JSON.stringify(testVector);
 
     const { rows } = await pool.query(

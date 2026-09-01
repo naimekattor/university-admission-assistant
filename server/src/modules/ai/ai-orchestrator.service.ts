@@ -2,6 +2,7 @@ import { geminiProvider } from './providers/gemini.provider';
 import { groqProvider } from './providers/groq.provider';
 import { StructuredAiResponse } from './schemas/ai-response.schemas';
 import { ragService } from '../rag/rag.service';
+import { ENV } from '../../config';
 
 export type AiRoleType = 'advisor' | 'tutor';
 
@@ -37,23 +38,34 @@ export class AiOrchestratorService {
     // 2. Build specialized System Prompt based on role (Advisor vs Tutor)
     const systemPrompt = this.buildSystemPrompt(roleType, studentContext, ragContextText);
 
-    // 3. Request structured JSON response: Gemini Primary -> Groq Fallback
+    // 3. Request structured JSON response with provider preference (Groq primary / Gemini fallback or vice versa)
     let rawAiResult: Record<string, any> | null = null;
+    const preferGroq = ENV.AI_PROVIDER === 'groq' || (groqProvider.isConfigured() && ENV.AI_PROVIDER !== 'gemini');
 
-    if (geminiProvider.isConfigured()) {
+    if (preferGroq && groqProvider.isConfigured()) {
       try {
-        rawAiResult = await geminiProvider.generateStructuredResponse(userQuery, systemPrompt);
-      } catch (geminiError: any) {
-        console.warn('[AiOrchestrator] Gemini failed, switching to Groq fallback:', geminiError.message || geminiError);
+        console.log(`[AiOrchestrator] Executing primary Groq query (${ENV.GROQ_MODEL})...`);
+        rawAiResult = await groqProvider.generateStructuredResponse(userQuery, systemPrompt);
+      } catch (groqError: any) {
+        console.warn('[AiOrchestrator] Groq primary failed, switching to Gemini fallback:', groqError.message || groqError);
       }
     }
 
-    if (!rawAiResult && groqProvider.isConfigured()) {
+    if (!rawAiResult && geminiProvider.isConfigured()) {
+      try {
+        console.log(`[AiOrchestrator] Executing Gemini query (${ENV.GEMINI_CHAT_MODEL})...`);
+        rawAiResult = await geminiProvider.generateStructuredResponse(userQuery, systemPrompt);
+      } catch (geminiError: any) {
+        console.warn('[AiOrchestrator] Gemini failed:', geminiError.message || geminiError);
+      }
+    }
+
+    if (!rawAiResult && !preferGroq && groqProvider.isConfigured()) {
       try {
         console.log('[AiOrchestrator] Executing Groq fallback query...');
         rawAiResult = await groqProvider.generateStructuredResponse(userQuery, systemPrompt);
       } catch (groqError: any) {
-        console.error('[AiOrchestrator] Groq fallback also failed:', groqError.message || groqError);
+        console.error('[AiOrchestrator] Groq fallback failed:', groqError.message || groqError);
       }
     }
 
