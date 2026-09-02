@@ -38,47 +38,9 @@ export function Navbar() {
     pathname.startsWith('/revision') ||
     pathname.startsWith('/chat');
 
-  // ==========================================
-  // 1. ADMIN PERSONALIZED NAVIGATION BAR
-  // ==========================================
+  // For admin routes, AdminShell handles the full-height modern sidebar and topbar
   if (isAdminRoute) {
-    return (
-      <header className="sticky top-0 z-50 bg-slate-950 text-white border-b border-orange-500/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/admin" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#FF5500] text-white font-black flex items-center justify-center text-xs shadow-md">
-              EG
-            </div>
-            <div className="flex flex-col">
-              <span className="font-extrabold text-base text-white tracking-tight leading-none flex items-center gap-1.5">
-                EduGuide <span className="text-orange-400 font-mono text-xs font-bold uppercase">[ADMIN CONTROL]</span>
-              </span>
-              <span className="text-[10px] text-slate-400 font-mono">Platform Infrastructure & Telemetry</span>
-            </div>
-          </Link>
-
-          <nav className="hidden lg:flex items-center gap-2 text-xs font-semibold">
-            <Link href="/admin" className="px-3 py-1.5 rounded-lg bg-orange-500/20 text-orange-300 border border-orange-500/30 flex items-center gap-1.5">
-              <BarChart3 className="w-3.5 h-3.5 text-orange-400" /> Admin Command Center
-            </Link>
-            <Link href="/admin/homepage" className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition">
-              Homepage CMS
-            </Link>
-          </nav>
-
-          <div className="hidden lg:flex items-center gap-3">
-            <div className="px-3 py-1 bg-orange-500/10 border border-orange-500/30 rounded-full text-[11px] font-mono text-orange-400 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-              Secured Session
-            </div>
-          </div>
-
-          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="lg:hidden text-slate-300 p-2">
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
-      </header>
-    );
+    return null;
   }
 
   // ==========================================

@@ -177,7 +177,7 @@ export default function AdminHomepageCMSPage() {
           )}
 
           <Link href="/?preview=true" target="_blank">
-            <button className="btn btn-secondary text-xs font-semibold flex items-center gap-1.5 cursor-pointer">
+            <button className="px-4 py-2 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition cursor-pointer">
               <Eye className="w-3.5 h-3.5" />
               <span>Preview Draft</span>
             </button>
@@ -185,7 +185,7 @@ export default function AdminHomepageCMSPage() {
 
           <button
             onClick={() => setPublishModalOpen(true)}
-            className="btn btn-primary text-xs font-semibold flex items-center gap-1.5 shadow-sm cursor-pointer"
+            className="px-4 py-2 rounded-full bg-gradient-to-r from-[#FF5500] to-[#FF6B00] hover:from-[#E64D00] hover:to-[#FF5500] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm hover:shadow transition cursor-pointer"
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>Publish Homepage</span>
