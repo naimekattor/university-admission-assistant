@@ -734,33 +734,17 @@ export default function AdminHomepageCMSPage() {
                 <div>
                   <h3 className="font-bold text-lg text-slate-900">Admission at a Glance Table & Template Manager</h3>
                   <p className="text-xs text-slate-500">
-                    Post, edit, and manage admission rows with ready table templates, plus custom WYSIWYG notices.
+                    Configure homepage table headlines, rich circular notices, and preview database university records.
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      setEditingRow({
-                        id: `adm-row-${Date.now()}`,
-                        name: '',
-                        shortName: '',
-                        location: 'Dhaka',
-                        applicationWindow: 'Jan 15, 2026 – Feb 15, 2026',
-                        testDate: 'Mar 01, 2026',
-                        minGpa: 'SSC 4.00, HSC 4.00',
-                        group: 'Science',
-                        units: 'Unit A',
-                        seats: 1000,
-                        status: 'Applications Open',
-                        circularUrl: 'https://',
-                      });
-                      setAdmissionModalOpen(true);
-                    }}
-                    className="px-4 py-2 rounded-full border border-orange-200 bg-orange-50 hover:bg-orange-100 text-[#FF5500] text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+                  <Link
+                    href="/admin/universities"
+                    className="px-4 py-2 rounded-full border border-slate-900 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
                   >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>+ Add University Row</span>
-                  </button>
+                    <Building2 className="w-3.5 h-3.5" />
+                    <span>Manage Universities Directory ({admissionRows.length})</span>
+                  </Link>
 
                   <button
                     onClick={() => handleSaveSection('admissionSection', draftConfig.admissionSection)}
