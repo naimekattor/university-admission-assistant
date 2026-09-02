@@ -96,7 +96,7 @@ export default function AdmissionDirectoryPage() {
     if (config?.admissionSection?.customRows && config.admissionSection.customRows.length > 0) {
       return config.admissionSection.customRows;
     }
-    return (DEFAULT_HOMEPAGE_CONFIG.admissionSection?.customRows as AdmissionRowItem[]) || [];
+    return [];
   }, [backendAdmissions, config?.admissionSection?.customRows]);
 
   // Reset to Page 1 on any filter or search query change

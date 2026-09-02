@@ -1032,6 +1032,20 @@ export class HomepageService {
         status: 'Opening Soon',
         circularUrl: 'https://nstu.edu.bd',
       },
+      {
+        id: 'jkkniu-adm',
+        name: 'Jatiya Kabi Kazi Nazrul Islam University',
+        shortName: 'JKKNIU',
+        location: 'Trishal, Mymensingh',
+        applicationWindow: 'Feb 15, 2026 – Mar 10, 2026',
+        testDate: 'Apr 12, 2026 (Under GST)',
+        minGpa: 'GST Cluster Criteria (Combined GPA 7.00)',
+        group: 'All Groups',
+        units: 'AL, AP, BBA, Science Faculties',
+        seats: 1120,
+        status: 'Opening Soon',
+        circularUrl: 'https://jkkniu.edu.bd',
+      },
     ];
   }
 

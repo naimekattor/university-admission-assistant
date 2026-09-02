@@ -10,21 +10,51 @@ interface AdmissionAtGlanceProps {
   admissions?: AdmissionRowItem[];
 }
 
-export function AdmissionAtGlance({ config, admissions = [] }: AdmissionAtGlanceProps) {
+export function AdmissionAtGlance({ config: propConfig, admissions: propAdmissions = [] }: AdmissionAtGlanceProps) {
+  const [fetchedAdmissions, setFetchedAdmissions] = useState<AdmissionRowItem[]>([]);
+  const [fetchedConfig, setFetchedConfig] = useState<AdmissionSectionConfig | null>(null);
+
+  // Self-fetch from /api/v1/homepage if parent didn't supply admissions
+  React.useEffect(() => {
+    if (!propAdmissions || propAdmissions.length === 0) {
+      const fetchHomepage = async () => {
+        try {
+          const res = await fetch('/api/v1/homepage', { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.admissions && data.admissions.length > 0) {
+              setFetchedAdmissions(data.admissions);
+            }
+            if (data.config?.admissionSection) {
+              setFetchedConfig(data.config.admissionSection);
+            }
+          }
+        } catch {
+          // Offline fallback
+        }
+      };
+      fetchHomepage();
+    }
+  }, [propAdmissions]);
+
+  const config = propConfig || fetchedConfig;
   const title = config?.title || 'Admission at a Glance';
   const description =
     config?.description ||
     'See important admission schedules, application dates, and GPA criteria across Bangladesh universities.';
 
   const rawRows: AdmissionRowItem[] = useMemo(() => {
+    if (propAdmissions && propAdmissions.length > 0) {
+      return propAdmissions;
+    }
+    if (fetchedAdmissions && fetchedAdmissions.length > 0) {
+      return fetchedAdmissions;
+    }
     if (config?.customRows && config.customRows.length > 0) {
       return config.customRows;
     }
-    if (admissions && admissions.length > 0) {
-      return admissions;
-    }
-    return (DEFAULT_HOMEPAGE_CONFIG.admissionSection?.customRows as AdmissionRowItem[]) || [];
-  }, [config?.customRows, admissions]);
+    return [];
+  }, [propAdmissions, fetchedAdmissions, config?.customRows]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string>('All');
@@ -94,7 +124,7 @@ export function AdmissionAtGlance({ config, admissions = [] }: AdmissionAtGlance
     circular: true,
   };
 
-  const maxDisplay = config?.maxDisplayCount || 6;
+  const maxDisplay = config?.maxDisplayCount || 8;
   const displayedRows = filteredAdmissions.slice(0, maxDisplay);
 
   return (
