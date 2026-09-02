@@ -61,11 +61,21 @@ export default function AdmissionDirectoryPage() {
     // 2. Fetch live data from backend
     const fetchData = async () => {
       try {
+        const resAdm = await fetch('/api/v1/admissions?limit=0', { cache: 'no-store' });
+        if (resAdm.ok) {
+          const jsonAdm = await resAdm.json();
+          if (jsonAdm.data && jsonAdm.data.length > 0) {
+            setBackendAdmissions(jsonAdm.data);
+          }
+        }
+      } catch {}
+
+      try {
         const res = await fetch('/api/v1/homepage', { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           if (data.config) setConfig(data.config);
-          if (data.admissions && data.admissions.length > 0) {
+          if ((!backendAdmissions || backendAdmissions.length === 0) && data.admissions && data.admissions.length > 0) {
             setBackendAdmissions(data.admissions);
           }
         }
@@ -80,14 +90,14 @@ export default function AdmissionDirectoryPage() {
   }, []);
 
   const allRows: AdmissionRowItem[] = useMemo(() => {
+    if (backendAdmissions && backendAdmissions.length > 0) {
+      return backendAdmissions;
+    }
     if (config?.admissionSection?.customRows && config.admissionSection.customRows.length > 0) {
       return config.admissionSection.customRows;
     }
-    if (backendAdmissions.length > 0) {
-      return backendAdmissions;
-    }
     return (DEFAULT_HOMEPAGE_CONFIG.admissionSection?.customRows as AdmissionRowItem[]) || [];
-  }, [config?.admissionSection?.customRows, backendAdmissions]);
+  }, [backendAdmissions, config?.admissionSection?.customRows]);
 
   // Reset to Page 1 on any filter or search query change
   useEffect(() => {
