@@ -74,8 +74,9 @@ export function AdminShell({ children, pageTitle, breadcrumbs, actions }: AdminS
       ],
     },
     {
-      group: 'CONTENT',
+      group: 'CONTENT & HOMEPAGE',
       items: [
+        { label: 'Homepage CMS', href: '/admin/homepage', icon: Globe },
         { label: 'SEO Guides & Articles', href: '/admin/guides', icon: FileText },
       ],
     },

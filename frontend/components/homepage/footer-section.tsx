@@ -1,0 +1,128 @@
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+import { FooterConfig } from '@/../backend/src/modules/homepage/homepage.service';
+
+interface FooterSectionProps {
+  config?: FooterConfig;
+}
+
+export function FooterSection({ config }: FooterSectionProps) {
+  const description =
+    config?.description ||
+    'EduGuide is Bangladesh’s premier data-driven university admission intelligence and preparation platform, consolidating circulars, eligibility criteria, deadlines, and smart prep in one unified place.';
+  const navGroups = config?.navGroups || [
+    {
+      title: 'Admission',
+      links: [
+        { label: 'Admission At A Glance', url: '/#admission-table' },
+        { label: 'Eligibility Checker', url: '/eligibility' },
+        { label: 'Upcoming Deadlines', url: '/#deadlines' },
+        { label: 'All Universities', url: '/universities' },
+        { label: 'Official Circulars', url: '/admission' },
+      ],
+    },
+    {
+      title: 'Preparation',
+      links: [
+        { label: 'Curriculum & Lessons', url: '/prepare' },
+        { label: 'Practice MCQs', url: '/practice' },
+        { label: 'Mock Test Simulator', url: '/mock-tests' },
+        { label: 'AI Admission Tutor', url: '/chat' },
+        { label: 'Student Dashboard', url: '/dashboard' },
+      ],
+    },
+    {
+      title: 'Knowledge',
+      links: [
+        { label: 'Admission Guides', url: '/guides' },
+        { label: 'BUET Preparation Guide', url: '/guides/buet-admission-guide-2026' },
+        { label: 'DU Ka Unit Guide', url: '/guides/du-ka-unit-guide' },
+        { label: 'Medical Admission Tips', url: '/guides' },
+      ],
+    },
+    {
+      title: 'Platform',
+      links: [
+        { label: 'Pricing & Passes', url: '/pricing' },
+        { label: 'Admin Portal', url: '/admin' },
+        { label: 'Terms of Service', url: '#' },
+        { label: 'Privacy Policy', url: '#' },
+      ],
+    },
+  ];
+  const copyrightText =
+    config?.copyrightText ||
+    '© 2026 EduGuide Bangladesh. All rights reserved. Official admission data sourced from university circulars.';
+
+  return (
+    <footer className="border-t border-[var(--eg-border)] bg-[var(--eg-surface)] text-[var(--eg-text-primary)]">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 space-y-12">
+        {/* ── TOP SECTION: BRAND & LINK GROUPS ── */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12">
+          {/* Brand Info (4 cols) */}
+          <div className="md:col-span-4 space-y-4">
+            <Link href="/" className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[var(--eg-primary)] text-white font-extrabold flex items-center justify-center text-sm shadow-sm">
+                EG
+              </div>
+              <span className="font-extrabold text-xl tracking-tight text-[var(--eg-text-primary)]">
+                Edu<span className="text-[var(--eg-primary)]">Guide</span>
+              </span>
+            </Link>
+
+            <p className="text-xs text-[var(--eg-text-secondary)] leading-relaxed max-w-sm">
+              {description}
+            </p>
+
+            <div className="text-xs text-[var(--eg-text-muted)] font-mono">
+              Designed for HSC Candidates & University Aspirants across Bangladesh.
+            </div>
+          </div>
+
+          {/* Dynamic Link Groups (8 cols) */}
+          <div className="md:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-6">
+            {navGroups.map((group, idx) => (
+              <div key={idx} className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--eg-text-primary)] font-mono">
+                  {group.title}
+                </h4>
+                <ul className="space-y-2 text-xs">
+                  {group.links.map((link, lIdx) => (
+                    <li key={lIdx}>
+                      <Link
+                        href={link.url}
+                        className="text-[var(--eg-text-secondary)] hover:text-[var(--eg-primary)] transition"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── BOTTOM BAR: COPYRIGHT & OFFICIAL SOURCE DISCLOSURE ── */}
+        <div className="pt-8 border-t border-[var(--eg-border)] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[var(--eg-text-muted)]">
+          <div>{copyrightText}</div>
+          <div className="flex items-center gap-4">
+            <Link href="/admin" className="hover:text-[var(--eg-primary)] transition">
+              Admin CMS
+            </Link>
+            <span>•</span>
+            <Link href="/eligibility" className="hover:text-[var(--eg-primary)] transition">
+              Eligibility Engine
+            </Link>
+            <span>•</span>
+            <Link href="/chat" className="hover:text-[var(--eg-primary)] transition">
+              AI Advisor
+            </Link>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}

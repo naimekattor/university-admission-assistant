@@ -487,6 +487,55 @@ export const subscriptions = pgTable('subscriptions', {
 });
 
 // ==========================================
+// 13. HOMEPAGE CMS & ADMISSION INTELLIGENCE
+// ==========================================
+export const homepageConfigs = pgTable('homepage_configs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  status: text('status').notNull().default('draft'), // 'draft' | 'published'
+  version: integer('version').default(1),
+  heroConfig: jsonb('hero_config'),
+  admissionSectionConfig: jsonb('admission_section_config'),
+  eligibilitySectionConfig: jsonb('eligibility_section_config'),
+  deadlineSectionConfig: jsonb('deadline_section_config'),
+  featuredUniversityIds: jsonb('featured_university_ids'),
+  aiAdvisorConfig: jsonb('ai_advisor_config'),
+  guideSectionConfig: jsonb('guide_section_config'),
+  preparationConfig: jsonb('preparation_config'),
+  faqConfig: jsonb('faq_config'),
+  footerConfig: jsonb('footer_config'),
+  seoConfig: jsonb('seo_config'),
+  updatedBy: text('updated_by'),
+  publishedBy: text('published_by'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  publishedAt: timestamp('published_at'),
+});
+
+export const faqs = pgTable('faqs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  question: text('question').notNull(),
+  answer: text('answer').notNull(),
+  category: text('category').default('General'),
+  order: integer('order').default(0),
+  isPublished: boolean('is_published').default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const admissionEvents = pgTable('admission_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  universityId: uuid('university_id').references(() => universities.id),
+  universityName: text('university_name').notNull(),
+  unit: text('unit'),
+  eventType: text('event_type').notNull(), // 'application_start' | 'application_deadline' | 'exam_date' | 'result_date'
+  title: text('title').notNull(),
+  eventDate: timestamp('event_date').notNull(),
+  description: text('description'),
+  sourceUrl: text('source_url'),
+  status: text('status').default('upcoming'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// ==========================================
 // RELATIONS DEFINITIONS
 // ==========================================
 export const sessionsRelations = relations(sessions, ({ many }) => ({

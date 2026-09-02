@@ -120,6 +120,134 @@ apiRouter.get('/rag/search', async (req: Request, res: Response, next) => {
 });
 
 // ==========================================
+// HOMEPAGE & ADMISSION INTELLIGENCE ENDPOINTS
+// ==========================================
+import { homepageService } from '../modules/homepage/homepage.service';
+
+// Public Aggregated Homepage Endpoint
+apiRouter.get('/homepage', async (req: Request, res: Response, next) => {
+  try {
+    const isPreview = req.query.preview === 'true';
+    const data = await homepageService.getPublicHomepageData(isPreview);
+    res.json(data);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Public Upcoming Deadlines Endpoint
+apiRouter.get('/deadlines', async (req: Request, res: Response, next) => {
+  try {
+    const limit = Number(req.query.limit || 10);
+    const deadlines = await homepageService.getUpcomingDeadlines(limit);
+    res.json({ success: true, data: deadlines });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Public Universities Overview Endpoint
+apiRouter.get('/universities', async (req: Request, res: Response, next) => {
+  try {
+    const universities = await homepageService.getAllUniversities();
+    res.json({ success: true, data: universities });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Public FAQs Endpoint
+apiRouter.get('/faqs', async (req: Request, res: Response, next) => {
+  try {
+    const faqs = await homepageService.getPublishedFaqs();
+    res.json({ success: true, data: faqs });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Public SEO Guides Endpoint
+apiRouter.get('/guides', async (req: Request, res: Response, next) => {
+  try {
+    const limit = Number(req.query.limit || 10);
+    const guides = await homepageService.getPublishedGuides(limit);
+    res.json({ success: true, data: guides });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ==========================================
+// ADMIN HOMEPAGE CMS ENDPOINTS
+// ==========================================
+
+apiRouter.get('/admin/homepage', async (req: Request, res: Response, next) => {
+  try {
+    const data = await homepageService.getAdminHomepageData();
+    res.json(data);
+  } catch (error) {
+    next(error);
+  }
+});
+
+apiRouter.put('/admin/homepage/section/:section', async (req: Request, res: Response, next) => {
+  try {
+    const section = Array.isArray(req.params.section) ? req.params.section[0] : req.params.section;
+    const updated = await homepageService.saveDraftSection(section, req.body);
+    res.json({ success: true, message: `Draft section '${section}' saved successfully.`, data: updated });
+  } catch (error) {
+    next(error);
+  }
+});
+
+apiRouter.post('/admin/homepage/publish', async (req: Request, res: Response, next) => {
+  try {
+    const result = await homepageService.publishHomepage();
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+apiRouter.get('/admin/homepage/faqs', async (req: Request, res: Response, next) => {
+  try {
+    const faqs = await homepageService.getAllFaqs();
+    res.json({ success: true, data: faqs });
+  } catch (error) {
+    next(error);
+  }
+});
+
+apiRouter.post('/admin/homepage/faqs', async (req: Request, res: Response, next) => {
+  try {
+    const result = await homepageService.saveFaq(req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+apiRouter.put('/admin/homepage/faqs/:id', async (req: Request, res: Response, next) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const result = await homepageService.saveFaq({ ...req.body, id });
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+apiRouter.delete('/admin/homepage/faqs/:id', async (req: Request, res: Response, next) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const result = await homepageService.deleteFaq(id);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ==========================================
 // ADMIN CONTROL PANEL ENDPOINTS
 // ==========================================
 

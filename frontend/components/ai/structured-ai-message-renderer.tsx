@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { CheckCircle2, AlertCircle, ArrowRight, BookOpen, Target, Award, Sparkles, HelpCircle } from 'lucide-react';
-import { StructuredAiResponse } from '@/server/src/modules/ai/schemas/ai-response.schemas';
+import type { StructuredAiResponse } from '@/../backend/src/modules/ai/schemas/ai-response.schemas';
 
 interface Props {
   response: StructuredAiResponse | any;
