@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { ChevronDown, HelpCircle } from 'lucide-react';
-import { FaqConfig } from '@/../backend/src/modules/homepage/homepage.service';
+import { FaqConfig } from '@/lib/homepage-types';
 import { RichTextRenderer } from '@/components/rich-text/rich-text-renderer';
 
 interface FaqItem {

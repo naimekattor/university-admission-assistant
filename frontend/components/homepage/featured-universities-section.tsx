@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Building2, MapPin, ArrowRight, Users, Calendar } from 'lucide-react';
-import { FeaturedUniversitiesConfig } from '@/../backend/src/modules/homepage/homepage.service';
+import { FeaturedUniversitiesConfig } from '@/lib/homepage-types';
 
 interface FeaturedUniversitiesSectionProps {
   config?: FeaturedUniversitiesConfig;

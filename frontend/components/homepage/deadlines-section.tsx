@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Calendar, Clock, ExternalLink, ArrowRight } from 'lucide-react';
-import { DeadlineSectionConfig } from '@/../backend/src/modules/homepage/homepage.service';
+import { DeadlineSectionConfig } from '@/lib/homepage-types';
 
 interface DeadlineEvent {
   id: string;

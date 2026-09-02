@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Sparkles, CheckCircle2, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
-import { EligibilitySectionConfig } from '@/../backend/src/modules/homepage/homepage.service';
+import { EligibilitySectionConfig } from '@/lib/homepage-types';
 import { EligibilityResultsDisplay } from './eligibility-results-display';
 
 interface EligibilityCheckerSectionProps {

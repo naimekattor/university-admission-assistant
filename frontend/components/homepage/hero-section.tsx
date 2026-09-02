@@ -10,7 +10,7 @@ import {
   GraduationCap,
   Star,
 } from 'lucide-react';
-import { HeroConfig } from '@/../backend/src/modules/homepage/homepage.service';
+import { HeroConfig } from '@/lib/homepage-types';
 
 interface HeroSectionProps {
   config?: HeroConfig;

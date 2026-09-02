@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { CheckCircle2, ArrowRight, Sparkles, BookOpen, Target, Award, Flame, Zap, ChevronsRight } from 'lucide-react';
-import { PreparationConfig } from '@/../backend/src/modules/homepage/homepage.service';
+import { PreparationConfig } from '@/lib/homepage-types';
 
 interface PreparationCtaSectionProps {
   config?: PreparationConfig;

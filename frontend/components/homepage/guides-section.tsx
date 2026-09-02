@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { BookOpen, Clock, ArrowRight } from 'lucide-react';
-import { GuideSectionConfig } from '@/../backend/src/modules/homepage/homepage.service';
+import { GuideSectionConfig } from '@/lib/homepage-types';
 
 interface GuideItem {
   id: string;

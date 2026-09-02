@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { FooterConfig } from '@/../backend/src/modules/homepage/homepage.service';
+import { FooterConfig } from '@/lib/homepage-types';
 
 interface FooterSectionProps {
   config?: FooterConfig;

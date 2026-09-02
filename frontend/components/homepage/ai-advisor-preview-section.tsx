@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Bot, Sparkles, ArrowRight, ShieldCheck, CheckCircle2, MessageSquare, ExternalLink, HelpCircle } from 'lucide-react';
-import { AiAdvisorConfig } from '@/../backend/src/modules/homepage/homepage.service';
+import { AiAdvisorConfig } from '@/lib/homepage-types';
 
 interface AiAdvisorPreviewSectionProps {
   config?: AiAdvisorConfig;

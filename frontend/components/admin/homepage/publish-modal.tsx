@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { CheckCircle2, AlertTriangle, XCircle, Loader2, Sparkles, ShieldCheck, X } from 'lucide-react';
-import { HomepageFullConfig } from '@/../backend/src/modules/homepage/homepage.service';
+import { HomepageFullConfig } from '@/lib/homepage-types';
 
 interface PublishModalProps {
   isOpen: boolean;

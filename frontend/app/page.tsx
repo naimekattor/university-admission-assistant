@@ -15,45 +15,51 @@ import { PreparationCtaSection } from '@/components/homepage/preparation-cta-sec
 import { FaqSection } from '@/components/homepage/faq-section';
 import { FooterSection } from '@/components/homepage/footer-section';
 import { Eye, ArrowLeft } from 'lucide-react';
+import { DEFAULT_HOMEPAGE_CONFIG, HomepageFullConfig } from '@/lib/homepage-types';
 
 export default function DynamicHomepage() {
   const searchParams = useSearchParams();
   const isPreview = searchParams.get('preview') === 'true';
 
   const [homepageData, setHomepageData] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [config, setConfig] = useState<HomepageFullConfig>(DEFAULT_HOMEPAGE_CONFIG);
+  const [loading, setLoading] = useState(false);
 
   const fetchHomepageData = async () => {
-    setLoading(true);
+    // 1. Instant local hydration of latest saved/published CMS changes
+    if (typeof window !== 'undefined') {
+      try {
+        const storedKey = isPreview ? 'eduguide_homepage_draft' : 'eduguide_homepage_published';
+        const stored = localStorage.getItem(storedKey) || localStorage.getItem('eduguide_homepage_config');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && typeof parsed === 'object') {
+            setConfig(parsed);
+          }
+        }
+      } catch {}
+    }
+
+    // 2. Fetch fresh synchronized data from backend
     try {
       const res = await fetch(`/api/v1/homepage${isPreview ? '?preview=true' : ''}`, {
         cache: 'no-store',
       });
-      if (!res.ok) {
-        throw new Error(`Failed to load homepage data (status ${res.status})`);
+      if (res.ok) {
+        const data = await res.json();
+        setHomepageData(data);
+        if (data.config) {
+          setConfig(data.config);
+        }
       }
-      const data = await res.json();
-      setHomepageData(data);
-    } catch (err: any) {
-      // Fallback
-      setHomepageData({
-        config: undefined,
-        admissions: undefined,
-        deadlines: undefined,
-        featuredUniversities: undefined,
-        guides: undefined,
-        faqs: undefined,
-      });
-    } finally {
-      setLoading(false);
+    } catch {
+      // Offline / seeding fallback
     }
   };
 
   useEffect(() => {
     fetchHomepageData();
   }, [isPreview]);
-
-  const config = homepageData?.config;
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-slate-900 font-sans antialiased selection:bg-orange-500/20 selection:text-[#FF5500] relative">
@@ -101,28 +107,30 @@ export default function DynamicHomepage() {
         </div>
       )}
 
-      {/* ── MAIN CONTENT ── */}
-      <main className="relative z-10">
-        {/* ── 2. HERO SECTION WITH TILTED CARDS ── */}
-        <HeroSection config={config?.hero} />
+      {/* ── MAIN HOMEPAGE SECTIONS ── */}
+      <div className="relative z-10 space-y-4 sm:space-y-6">
+        {/* ── 1. HERO SECTION ── */}
+        {(!config || config.hero?.enabled !== false) && (
+          <HeroSection config={config?.hero} />
+        )}
 
-        {/* ── 3. EXACT DASHBOARD PREVIEW FRAME AS IN IMAGE ── */}
+        {/* ── 2. DASHBOARD PREVIEW FRAME ── */}
         <DashboardPreviewFrame />
 
-        {/* ── 4. ADMISSION AT A GLANCE (DATA TABLE & MOBILE CARDS) ── */}
+        {/* ── 3. ADMISSION AT A GLANCE (DATA TABLE & READY TEMPLATES) ── */}
         {(!config || config.admissionSection?.enabled !== false) && (
           <AdmissionAtGlance
             config={config?.admissionSection}
-            admissions={homepageData?.admissions}
+            admissions={config?.admissionSection?.customRows || homepageData?.admissions}
           />
         )}
 
-        {/* ── 5. ELIGIBILITY CHECKER & RESULTS ── */}
+        {/* ── 4. ELIGIBILITY CHECKER & RESULTS ── */}
         {(!config || config.eligibilitySection?.enabled !== false) && (
           <EligibilityCheckerSection config={config?.eligibilitySection} />
         )}
 
-        {/* ── 6. UPCOMING ADMISSION DEADLINES ── */}
+        {/* ── 5. UPCOMING ADMISSION DEADLINES ── */}
         {(!config || config.deadlineSection?.enabled !== false) && (
           <DeadlinesSection
             config={config?.deadlineSection}
@@ -130,7 +138,7 @@ export default function DynamicHomepage() {
           />
         )}
 
-        {/* ── 7. EXPLORE UNIVERSITIES ── */}
+        {/* ── 6. EXPLORE UNIVERSITIES ── */}
         {(!config || config.featuredUniversities?.enabled !== false) && (
           <FeaturedUniversitiesSection
             config={config?.featuredUniversities}
@@ -138,12 +146,12 @@ export default function DynamicHomepage() {
           />
         )}
 
-        {/* ── 8. AI ADMISSION ADVISOR PREVIEW ── */}
+        {/* ── 7. AI ADMISSION ADVISOR PREVIEW ── */}
         {(!config || config.aiAdvisor?.enabled !== false) && (
           <AiAdvisorPreviewSection config={config?.aiAdvisor} />
         )}
 
-        {/* ── 9. ADMISSION GUIDES ── */}
+        {/* ── 8. ADMISSION GUIDES ── */}
         {(!config || config.guideSection?.enabled !== false) && (
           <GuidesSection
             config={config?.guideSection}
@@ -151,19 +159,21 @@ export default function DynamicHomepage() {
           />
         )}
 
-        {/* ── 10. PREPARE WITH EDUGUIDE CTA ── */}
+        {/* ── 9. PREPARE WITH EDUGUIDE CTA ── */}
         {(!config || config.preparation?.enabled !== false) && (
           <PreparationCtaSection config={config?.preparation} />
         )}
 
-        {/* ── 11. FAQ ACCORDION ── */}
+        {/* ── 10. FAQ ACCORDION ── */}
         {(!config || config.faq?.enabled !== false) && (
           <FaqSection config={config?.faq} faqs={homepageData?.faqs} />
         )}
 
-        {/* ── 12. FOOTER ── */}
-        <FooterSection config={config?.footer} />
-      </main>
+        {/* ── 11. FOOTER ── */}
+        {(!config || config.footer?.enabled !== false) && (
+          <FooterSection config={config?.footer} />
+        )}
+      </div>
     </div>
   );
 }
