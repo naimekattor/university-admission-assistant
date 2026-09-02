@@ -135,6 +135,30 @@ apiRouter.get('/homepage', async (req: Request, res: Response, next) => {
   }
 });
 
+// Dedicated Public Admissions Directory Endpoint (Supports query params: search, group, status, sortBy, page, limit)
+apiRouter.get('/admissions', async (req: Request, res: Response, next) => {
+  try {
+    const search = req.query.search as string;
+    const group = req.query.group as string;
+    const status = req.query.status as string;
+    const sortBy = req.query.sortBy as string;
+    const page = req.query.page ? Number(req.query.page) : 1;
+    const limit = req.query.limit !== undefined ? Number(req.query.limit) : 10;
+
+    const result = await homepageService.getAdmissionsDirectory({
+      search,
+      group,
+      status,
+      sortBy,
+      page,
+      limit,
+    });
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Public Upcoming Deadlines Endpoint
 apiRouter.get('/deadlines', async (req: Request, res: Response, next) => {
   try {

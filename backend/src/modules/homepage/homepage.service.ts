@@ -28,6 +28,8 @@ export interface AdmissionSectionConfig {
     circular: boolean;
   };
   maxDisplayCount: number;
+  customRows?: any[];
+  customHtmlNotice?: string;
   enabled: boolean;
 }
 
@@ -544,6 +546,107 @@ export class HomepageService {
     }
 
     return warnings;
+  }
+
+  /**
+   * Dedicated Admissions Directory API with Backend Filtering, Search & Pagination
+   */
+  public async getAdmissionsDirectory(query: {
+    search?: string;
+    group?: string;
+    status?: string;
+    sortBy?: string;
+    page?: number;
+    limit?: number;
+  } = {}): Promise<{
+    success: boolean;
+    data: any[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
+  }> {
+    const config = await this.getPublishedConfig();
+    let rows =
+      config.admissionSection?.customRows && config.admissionSection.customRows.length > 0
+        ? config.admissionSection.customRows
+        : await this.getDynamicAdmissionOverview();
+
+    const { search = '', group = 'All', status = 'All', sortBy = 'default', page = 1, limit = 10 } = query;
+
+    let filtered = rows.filter((item: any) => {
+      const matchesSearch =
+        search === '' ||
+        (item.name && item.name.toLowerCase().includes(search.toLowerCase())) ||
+        (item.shortName && item.shortName.toLowerCase().includes(search.toLowerCase())) ||
+        (item.location && item.location.toLowerCase().includes(search.toLowerCase())) ||
+        (item.units && item.units.toLowerCase().includes(search.toLowerCase())) ||
+        (item.minGpa && item.minGpa.toLowerCase().includes(search.toLowerCase()));
+
+      let matchesGroup = true;
+      if (group !== 'All') {
+        if (group === 'Engineering') {
+          matchesGroup =
+            (item.shortName &&
+              (item.shortName.includes('BUET') ||
+                item.shortName.includes('KUET') ||
+                item.shortName.includes('RUET') ||
+                item.shortName.includes('CUET') ||
+                item.shortName.includes('BUTEX') ||
+                item.shortName.includes('MIST'))) ||
+            (item.name && item.name.toLowerCase().includes('engineering'));
+        } else if (group === 'Medical') {
+          matchesGroup =
+            (item.shortName && item.shortName.includes('Medical')) ||
+            (item.group && item.group.includes('Bio'));
+        } else if (group === 'GST') {
+          matchesGroup =
+            (item.shortName && item.shortName.includes('GST')) ||
+            (item.applicationWindow && item.applicationWindow.includes('GST'));
+        } else if (group === 'Agri') {
+          matchesGroup =
+            (item.shortName && item.shortName.includes('Agri')) ||
+            (item.name && item.name.toLowerCase().includes('agri'));
+        } else {
+          matchesGroup = item.group && item.group.toLowerCase().includes(group.toLowerCase());
+        }
+      }
+
+      const matchesStatus =
+        status === 'All' || (item.status && item.status.toLowerCase() === status.toLowerCase());
+
+      return matchesSearch && matchesGroup && matchesStatus;
+    });
+
+    if (sortBy === 'seats') {
+      filtered = [...filtered].sort((a: any, b: any) => (b.seats || 0) - (a.seats || 0));
+    } else if (sortBy === 'shortName') {
+      filtered = [...filtered].sort((a: any, b: any) =>
+        (a.shortName || '').localeCompare(b.shortName || '')
+      );
+    } else if (sortBy === 'name') {
+      filtered = [...filtered].sort((a: any, b: any) => (a.name || '').localeCompare(b.name || ''));
+    }
+
+    const total = filtered.length;
+    const pageNum = Math.max(1, Number(page) || 1);
+    const limitNum = limit === 0 ? total : Math.max(1, Number(limit) || 10);
+    const totalPages = Math.max(1, Math.ceil(total / limitNum));
+    const startIndex = (pageNum - 1) * limitNum;
+    const pagedData = limit === 0 ? filtered : filtered.slice(startIndex, startIndex + limitNum);
+
+    return {
+      success: true,
+      data: pagedData,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages,
+      },
+    };
   }
 
   /**

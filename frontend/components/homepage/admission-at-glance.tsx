@@ -94,6 +94,9 @@ export function AdmissionAtGlance({ config, admissions = [] }: AdmissionAtGlance
     circular: true,
   };
 
+  const maxDisplay = config?.maxDisplayCount || 6;
+  const displayedRows = filteredAdmissions.slice(0, maxDisplay);
+
   return (
     <section id="admission-table" className="py-12 container mx-auto px-4 sm:px-6 lg:px-8">
       <div className="space-y-6">
@@ -111,8 +114,16 @@ export function AdmissionAtGlance({ config, admissions = [] }: AdmissionAtGlance
             </p>
           </div>
 
-          <div className="text-xs text-slate-500 font-mono shrink-0">
-            Showing <strong className="text-slate-900">{filteredAdmissions.length}</strong> of {rawRows.length} universities
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="text-xs text-slate-500 font-mono hidden sm:block">
+              Showing <strong className="text-slate-900">{displayedRows.length}</strong> of {rawRows.length} universities
+            </div>
+            <Link href="/admission">
+              <button className="px-3.5 py-1.5 rounded-full bg-orange-50 hover:bg-orange-100 border border-orange-200 text-[#FF5500] text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-2xs">
+                <span>View All ({rawRows.length})</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </Link>
           </div>
         </div>
 
@@ -178,14 +189,14 @@ export function AdmissionAtGlance({ config, admissions = [] }: AdmissionAtGlance
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-                {filteredAdmissions.length === 0 ? (
+                {displayedRows.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="py-12 text-center text-slate-400">
                       No matching universities found for the selected filter.
                     </td>
                   </tr>
                 ) : (
-                  filteredAdmissions.slice(0, config?.maxDisplayCount || 10).map((row) => (
+                  displayedRows.map((row) => (
                     <tr key={row.id} className="hover:bg-slate-50/60 transition group">
                       {visibleCols.university !== false && (
                         <td className="py-3.5 px-4 font-semibold">
@@ -257,7 +268,7 @@ export function AdmissionAtGlance({ config, admissions = [] }: AdmissionAtGlance
 
         {/* ── MOBILE CARDS VIEW (md:hidden) ── */}
         <div className="md:hidden space-y-3">
-          {filteredAdmissions.slice(0, config?.maxDisplayCount || 10).map((row) => (
+          {displayedRows.map((row) => (
             <div
               key={row.id}
               className="p-4 rounded-2xl border border-slate-200 bg-white shadow-2xs space-y-3"
@@ -301,6 +312,18 @@ export function AdmissionAtGlance({ config, admissions = [] }: AdmissionAtGlance
             </div>
           ))}
         </div>
+
+        {/* ── BOTTOM VIEW ALL BUTTON ── */}
+        {rawRows.length > maxDisplay && (
+          <div className="flex justify-center pt-2">
+            <Link href="/admission">
+              <button className="px-6 py-2.5 rounded-full bg-orange-50 hover:bg-orange-100 border border-orange-200 text-[#FF5500] text-xs font-bold flex items-center gap-2 shadow-2xs hover:shadow-xs transition cursor-pointer">
+                <span>View Full Admission Table & All {rawRows.length} Universities</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   );
