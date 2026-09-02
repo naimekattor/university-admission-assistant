@@ -2,6 +2,7 @@ import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { Navbar } from '@/components/navbar'
+import { ToastProvider } from '@/components/ui/custom-toast'
 
 export const metadata: Metadata = {
   title: 'EduGuide - AI-Powered University Admission Preparation for Bangladesh',
@@ -39,9 +40,11 @@ export default function RootLayout({
   return (
     <html lang="en" className="bg-[#FAF8F5] text-slate-900">
       <body className="antialiased min-h-screen flex flex-col bg-[#FAF8F5] text-slate-900">
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        {process.env.NODE_ENV === 'production' && <Analytics />}
+        <ToastProvider>
+          <Navbar />
+          <main className="flex-1">{children}</main>
+          {process.env.NODE_ENV === 'production' && <Analytics />}
+        </ToastProvider>
       </body>
     </html>
   )

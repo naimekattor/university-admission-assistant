@@ -33,6 +33,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { RichTextEditor } from '@/components/rich-text/rich-text-editor';
 import { PublishModal } from '@/components/admin/homepage/publish-modal';
+import { useToast } from '@/components/ui/custom-toast';
 import {
   DEFAULT_HOMEPAGE_CONFIG,
   HomepageFullConfig,
@@ -40,6 +41,7 @@ import {
 } from '@/lib/homepage-types';
 
 export default function AdminHomepageCMSPage() {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [draftConfig, setDraftConfig] = useState<HomepageFullConfig>(DEFAULT_HOMEPAGE_CONFIG);
   const [publishedConfig, setPublishedConfig] = useState<HomepageFullConfig>(DEFAULT_HOMEPAGE_CONFIG);
@@ -134,9 +136,11 @@ export default function AdminHomepageCMSPage() {
         if (json.data) setDraftConfig(json.data);
       }
       setSaveSuccess(`Section '${sectionKey}' saved as draft.`);
+      toast.success(`Section '${sectionKey}' changes saved as draft.`, 'Draft Saved');
       setTimeout(() => setSaveSuccess(null), 3500);
     } catch {
       setSaveSuccess(`Draft saved locally.`);
+      toast.warning(`Saved draft to local storage.`, 'Offline Draft');
       setTimeout(() => setSaveSuccess(null), 3500);
     } finally {
       setSaving(false);
@@ -162,9 +166,10 @@ export default function AdminHomepageCMSPage() {
       });
       if (res.ok) {
         await fetchAdminData();
+        toast.success(`Version ${nextVersion} published live to all students!`, 'Published Live');
       }
     } catch {
-      // Offline fallback
+      toast.info(`Homepage published locally.`, 'Published');
     }
   };
 
@@ -189,21 +194,48 @@ export default function AdminHomepageCMSPage() {
     };
 
     handleSaveSection('admissionSection', updatedAdmissionSection);
+    toast.success(`Admission row '${editingRow.shortName || editingRow.name}' saved!`, 'Row Saved');
     setAdmissionModalOpen(false);
     setEditingRow(null);
   };
 
-  const handleDeleteAdmissionRow = (rowId: string) => {
-    if (!confirm('Are you sure you want to remove this admission row?')) return;
-    const currentRows: AdmissionRowItem[] = draftConfig.admissionSection?.customRows || (DEFAULT_HOMEPAGE_CONFIG.admissionSection?.customRows as AdmissionRowItem[]) || [];
-    const updatedRows = currentRows.filter((r) => r.id !== rowId);
+  // SweetAlert-style Delete Confirmation Dialog State
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    isDeleting?: boolean;
+    onConfirm: () => Promise<void> | void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Yes, delete it!',
+    isDeleting: false,
+    onConfirm: () => {},
+  });
 
-    const updatedAdmissionSection = {
-      ...draftConfig.admissionSection,
-      customRows: updatedRows,
-    };
+  const promptDeleteAdmissionRow = (row: AdmissionRowItem) => {
+    setDeleteDialog({
+      isOpen: true,
+      title: 'Remove Admission Row?',
+      message: `Are you sure you want to remove "${row.name || row.shortName}" from the admission table? This will update your homepage draft configuration.`,
+      confirmText: 'Yes, remove row',
+      onConfirm: async () => {
+        const currentRows: AdmissionRowItem[] = draftConfig.admissionSection?.customRows || [];
+        const updatedRows = currentRows.filter((r) => r.id !== row.id);
 
-    handleSaveSection('admissionSection', updatedAdmissionSection);
+        const updatedAdmissionSection = {
+          ...draftConfig.admissionSection,
+          customRows: updatedRows,
+        };
+
+        handleSaveSection('admissionSection', updatedAdmissionSection);
+        toast.info(`Removed ${row.shortName || row.name} from admission table`, 'Row Removed');
+        setDeleteDialog((prev) => ({ ...prev, isOpen: false }));
+      },
+    });
   };
 
   // FAQ Handlers
@@ -227,6 +259,7 @@ export default function AdminHomepageCMSPage() {
       setFaqModalOpen(false);
       setEditingFaq(null);
       await fetchAdminData();
+      toast.success('FAQ question saved to database!', 'FAQ Saved');
     } catch (err: any) {
       // Fallback local update
       if (editingFaq.id && !editingFaq.id.startsWith('faq-new-')) {
@@ -236,17 +269,30 @@ export default function AdminHomepageCMSPage() {
       }
       setFaqModalOpen(false);
       setEditingFaq(null);
+      toast.success('FAQ saved locally.', 'FAQ Updated');
     }
   };
 
-  const handleDeleteFaq = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this FAQ?')) return;
-    try {
-      await fetch(`/api/v1/admin/homepage/faqs/${id}`, { method: 'DELETE' });
-      await fetchAdminData();
-    } catch {
-      setFaqs(faqs.filter((f) => f.id !== id));
-    }
+  const promptDeleteFaq = (faq: { id: string; question: string }) => {
+    setDeleteDialog({
+      isOpen: true,
+      title: 'Delete FAQ Item?',
+      message: `Are you sure you want to delete "${faq.question}"? This will permanently remove it from the admission platform FAQs.`,
+      confirmText: 'Yes, delete FAQ',
+      onConfirm: async () => {
+        setDeleteDialog((prev) => ({ ...prev, isDeleting: true }));
+        try {
+          await fetch(`/api/v1/admin/homepage/faqs/${faq.id}`, { method: 'DELETE' });
+          await fetchAdminData();
+          toast.success('FAQ item permanently deleted.', 'FAQ Deleted');
+        } catch {
+          setFaqs(faqs.filter((f) => f.id !== faq.id));
+          toast.info('FAQ item removed.', 'FAQ Removed');
+        } finally {
+          setDeleteDialog((prev) => ({ ...prev, isOpen: false, isDeleting: false }));
+        }
+      },
+    });
   };
 
   const navTabs = [
@@ -731,7 +777,7 @@ export default function AdminHomepageCMSPage() {
                                 <Edit2 className="w-3.5 h-3.5" />
                               </button>
                               <button
-                                onClick={() => handleDeleteAdmissionRow(row.id)}
+                                onClick={() => promptDeleteAdmissionRow(row)}
                                 className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition cursor-pointer"
                                 title="Delete Row"
                               >
@@ -1166,8 +1212,9 @@ export default function AdminHomepageCMSPage() {
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => handleDeleteFaq(faq.id)}
-                        className="p-2 rounded-lg text-red-500 hover:bg-red-50 transition"
+                        onClick={() => promptDeleteFaq(faq)}
+                        className="p-2 rounded-lg text-red-500 hover:bg-red-50 transition cursor-pointer"
+                        title="Delete FAQ"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -1469,6 +1516,54 @@ export default function AdminHomepageCMSPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── CUSTOM SWEETALERT-STYLE DELETE CONFIRMATION MODAL ── */}
+      {deleteDialog.isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-3xl bg-white border border-slate-200 p-6 sm:p-7 shadow-2xl text-center space-y-4 animate-in zoom-in-95 duration-200">
+            {/* Warning Pulsing Icon */}
+            <div className="mx-auto w-16 h-16 rounded-full bg-rose-50 border-2 border-rose-200 text-rose-600 flex items-center justify-center shadow-lg shadow-rose-500/10">
+              <AlertTriangle className="w-8 h-8 text-rose-600 animate-pulse" />
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-bold text-slate-900">{deleteDialog.title}</h3>
+              <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
+                {deleteDialog.message}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-center gap-3 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                disabled={deleteDialog.isDeleting}
+                onClick={() => setDeleteDialog((prev) => ({ ...prev, isOpen: false }))}
+                className="px-5 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleteDialog.isDeleting}
+                onClick={deleteDialog.onConfirm}
+                className="px-6 py-2.5 rounded-full bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white text-xs font-bold shadow-lg shadow-rose-600/25 transition cursor-pointer flex items-center gap-2 disabled:opacity-50"
+              >
+                {deleteDialog.isDeleting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>{deleteDialog.confirmText || 'Yes, delete it!'}</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

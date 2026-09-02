@@ -17,6 +17,8 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/components/ui/custom-toast';
+import { AlertTriangle, Loader2 } from 'lucide-react';
 
 const RichEditor = dynamic(
   () => import('@/components/admin/rich-editor').then((m) => m.RichEditor),
@@ -24,6 +26,7 @@ const RichEditor = dynamic(
 );
 
 export default function AdminUniversitiesPage() {
+  const toast = useToast();
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [msg, setMsg] = useState<{ success: boolean; text: string } | null>(null);
@@ -38,6 +41,21 @@ export default function AdminUniversitiesPage() {
   const [uniBody, setUniBody] = useState('');
   const [universitiesList, setUniversitiesList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // SweetAlert-style Delete Dialog State
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    isDeleting?: boolean;
+    onConfirm: () => Promise<void> | void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    isDeleting: false,
+    onConfirm: () => {},
+  });
 
   const loadUniversities = async () => {
     try {
@@ -79,6 +97,7 @@ export default function AdminUniversitiesPage() {
       });
 
       if (res.ok) {
+        toast.success(`University "${uniName}" saved to database!`, 'University Created');
         setMsg({ success: true, text: `University "${uniName}" saved to PostgreSQL database!` });
         setShowAddModal(false);
         setUniName('');
@@ -88,24 +107,35 @@ export default function AdminUniversitiesPage() {
         setUniBody('');
         loadUniversities();
       } else {
-        setMsg({ success: false, text: 'Failed to save university to database.' });
+        toast.error('Failed to save university to database.', 'Database Error');
       }
     } catch (err: any) {
-      setMsg({ success: false, text: err.message || 'Error creating university.' });
+      toast.error(err.message || 'Error creating university.', 'Error');
     }
   };
 
-  const handleDeleteUni = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
-    try {
-      const res = await fetch(`/api/v1/universities/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setMsg({ success: true, text: `University "${name}" deleted.` });
-        loadUniversities();
-      }
-    } catch (err: any) {
-      setMsg({ success: false, text: 'Failed to delete university.' });
-    }
+  const promptDeleteUni = (id: string, name: string) => {
+    setDeleteDialog({
+      isOpen: true,
+      title: 'Delete University?',
+      message: `Are you sure you want to permanently delete "${name}" from PostgreSQL? This action cannot be undone.`,
+      onConfirm: async () => {
+        setDeleteDialog((prev) => ({ ...prev, isDeleting: true }));
+        try {
+          const res = await fetch(`/api/v1/universities/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            toast.success(`University "${name}" deleted.`, 'Deleted');
+            loadUniversities();
+          } else {
+            toast.error('Failed to delete university from database.', 'Delete Failed');
+          }
+        } catch {
+          toast.error('Error deleting university.', 'Error');
+        } finally {
+          setDeleteDialog((prev) => ({ ...prev, isOpen: false, isDeleting: false }));
+        }
+      },
+    });
   };
 
   return (
@@ -221,7 +251,7 @@ export default function AdminUniversitiesPage() {
                               </a>
                             )}
                             <button
-                              onClick={() => handleDeleteUni(u.id, u.name)}
+                              onClick={() => promptDeleteUni(u.id, u.name)}
                               className="p-1.5 rounded hover:bg-rose-950/20 text-slate-500 hover:text-rose-400 transition"
                               title="Delete University"
                             >
@@ -340,6 +370,54 @@ export default function AdminUniversitiesPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* ── CUSTOM SWEETALERT-STYLE DELETE CONFIRMATION MODAL ── */}
+        {deleteDialog.isOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <div className="w-full max-w-md rounded-3xl bg-white border border-slate-200 p-6 sm:p-7 shadow-2xl text-center space-y-4 animate-in zoom-in-95 duration-200">
+              {/* Warning Pulsing Icon */}
+              <div className="mx-auto w-16 h-16 rounded-full bg-rose-50 border-2 border-rose-200 text-rose-600 flex items-center justify-center shadow-lg shadow-rose-500/10">
+                <AlertTriangle className="w-8 h-8 text-rose-600 animate-pulse" />
+              </div>
+
+              <div className="space-y-1.5">
+                <h3 className="text-lg font-bold text-slate-900">{deleteDialog.title}</h3>
+                <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
+                  {deleteDialog.message}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-center gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  disabled={deleteDialog.isDeleting}
+                  onClick={() => setDeleteDialog((prev) => ({ ...prev, isOpen: false }))}
+                  className="px-5 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={deleteDialog.isDeleting}
+                  onClick={deleteDialog.onConfirm}
+                  className="px-6 py-2.5 rounded-full bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white text-xs font-bold shadow-lg shadow-rose-600/25 transition cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                >
+                  {deleteDialog.isDeleting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Deleting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Yes, delete it!</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         )}
