@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { HeroSection } from '@/components/homepage/hero-section';
@@ -17,13 +17,12 @@ import { FooterSection } from '@/components/homepage/footer-section';
 import { Eye, ArrowLeft } from 'lucide-react';
 import { DEFAULT_HOMEPAGE_CONFIG, HomepageFullConfig } from '@/lib/homepage-types';
 
-export default function DynamicHomepage() {
+function HomepageInner() {
   const searchParams = useSearchParams();
   const isPreview = searchParams.get('preview') === 'true';
 
   const [homepageData, setHomepageData] = useState<any | null>(null);
   const [config, setConfig] = useState<HomepageFullConfig>(DEFAULT_HOMEPAGE_CONFIG);
-  const [loading, setLoading] = useState(false);
 
   const fetchHomepageData = async () => {
     // 1. Instant local hydration of latest saved/published CMS changes
@@ -175,5 +174,13 @@ export default function DynamicHomepage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function DynamicHomepage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#FAF8F5]" />}>
+      <HomepageInner />
+    </Suspense>
   );
 }
