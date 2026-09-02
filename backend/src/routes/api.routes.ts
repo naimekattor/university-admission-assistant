@@ -334,6 +334,47 @@ apiRouter.delete('/admin/homepage/universities/:id', async (req: Request, res: R
 });
 
 // ==========================================
+// DEADLINES & ADMISSION EVENTS CRUD ENDPOINTS
+// ==========================================
+apiRouter.get('/deadlines', async (req: Request, res: Response, next) => {
+  try {
+    const limit = req.query.limit ? Number(req.query.limit) : 20;
+    const data = await homepageService.getUpcomingDeadlines(limit);
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+apiRouter.get('/admin/homepage/deadlines', async (req: Request, res: Response, next) => {
+  try {
+    const data = await homepageService.getUpcomingDeadlines(50);
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+apiRouter.post('/admin/homepage/deadlines', async (req: Request, res: Response, next) => {
+  try {
+    const result = await homepageService.saveDeadline(req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+apiRouter.delete('/admin/homepage/deadlines/:id', async (req: Request, res: Response, next) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const result = await homepageService.deleteDeadline(id);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ==========================================
 // ADMIN CONTROL PANEL ENDPOINTS
 // ==========================================
 

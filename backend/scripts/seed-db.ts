@@ -504,8 +504,143 @@ async function main() {
     }
   }
 
-  const { rows } = await pool.query('SELECT COUNT(*) as total FROM universities');
-  console.log(`✓ Successfully seeded! Total universities in PostgreSQL database: ${rows[0].total}`);
+  // Create and Seed admission_events table
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS admission_events (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      university_id UUID REFERENCES universities(id) ON DELETE CASCADE,
+      university_name TEXT NOT NULL,
+      unit TEXT,
+      event_type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      event_date TIMESTAMP NOT NULL,
+      description TEXT,
+      source_url TEXT,
+      status TEXT DEFAULT 'upcoming',
+      created_at TIMESTAMP DEFAULT NOW() NOT NULL
+    );
+  `);
+
+  await pool.query(`DELETE FROM admission_events`);
+
+  const eventsData = [
+    {
+      uniShort: 'BUET',
+      unit: 'Ka Unit (Engineering & CS)',
+      eventType: 'application_deadline',
+      title: 'Application Deadline',
+      eventDate: '2026-09-18T23:59:59Z',
+      desc: 'Online application window closes for BUET undergraduate programs.',
+      url: 'https://buet.ac.bd',
+    },
+    {
+      uniShort: 'BUET',
+      unit: 'Preliminary Admission Test',
+      eventType: 'exam_date',
+      title: 'Preliminary Exam',
+      eventDate: '2026-09-28T10:00:00Z',
+      desc: 'Shift-wise MCQ preliminary screening test.',
+      url: 'https://buet.ac.bd',
+    },
+    {
+      uniShort: 'DU',
+      unit: 'Ka Unit (Science)',
+      eventType: 'application_deadline',
+      title: 'Application Deadline',
+      eventDate: '2026-10-05T23:59:59Z',
+      desc: 'Dhaka University Ka Unit application portal closes.',
+      url: 'https://du.ac.bd',
+    },
+    {
+      uniShort: 'DU',
+      unit: 'Ka Unit (Science)',
+      eventType: 'exam_date',
+      title: 'Ka Unit Admission Test',
+      eventDate: '2026-10-25T11:00:00Z',
+      desc: 'Written & MCQ combined admission test nationwide at divisional centers.',
+      url: 'https://du.ac.bd',
+    },
+    {
+      uniShort: 'Medical & Dental (DGHS)',
+      unit: 'MBBS / BDS Combined',
+      eventType: 'exam_date',
+      title: 'MBBS Admission Test',
+      eventDate: '2026-11-14T10:00:00Z',
+      desc: 'Centralized 100-mark nationwide MBBS admission exam.',
+      url: 'https://dghs.gov.bd',
+    },
+    {
+      uniShort: 'GST 24 Cluster',
+      unit: 'A Unit (Science)',
+      eventType: 'application_deadline',
+      title: 'GST Application Deadline',
+      eventDate: '2026-10-15T23:59:59Z',
+      desc: 'Single application for 24 public general, science & technology universities.',
+      url: 'https://gstadmission.ac.bd',
+    },
+    {
+      uniShort: 'GST 24 Cluster',
+      unit: 'A Unit (Science)',
+      eventType: 'exam_date',
+      title: 'GST Combined Exam',
+      eventDate: '2026-11-08T11:00:00Z',
+      desc: 'Combined 100-mark MCQ test for all 24 general cluster universities.',
+      url: 'https://gstadmission.ac.bd',
+    },
+    {
+      uniShort: 'Agriculture 9 Cluster',
+      unit: 'Combined Agricultural Science',
+      eventType: 'exam_date',
+      title: 'Agriculture Combined Test',
+      eventDate: '2026-11-22T11:00:00Z',
+      desc: 'Combined admission test for 9 public agricultural universities (BAU, BSMRAU, SAU).',
+      url: 'https://acas.edu.bd',
+    },
+    {
+      uniShort: 'BUTEX',
+      unit: 'Textile Engineering',
+      eventType: 'exam_date',
+      title: 'Written Admission Test',
+      eventDate: '2026-11-29T10:00:00Z',
+      desc: 'Written admission examination for Bangladesh University of Textiles.',
+      url: 'https://butex.edu.bd',
+    },
+    {
+      uniShort: 'MIST',
+      unit: 'Engineering & Architecture',
+      eventType: 'exam_date',
+      title: 'MIST Admission Test',
+      eventDate: '2026-12-05T09:00:00Z',
+      desc: 'Military Institute of Science & Technology undergraduate entrance test.',
+      url: 'https://mist.ac.bd',
+    },
+  ];
+
+  for (const evt of eventsData) {
+    const uniRes = await pool.query(`SELECT id, name FROM universities WHERE short_name = $1 LIMIT 1`, [evt.uniShort]);
+    const uni = uniRes.rows[0];
+    await pool.query(
+      `INSERT INTO admission_events (university_id, university_name, unit, event_type, title, event_date, description, source_url, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        uni?.id || null,
+        uni?.name || evt.uniShort,
+        evt.unit,
+        evt.eventType,
+        evt.title,
+        evt.eventDate,
+        evt.desc,
+        evt.url,
+        'upcoming',
+      ]
+    );
+  }
+
+  const { rows: uniCount } = await pool.query('SELECT COUNT(*) as total FROM universities');
+  const { rows: eventCount } = await pool.query('SELECT COUNT(*) as total FROM admission_events');
+  console.log(`✓ Successfully seeded PostgreSQL database!`);
+  console.log(`  - Total Universities: ${uniCount[0].total}`);
+  console.log(`  - Total Admission Deadlines & Events in PostgreSQL: ${eventCount[0].total}`);
 
   await pool.end();
 }

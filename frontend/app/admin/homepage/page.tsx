@@ -76,6 +76,11 @@ export default function AdminHomepageCMSPage() {
   const [admissionModalOpen, setAdmissionModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<AdmissionRowItem | null>(null);
 
+  // Deadline Manager state
+  const [deadlinesList, setDeadlinesList] = useState<any[]>([]);
+  const [deadlineModalOpen, setDeadlineModalOpen] = useState(false);
+  const [editingDeadline, setEditingDeadline] = useState<any | null>(null);
+
   const fetchAdminData = async () => {
     // 1. Check local storage for drafts
     if (typeof window !== 'undefined') {
@@ -116,6 +121,17 @@ export default function AdminHomepageCMSPage() {
         const uniData = await uniRes.json();
         if (uniData.data && Array.isArray(uniData.data) && uniData.data.length > 0) {
           setUniversities(uniData.data);
+        }
+      }
+    } catch {}
+
+    // 4. Ensure live PostgreSQL deadlines are loaded
+    try {
+      const deadRes = await fetch('/api/v1/admin/homepage/deadlines');
+      if (deadRes.ok) {
+        const deadData = await deadRes.json();
+        if (deadData.data && Array.isArray(deadData.data)) {
+          setDeadlinesList(deadData.data);
         }
       }
     } catch {}
@@ -326,6 +342,54 @@ export default function AdminHomepageCMSPage() {
         } catch {
           setFaqs(faqs.filter((f) => f.id !== faq.id));
           toast.info('FAQ item removed.', 'FAQ Removed');
+        } finally {
+          setDeleteDialog((prev) => ({ ...prev, isOpen: false, isDeleting: false }));
+        }
+      },
+    });
+  };
+
+  // Deadline Handlers
+  const handleSaveDeadlineModal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDeadline) return;
+
+    try {
+      const isNew = !editingDeadline.id || editingDeadline.id.startsWith('deadline-new-');
+      const res = await fetch('/api/v1/admin/homepage/deadlines', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingDeadline),
+      });
+
+      if (res.ok) {
+        toast.success(`Deadline event saved to database!`, 'Deadline Saved');
+        setDeadlineModalOpen(false);
+        setEditingDeadline(null);
+        await fetchAdminData();
+      } else {
+        toast.error('Failed to save deadline event.', 'Error');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error saving deadline.', 'Error');
+    }
+  };
+
+  const promptDeleteDeadline = (deadline: any) => {
+    setDeleteDialog({
+      isOpen: true,
+      title: 'Delete Deadline Event?',
+      message: `Are you sure you want to delete "${deadline.eventTypeName || deadline.title || 'this event'}" for ${deadline.university}? This will permanently remove it from PostgreSQL.`,
+      confirmText: 'Yes, delete deadline',
+      onConfirm: async () => {
+        setDeleteDialog((prev) => ({ ...prev, isDeleting: true }));
+        try {
+          await fetch(`/api/v1/admin/homepage/deadlines/${deadline.id}`, { method: 'DELETE' });
+          setDeadlinesList((prev) => prev.filter((d) => d.id !== deadline.id));
+          toast.success('Deadline event deleted successfully from database.', 'Deleted');
+          await fetchAdminData();
+        } catch {
+          toast.error('Failed to delete deadline.', 'Error');
         } finally {
           setDeleteDialog((prev) => ({ ...prev, isOpen: false, isDeleting: false }));
         }
@@ -924,19 +988,41 @@ export default function AdminHomepageCMSPage() {
               <div className="flex items-center justify-between border-b border-slate-200 pb-4">
                 <div>
                   <h3 className="font-bold text-lg text-slate-900">Upcoming Deadlines Section Editor</h3>
-                  <p className="text-xs text-slate-500">Configure countdown event filters and max displayed events.</p>
+                  <p className="text-xs text-slate-500">Configure section headers and manage live deadline countdown events stored in PostgreSQL.</p>
                 </div>
-                <button
-                  onClick={() => handleSaveSection('deadlineSection', draftConfig.deadlineSection)}
-                  disabled={saving}
-                  className="px-4 py-2 rounded-full bg-[#FF5500] hover:bg-[#E64D00] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>{saving ? 'Saving...' : 'Save Deadlines Draft'}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setEditingDeadline({
+                        id: `deadline-new-${Date.now()}`,
+                        universityName: universities[0]?.shortName || 'BUET',
+                        unit: 'Ka Unit (Science)',
+                        eventType: 'application_deadline',
+                        title: 'Application Deadline',
+                        eventDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 16),
+                        sourceUrl: 'https://',
+                        status: 'upcoming',
+                      });
+                      setDeadlineModalOpen(true);
+                    }}
+                    className="px-4 py-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Deadline Event</span>
+                  </button>
+                  <button
+                    onClick={() => handleSaveSection('deadlineSection', draftConfig.deadlineSection)}
+                    disabled={saving}
+                    className="px-4 py-2 rounded-full bg-[#FF5500] hover:bg-[#E64D00] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>{saving ? 'Saving...' : 'Save Draft'}</span>
+                  </button>
+                </div>
               </div>
 
-              <div className="space-y-4">
+              {/* Section Header Controls */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-900">Section Title</label>
                   <input
@@ -966,6 +1052,124 @@ export default function AdminHomepageCMSPage() {
                     className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
                   />
                 </div>
+              </div>
+
+              {/* Live Database Deadlines Table */}
+              <div className="space-y-3 pt-4 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-bold text-sm text-slate-900">
+                      Live PostgreSQL Deadlines & Events ({deadlinesList.length} active)
+                    </h4>
+                    <p className="text-xs text-slate-500">
+                      Countdown events and dates displayed dynamically on the public homepage.
+                    </p>
+                  </div>
+                </div>
+
+                {deadlinesList.length === 0 ? (
+                  <div className="p-8 rounded-xl border border-dashed border-slate-200 text-center space-y-3 bg-slate-50/50">
+                    <Calendar className="w-8 h-8 text-slate-400 mx-auto" />
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-slate-700">No deadline events created yet</p>
+                      <p className="text-xs text-slate-500">
+                        Add application deadlines, admission exam dates, or circular releases.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setEditingDeadline({
+                          id: `deadline-new-${Date.now()}`,
+                          universityName: universities[0]?.shortName || 'BUET',
+                          unit: 'Ka Unit (Science)',
+                          eventType: 'application_deadline',
+                          title: 'Application Deadline',
+                          eventDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 16),
+                          sourceUrl: 'https://',
+                          status: 'upcoming',
+                        });
+                        setDeadlineModalOpen(true);
+                      }}
+                      className="px-4 py-2 rounded-full bg-[#FF5500] hover:bg-[#E64D00] text-white text-xs font-bold shadow-sm transition cursor-pointer"
+                    >
+                      + Add First Deadline Event
+                    </button>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto border border-slate-200 rounded-xl">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                          <th className="py-2.5 px-3">University</th>
+                          <th className="py-2.5 px-3">Unit / Faculty</th>
+                          <th className="py-2.5 px-3">Event Type</th>
+                          <th className="py-2.5 px-3">Target Date & Time</th>
+                          <th className="py-2.5 px-3">Countdown</th>
+                          <th className="py-2.5 px-3">Status</th>
+                          <th className="py-2.5 px-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-xs">
+                        {deadlinesList.map((evt) => (
+                          <tr key={evt.id} className="hover:bg-slate-50/60 transition">
+                            <td className="py-3 px-3 font-bold text-slate-900">{evt.university}</td>
+                            <td className="py-3 px-3 text-slate-600">{evt.unit}</td>
+                            <td className="py-3 px-3">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-50 text-[#FF5500] border border-orange-200">
+                                {evt.eventTypeName || evt.title || evt.eventType}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 font-mono text-slate-800">{evt.dateDisplay || new Date(evt.eventDate).toLocaleDateString()}</td>
+                            <td className="py-3 px-3 font-mono font-bold text-[#FF5500]">
+                              {evt.remainingDays} days left
+                            </td>
+                            <td className="py-3 px-3">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                evt.status === 'urgent'
+                                  ? 'bg-rose-50 text-rose-600 border border-rose-200'
+                                  : evt.status === 'upcoming'
+                                  ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                                  : 'bg-slate-100 text-slate-600 border border-slate-200'
+                              }`}>
+                                {evt.status || 'upcoming'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <button
+                                  onClick={() => {
+                                    setEditingDeadline({
+                                      id: evt.id,
+                                      universityName: evt.university,
+                                      unit: evt.unit,
+                                      eventType: evt.eventType,
+                                      title: evt.eventTypeName || evt.title,
+                                      eventDate: evt.eventDate ? new Date(evt.eventDate).toISOString().slice(0, 16) : '',
+                                      sourceUrl: evt.sourceUrl,
+                                      status: evt.status,
+                                    });
+                                    setDeadlineModalOpen(true);
+                                  }}
+                                  className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition cursor-pointer"
+                                  title="Edit Event"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => promptDeleteDeadline(evt)}
+                                  className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition cursor-pointer"
+                                  title="Delete Event"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1602,6 +1806,134 @@ export default function AdminHomepageCMSPage() {
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── DEADLINE EVENT MODAL ── */}
+      {deadlineModalOpen && editingDeadline && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white border border-slate-200 p-6 shadow-2xl space-y-4">
+            <h3 className="font-bold text-base text-slate-900">
+              {editingDeadline.id && !editingDeadline.id.startsWith('deadline-new-') ? 'Edit Deadline Event' : 'Add New Admission Deadline'}
+            </h3>
+
+            <form onSubmit={handleSaveDeadlineModal} className="space-y-3.5">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-900">University / Institution *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingDeadline.universityName}
+                    onChange={(e) => setEditingDeadline({ ...editingDeadline, universityName: e.target.value })}
+                    placeholder="e.g. BUET, DU, Medical"
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-900">Unit / Faculty *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingDeadline.unit}
+                    onChange={(e) => setEditingDeadline({ ...editingDeadline, unit: e.target.value })}
+                    placeholder="e.g. Ka Unit (Science)"
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-900">Event Type</label>
+                  <select
+                    value={editingDeadline.eventType}
+                    onChange={(e) => {
+                      const type = e.target.value;
+                      let defaultTitle = 'Application Deadline';
+                      if (type === 'exam_date') defaultTitle = 'Admission Test';
+                      if (type === 'application_start') defaultTitle = 'Applications Open';
+                      if (type === 'result_date') defaultTitle = 'Result Publication';
+                      setEditingDeadline({ ...editingDeadline, eventType: type, title: defaultTitle });
+                    }}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                  >
+                    <option value="application_deadline">Application Deadline</option>
+                    <option value="exam_date">Admission Exam Date</option>
+                    <option value="application_start">Applications Open</option>
+                    <option value="result_date">Result Publication</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-900">Event Title *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingDeadline.title}
+                    onChange={(e) => setEditingDeadline({ ...editingDeadline, title: e.target.value })}
+                    placeholder="e.g. Application Deadline"
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-900">Target Date & Time *</label>
+                  <input
+                    type="datetime-local"
+                    required
+                    value={editingDeadline.eventDate}
+                    onChange={(e) => setEditingDeadline({ ...editingDeadline, eventDate: e.target.value })}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-900">Status</label>
+                  <select
+                    value={editingDeadline.status || 'upcoming'}
+                    onChange={(e) => setEditingDeadline({ ...editingDeadline, status: e.target.value })}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                  >
+                    <option value="upcoming">Upcoming</option>
+                    <option value="urgent">Urgent</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="passed">Passed</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-900">Official Circular URL</label>
+                <input
+                  type="text"
+                  value={editingDeadline.sourceUrl || ''}
+                  onChange={(e) => setEditingDeadline({ ...editingDeadline, sourceUrl: e.target.value })}
+                  placeholder="https://..."
+                  className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setDeadlineModalOpen(false)}
+                  className="px-4 py-2 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-full bg-[#FF5500] hover:bg-[#E64D00] text-white text-xs font-bold shadow-sm transition cursor-pointer"
+                >
+                  Save Deadline
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

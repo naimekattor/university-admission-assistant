@@ -96,67 +96,77 @@ export function DeadlinesSection({ config, deadlines = [] }: DeadlinesSectionPro
         </div>
 
         {/* ── DEADLINE EVENT CARDS GRID ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-          {filteredEvents.map((event) => (
-            <div
-              key={event.id}
-              className="p-5 rounded-2xl border border-slate-200 bg-white hover:border-orange-300 hover:shadow-xs transition-all flex flex-col justify-between space-y-3.5"
-            >
-              <div className="space-y-1">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-bold text-sm text-slate-900">
-                    {event.university}
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-50 text-[#FF5500] border border-orange-200">
-                    {event.eventTypeName}
-                  </span>
-                </div>
-                <div className="text-xs text-slate-600 font-medium">
-                  {event.unit}
-                </div>
-              </div>
-
-              {/* Date & Countdown */}
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-[#FF5500]" />
-                  <div>
-                    <div className="text-xs font-bold text-slate-900">{event.dateDisplay}</div>
-                    <span className="text-[10px] text-slate-400">Official Date</span>
+        {filteredEvents.length === 0 ? (
+          <div className="p-8 rounded-2xl border border-dashed border-slate-200 bg-white text-center space-y-2">
+            <Calendar className="w-8 h-8 text-slate-300 mx-auto" />
+            <h3 className="text-sm font-bold text-slate-700">No deadline events scheduled</h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              Admission test dates and application deadlines will appear here once published in the Admin CMS.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {filteredEvents.map((event) => (
+              <div
+                key={event.id}
+                className="p-5 rounded-2xl border border-slate-200 bg-white hover:border-orange-300 hover:shadow-xs transition-all flex flex-col justify-between space-y-3.5"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-sm text-slate-900">
+                      {event.university}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-50 text-[#FF5500] border border-orange-200">
+                      {event.eventTypeName}
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-600 font-medium">
+                    {event.unit}
                   </div>
                 </div>
 
-                <div className="text-right">
-                  <div className="text-xs font-black text-[#FF5500]">
-                    {event.remainingDays} days left
+                {/* Date & Countdown */}
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-[#FF5500]" />
+                    <div>
+                      <div className="text-xs font-bold text-slate-900">{event.dateDisplay}</div>
+                      <span className="text-[10px] text-slate-400">Official Date</span>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <div className="text-xs font-black text-[#FF5500]">
+                      {event.remainingDays} days left
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Bottom Actions */}
-              <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 text-xs">
-                {event.sourceUrl ? (
-                  <a
-                    href={event.sourceUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[#FF5500] hover:underline font-medium text-[11px]"
-                  >
-                    <span>Circular</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                ) : (
-                  <span className="text-slate-400 text-[11px]">Official Source</span>
-                )}
+                {/* Bottom Actions */}
+                <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 text-xs">
+                  {event.sourceUrl ? (
+                    <a
+                      href={event.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[#FF5500] hover:underline font-medium text-[11px]"
+                    >
+                      <span>Circular</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  ) : (
+                    <span className="text-slate-400 text-[11px]">Official Source</span>
+                  )}
 
-                <Link href="/universities" className="inline-flex items-center gap-1 text-slate-700 font-bold hover:text-[#FF5500] transition text-[11px]">
-                  <span>Details</span>
-                  <ArrowRight className="w-3 h-3" />
-                </Link>
+                  <Link href="/universities" className="inline-flex items-center gap-1 text-slate-700 font-bold hover:text-[#FF5500] transition text-[11px]">
+                    <span>Details</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

@@ -1032,108 +1032,104 @@ export class HomepageService {
   }
 
   /**
-   * Dynamic Upcoming Deadlines
+   * Dynamic Upcoming Deadlines from PostgreSQL
    */
-  public async getUpcomingDeadlines(limit = 6): Promise<any[]> {
-    const defaultDeadlines = [
-      {
-        id: 'd1',
-        university: 'BUET',
-        unit: 'Ka Unit (Engineering)',
-        eventType: 'application_deadline',
-        eventTypeName: 'Application Deadline',
-        eventDate: '2026-09-18T23:59:59Z',
-        dateDisplay: 'September 18, 2026',
-        remainingDays: 16,
-        status: 'urgent',
-        sourceUrl: 'https://buet.ac.bd/admission',
-      },
-      {
-        id: 'd2',
-        university: 'BUET',
-        unit: 'Preliminary Test',
-        eventType: 'exam_date',
-        eventTypeName: 'Admission Test',
-        eventDate: '2026-09-28T10:00:00Z',
-        dateDisplay: 'September 28, 2026',
-        remainingDays: 26,
-        status: 'upcoming',
-        sourceUrl: 'https://buet.ac.bd/admission',
-      },
-      {
-        id: 'd3',
-        university: 'University of Dhaka (DU)',
-        unit: 'Ka Unit (Science)',
-        eventType: 'application_deadline',
-        eventTypeName: 'Application Deadline',
-        eventDate: '2026-10-05T23:59:59Z',
-        dateDisplay: 'October 5, 2026',
-        remainingDays: 33,
-        status: 'upcoming',
-        sourceUrl: 'https://admission.eis.du.ac.bd',
-      },
-      {
-        id: 'd4',
-        university: 'KUET',
-        unit: 'Engineering & Architecture',
-        eventType: 'application_start',
-        eventTypeName: 'Applications Open',
-        eventDate: '2026-09-15T09:00:00Z',
-        dateDisplay: 'September 15, 2026',
-        remainingDays: 13,
-        status: 'upcoming',
-        sourceUrl: 'https://admission.kuet.ac.bd',
-      },
-      {
-        id: 'd5',
-        university: 'University of Dhaka (DU)',
-        unit: 'Kha Unit (Arts & Social Science)',
-        eventType: 'exam_date',
-        eventTypeName: 'Admission Test',
-        eventDate: '2026-10-25T10:00:00Z',
-        dateDisplay: 'October 25, 2026',
-        remainingDays: 53,
-        status: 'upcoming',
-        sourceUrl: 'https://admission.eis.du.ac.bd',
-      },
-      {
-        id: 'd6',
-        university: 'Medical (DGHS)',
-        unit: 'MBBS Admission',
-        eventType: 'application_start',
-        eventTypeName: 'Circular Publication',
-        eventDate: '2026-11-01T00:00:00Z',
-        dateDisplay: 'November 1, 2026',
-        remainingDays: 60,
-        status: 'scheduled',
-        sourceUrl: 'https://dgme.teletalk.com.bd',
-      },
-    ];
-
+  public async getUpcomingDeadlines(limit = 20): Promise<any[]> {
     try {
+      // Ensure table exists
+      await this.pool.query(`
+        CREATE TABLE IF NOT EXISTS admission_events (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          university_id UUID REFERENCES universities(id) ON DELETE CASCADE,
+          university_name TEXT NOT NULL,
+          unit TEXT,
+          event_type TEXT NOT NULL,
+          title TEXT NOT NULL,
+          event_date TIMESTAMP NOT NULL,
+          description TEXT,
+          source_url TEXT,
+          status TEXT DEFAULT 'upcoming',
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL
+        );
+      `);
+
       const res = await this.pool.query(
-        `SELECT * FROM admission_events ORDER BY event_date ASC LIMIT $1`,
+        `SELECT 
+           id::text,
+           university_name as "universityName",
+           unit,
+           event_type as "eventType",
+           title,
+           event_date as "eventDate",
+           description,
+           source_url as "sourceUrl",
+           status
+         FROM admission_events 
+         ORDER BY event_date ASC 
+         LIMIT $1`,
         [limit]
       );
-      if (res.rows.length > 0) {
-        return res.rows.map((r) => ({
-          id: r.id,
-          university: r.university_name,
-          unit: r.unit,
-          eventType: r.event_type,
-          eventTypeName: r.title,
-          eventDate: r.event_date,
-          dateDisplay: new Date(r.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-          remainingDays: Math.max(0, Math.ceil((new Date(r.event_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))),
-          status: r.status,
-          sourceUrl: r.source_url,
-        }));
-      }
-    } catch {
-      // Fallback
-    }
 
-    return defaultDeadlines.slice(0, limit);
+      return res.rows.map((r) => {
+        const evtDate = new Date(r.eventDate);
+        const diffMs = evtDate.getTime() - Date.now();
+        const remainingDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+        const dynamicStatus = remainingDays === 0 ? 'passed' : remainingDays <= 7 ? 'urgent' : remainingDays <= 30 ? 'upcoming' : 'scheduled';
+        return {
+          id: r.id,
+          university: r.universityName,
+          unit: r.unit || 'All Units',
+          eventType: r.eventType,
+          eventTypeName: r.title,
+          eventDate: evtDate.toISOString(),
+          dateDisplay: evtDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          remainingDays,
+          status: r.status || dynamicStatus,
+          sourceUrl: r.sourceUrl || '#',
+          description: r.description || '',
+        };
+      });
+    } catch (err: any) {
+      console.error('Error loading upcoming deadlines from PostgreSQL:', err.message);
+      return [];
+    }
+  }
+
+  public async saveDeadline(data: any): Promise<any> {
+    try {
+      const { id, universityName, unit, eventType, title, eventDate, description, sourceUrl, status } = data;
+      if (id && !id.startsWith('deadline-new-')) {
+        const res = await this.pool.query(
+          `UPDATE admission_events 
+           SET university_name = $1, unit = $2, event_type = $3, title = $4, event_date = $5, description = $6, source_url = $7, status = $8
+           WHERE id = $9
+           RETURNING *`,
+          [universityName, unit || 'All Units', eventType || 'application_deadline', title || 'Deadline', eventDate || new Date(), description || null, sourceUrl || null, status || 'upcoming', id]
+        );
+        return { success: true, data: res.rows[0] };
+      } else {
+        const res = await this.pool.query(
+          `INSERT INTO admission_events (university_name, unit, event_type, title, event_date, description, source_url, status)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           RETURNING *`,
+          [universityName, unit || 'All Units', eventType || 'application_deadline', title || 'Deadline', eventDate || new Date(), description || null, sourceUrl || null, status || 'upcoming']
+        );
+        return { success: true, data: res.rows[0] };
+      }
+    } catch (err: any) {
+      console.error('Error saving deadline to PostgreSQL:', err.message);
+      return { success: false, error: err.message };
+    }
+  }
+
+  public async deleteDeadline(id: string): Promise<any> {
+    try {
+      await this.pool.query(`DELETE FROM admission_events WHERE id = $1`, [id]);
+      return { success: true, id };
+    } catch (err: any) {
+      console.error('Error deleting deadline from PostgreSQL:', err.message);
+      return { success: false, error: err.message };
+    }
   }
 
   public async getFeaturedUniversities(selectedIds: string[]): Promise<any[]> {
