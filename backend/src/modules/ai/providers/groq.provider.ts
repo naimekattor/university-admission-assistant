@@ -3,14 +3,16 @@ import { ENV } from '../../../config';
 
 export class GroqProvider {
   private client: Groq | null = null;
-  private model: string;
 
   constructor() {
     const apiKey = ENV.GROQ_API_KEY || process.env.GROQ_API_KEY || '';
-    this.model = ENV.GROQ_MODEL || process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
     if (apiKey) {
       this.client = new Groq({ apiKey });
     }
+  }
+
+  private getModel(): string {
+    return ENV.GROQ_MODEL || process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
   }
 
   public isConfigured(): boolean {
@@ -30,7 +32,7 @@ export class GroqProvider {
       messages.push({ role: 'user', content: prompt });
 
       const completion = await this.client.chat.completions.create({
-        model: this.model,
+        model: this.getModel(),
         messages,
         temperature: 0.3,
         max_tokens: 2048,
@@ -61,7 +63,7 @@ export class GroqProvider {
     try {
       // First attempt with json_object response format
       const completion = await this.client.chat.completions.create({
-        model: this.model,
+        model: this.getModel(),
         messages,
         response_format: { type: 'json_object' },
         temperature: 0.2,
@@ -74,7 +76,7 @@ export class GroqProvider {
       // Fallback attempt with standard text completion + JSON regex extraction
       try {
         const fallbackCompletion = await this.client.chat.completions.create({
-          model: this.model,
+          model: this.getModel(),
           messages,
           temperature: 0.2,
           max_tokens: 2048,

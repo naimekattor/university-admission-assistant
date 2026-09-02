@@ -1,7 +1,6 @@
 import { db, schema } from '../../db';
 import { eq, and, sql, ilike } from 'drizzle-orm';
-import { geminiProvider } from '../ai/providers/gemini.provider';
-import { huggingFaceProvider } from '../ai/providers/huggingface.provider';
+import { generateEmbedding } from '../../ai/embeddings';
 
 export interface RagSearchOptions {
   query: string;
@@ -32,10 +31,8 @@ export class RagService {
 
     if (this.pgvectorAvailable !== false) {
       try {
-        // 1. Generate query embedding using Hugging Face or Gemini provider
-        const queryVector = huggingFaceProvider.isConfigured()
-          ? await huggingFaceProvider.generateEmbedding(query)
-          : await geminiProvider.generateEmbedding(query);
+        // 1. Generate query embedding (Gemini Primary -> Hugging Face Fallback -> Local Ollama)
+        const queryVector = await generateEmbedding(query);
         const vectorLiteral = `[${queryVector.join(',')}]`;
 
         // 2. Query PostgreSQL document_chunks using pgvector cosine distance operator <=>

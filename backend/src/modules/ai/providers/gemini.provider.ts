@@ -4,6 +4,10 @@ import { ENV } from '../../../config';
 export class GeminiProvider {
   private client: GoogleGenAI | null = null;
   private embeddingCache = new Map<string, number[]>();
+  private lastEmbeddingTimestamp = 0;
+  private embeddingQueue: Promise<any> = Promise.resolve();
+  // Free tier is max 15 RPM. 4300ms spacing enforces max ~13-14 RPM safely.
+  private readonly MIN_REQUEST_INTERVAL_MS = 4300;
 
   constructor() {
     if (ENV.GEMINI_API_KEY) {
@@ -73,45 +77,90 @@ export class GeminiProvider {
     }
   }
 
+  /**
+   * Rate-limited embedding generation with queue pacing and exponential retry.
+   * Throws if failed after retries so the caller can switch to Hugging Face fallback.
+   */
   public async generateEmbedding(text: string): Promise<number[]> {
     const trimmed = text.trim();
+    if (!trimmed) {
+      return new Array(ENV.GEMINI_EMBEDDING_DIMENSION).fill(0);
+    }
+
+    // 1. Return from in-memory cache if available (0 rate-limit cost)
     if (this.embeddingCache.has(trimmed)) {
       return this.embeddingCache.get(trimmed)!;
     }
 
     if (!this.client) {
-      // Deterministic 768-dim pseudo vector for dev mode without key
-      const pseudo = new Array(ENV.GEMINI_EMBEDDING_DIMENSION).fill(0).map((_, i) => Math.sin(i + trimmed.length) * 0.1);
-      this.embeddingCache.set(trimmed, pseudo);
-      return pseudo;
+      throw new Error('GEMINI_API_KEY is not configured');
     }
 
-    try {
-      const response: any = await this.client.models.embedContent({
-        model: ENV.GEMINI_EMBEDDING_MODEL,
-        contents: trimmed,
-        config: {
-          outputDimensionality: ENV.GEMINI_EMBEDDING_DIMENSION,
-        },
-      });
+    // 2. Enqueue through serialized rate-limiter queue to prevent concurrency spikes
+    return new Promise<number[]>((resolve, reject) => {
+      this.embeddingQueue = this.embeddingQueue
+        .then(async () => {
+          try {
+            const vector = await this.executeRateLimitedEmbeddingWithRetry(trimmed);
+            this.embeddingCache.set(trimmed, vector);
+            resolve(vector);
+          } catch (err) {
+            reject(err);
+          }
+        })
+        .catch(() => {
+          // Keep queue chain unbroken on individual item error
+        });
+    });
+  }
 
-      const values = response?.embedding?.values || response?.embeddings?.[0]?.values;
-      if (values && Array.isArray(values) && values.length > 0) {
-        const finalVector = values.length === ENV.GEMINI_EMBEDDING_DIMENSION ? values : values.slice(0, ENV.GEMINI_EMBEDDING_DIMENSION);
-        this.embeddingCache.set(trimmed, finalVector);
-        return finalVector;
+  private async executeRateLimitedEmbeddingWithRetry(text: string, maxRetries = 2): Promise<number[]> {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      // Enforce rate-limit interval
+      const now = Date.now();
+      const elapsed = now - this.lastEmbeddingTimestamp;
+      if (elapsed < this.MIN_REQUEST_INTERVAL_MS) {
+        const waitTime = this.MIN_REQUEST_INTERVAL_MS - elapsed;
+        await new Promise((r) => setTimeout(r, waitTime));
       }
-    } catch (error: any) {
-      // Graceful fallback on rate limits/quota exhaustion
-      const is429 = error?.status === 429 || error?.message?.includes('429') || error?.message?.includes('Quota exceeded');
-      if (!is429) {
-        console.warn(`[GeminiProvider] Embedding notice with model "${ENV.GEMINI_EMBEDDING_MODEL}":`, error.message || error);
+      this.lastEmbeddingTimestamp = Date.now();
+
+      try {
+        const response: any = await this.client!.models.embedContent({
+          model: ENV.GEMINI_EMBEDDING_MODEL,
+          contents: text,
+          config: {
+            outputDimensionality: ENV.GEMINI_EMBEDDING_DIMENSION,
+          },
+        });
+
+        const values = response?.embedding?.values || response?.embeddings?.[0]?.values;
+        if (values && Array.isArray(values) && values.length > 0) {
+          const finalVector = values.length === ENV.GEMINI_EMBEDDING_DIMENSION ? values : values.slice(0, ENV.GEMINI_EMBEDDING_DIMENSION);
+          return finalVector;
+        }
+
+        throw new Error('Gemini API returned empty embedding values');
+      } catch (error: any) {
+        const isRateLimit =
+          error?.status === 429 ||
+          error?.message?.includes('429') ||
+          error?.message?.includes('RESOURCE_EXHAUSTED') ||
+          error?.message?.includes('Quota exceeded');
+
+        if (isRateLimit && attempt < maxRetries) {
+          const backoff = (attempt + 1) * 3500 + Math.floor(Math.random() * 1000);
+          console.warn(`[GeminiProvider] ⏳ Rate limit reached (429). Retrying in ${backoff}ms (Attempt ${attempt + 1}/${maxRetries})...`);
+          await new Promise((r) => setTimeout(r, backoff));
+          continue;
+        }
+
+        console.warn(`[GeminiProvider] Gemini embedding failed: ${error.message || error}`);
+        throw error;
       }
     }
 
-    const fallbackVector = new Array(ENV.GEMINI_EMBEDDING_DIMENSION).fill(0).map((_, i) => Math.sin(i + trimmed.length) * 0.1);
-    this.embeddingCache.set(trimmed, fallbackVector);
-    return fallbackVector;
+    throw new Error(`Gemini embedding exhausted ${maxRetries + 1} attempts`);
   }
 }
 

@@ -1,61 +1,65 @@
-import { GoogleGenAI } from '@google/genai';
+import { geminiProvider } from '../modules/ai/providers/gemini.provider';
 import { huggingFaceProvider } from '../modules/ai/providers/huggingface.provider';
+import { ENV } from '../config';
+
+export const EMBEDDING_DIMENSION = ENV.GEMINI_EMBEDDING_DIMENSION || 768;
 
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434';
 const OLLAMA_EMBEDDING_MODEL = process.env.OLLAMA_EMBEDDING_MODEL || process.env.EMBEDDING_MODEL || 'bge-m3';
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001';
-const EMBEDDING_PROVIDER = (process.env.EMBEDDING_PROVIDER || 'auto').toLowerCase();
 
 /**
  * Generate high-quality Bengali/English vector embeddings using:
- * 1. Hugging Face Free Cloud Inference (`sentence-transformers/paraphrase-multilingual-mpnet-base-v2` - 768 dimensions)
- * 2. Google Gemini Free Tier (`gemini-embedding-001` - 768 dimensions)
- * 3. Local Free via Ollama (`BAAI/bge-m3` - Multilingual State-of-the-Art)
+ * 1. Primary: Google Gemini (`gemini-embedding-001` - 768 dimensions) with rate limiting & auto-retry
+ * 2. Fallback: Hugging Face Cloud Inference (`sentence-transformers/paraphrase-multilingual-mpnet-base-v2` - 768 dimensions)
+ * 3. Fallback: Local Offline Ollama (`BAAI/bge-m3`)
+ * 4. Deterministic 768-dim pseudo vector for offline testing
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
-  // Strategy A: Hugging Face Free Cloud Inference (768-dim)
-  if ((EMBEDDING_PROVIDER === 'huggingface' || EMBEDDING_PROVIDER === 'hf' || EMBEDDING_PROVIDER === 'auto') && huggingFaceProvider.isConfigured()) {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return new Array(EMBEDDING_DIMENSION).fill(0);
+  }
+
+  const provider = (ENV.EMBEDDING_PROVIDER || process.env.EMBEDDING_PROVIDER || 'gemini').toLowerCase();
+
+  // -------------------------------------------------------------
+  // Strategy 1: Google Gemini (Primary with Rate Limiting & Queue)
+  // -------------------------------------------------------------
+  if (provider === 'gemini' || provider === 'google' || provider === 'auto') {
+    if (geminiProvider.isConfigured()) {
+      try {
+        const emb = await geminiProvider.generateEmbedding(trimmed);
+        if (emb && Array.isArray(emb) && emb.length > 0) {
+          return emb;
+        }
+      } catch (geminiErr: any) {
+        console.warn(`[Embeddings] Gemini embedding failed/rate-limited: ${geminiErr.message || geminiErr}. Switching to Hugging Face fallback...`);
+      }
+    }
+  }
+
+  // -------------------------------------------------------------
+  // Strategy 2: Hugging Face Inference API (Fallback)
+  // -------------------------------------------------------------
+  if (huggingFaceProvider.isConfigured()) {
     try {
-      const emb = await huggingFaceProvider.generateEmbedding(text);
+      const emb = await huggingFaceProvider.generateEmbedding(trimmed);
       if (emb && Array.isArray(emb) && emb.length > 0) {
         return emb;
       }
     } catch (hfErr: any) {
-      console.warn('[Embeddings] Hugging Face embedding failed, trying next provider:', hfErr.message || hfErr);
+      console.warn(`[Embeddings] Hugging Face fallback failed: ${hfErr.message || hfErr}. Trying Ollama...`);
     }
   }
 
-  // Strategy B: Google Gemini gemini-embedding-001 (Free Tier)
-  if ((EMBEDDING_PROVIDER === 'google' || EMBEDDING_PROVIDER === 'gemini' || EMBEDDING_PROVIDER === 'auto') && GEMINI_API_KEY) {
-    try {
-      const genai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-      const response: any = await genai.models.embedContent({
-        model: GEMINI_EMBEDDING_MODEL,
-        contents: text,
-        config: {
-          outputDimensionality: EMBEDDING_DIMENSION,
-        },
-      });
-
-      const values = response?.embedding?.values || response?.embeddings?.[0]?.values;
-      if (values && Array.isArray(values) && values.length > 0) {
-        if (values.length === EMBEDDING_DIMENSION) {
-          return values;
-        }
-        return values.slice(0, EMBEDDING_DIMENSION);
-      }
-    } catch (googleErr: any) {
-      console.warn(`[Embeddings] Google ${GEMINI_EMBEDDING_MODEL} failed, falling back to local BAAI/bge-m3:`, googleErr.message || googleErr);
-    }
-  }
-
-  // Strategy B: BAAI/bge-m3 via Local Ollama (Free, 100% Offline)
+  // -------------------------------------------------------------
+  // Strategy 3: BAAI/bge-m3 via Local Ollama (Free, 100% Offline)
+  // -------------------------------------------------------------
   try {
     const res = await fetch(`${OLLAMA_BASE_URL}/api/embed`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: OLLAMA_EMBEDDING_MODEL, input: text }),
+      body: JSON.stringify({ model: OLLAMA_EMBEDDING_MODEL, input: trimmed }),
     });
 
     if (res.ok) {
@@ -69,7 +73,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     const fallbackRes = await fetch(`${OLLAMA_BASE_URL}/api/embeddings`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: OLLAMA_EMBEDDING_MODEL, prompt: text }),
+      body: JSON.stringify({ model: OLLAMA_EMBEDDING_MODEL, prompt: trimmed }),
     });
 
     if (fallbackRes.ok) {
@@ -78,21 +82,33 @@ export async function generateEmbedding(text: string): Promise<number[]> {
         return data.embedding;
       }
     }
-  } catch (ollamaErr: any) {
-    console.warn(`[Embeddings] Ollama (${OLLAMA_EMBEDDING_MODEL}) embedding failed:`, ollamaErr.message || ollamaErr);
+  } catch {
+    // Ollama not running
   }
 
-  // Deterministic 768-dim pseudo vector for offline testing
-  return new Array(EMBEDDING_DIMENSION).fill(0).map((_, i) => Math.sin(i + text.length) * 0.1);
+  // -------------------------------------------------------------
+  // Strategy 4: Deterministic 768-dim pseudo vector for offline testing
+  // -------------------------------------------------------------
+  return new Array(EMBEDDING_DIMENSION).fill(0).map((_, i) => Math.sin(i + trimmed.length) * 0.1);
 }
 
-export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
+/**
+ * Sequential batch embedding generator with progress reporting and rate pacing.
+ */
+export async function generateEmbeddings(
+  texts: string[],
+  onProgress?: (completed: number, total: number) => void
+): Promise<number[][]> {
   const embeddings: number[][] = [];
-  for (const t of texts) {
-    const emb = await generateEmbedding(t);
+  const total = texts.length;
+
+  for (let i = 0; i < texts.length; i++) {
+    const emb = await generateEmbedding(texts[i]);
     embeddings.push(emb);
+    if (onProgress) {
+      onProgress(i + 1, total);
+    }
   }
   return embeddings;
 }
 
-export const EMBEDDING_DIMENSION = 768;

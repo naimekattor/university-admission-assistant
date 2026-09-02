@@ -1,53 +1,43 @@
 import { config } from 'dotenv';
 config();
 
-import { groq } from '@ai-sdk/groq';
-import { generateText } from 'ai';
+import Groq from 'groq-sdk';
 
 async function testGroqApi() {
   const apiKey = process.env.GROQ_API_KEY;
 
   console.log('====================================================');
-  console.log('            GROQ API CONNECTION TEST SCRIPT         ');
+  console.log('            GROQ API MODEL DISCOVERY SCRIPT         ');
   console.log('====================================================');
-  console.log('Configured GROQ_API_KEY:', apiKey ? `${apiKey.substring(0, 10)}...${apiKey.substring(apiKey.length - 4)}` : '❌ NOT SET IN .env');
 
   if (!apiKey) {
-    console.error('\n❌ ERROR: GROQ_API_KEY environment variable is missing.');
-    console.log('Please add GROQ_API_KEY=gsk_... to your .env file.\n');
+    console.error('❌ ERROR: GROQ_API_KEY is not set');
     return;
   }
 
-  const modelName = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
-  console.log(`🤖 Model Target: ${modelName}`);
+  const client = new Groq({ apiKey });
 
   try {
-    const startTime = Date.now();
-    console.log('⏳ Sending test prompt to Groq API...');
+    const modelList = await client.models.list();
+    console.log('Available models for your API key:');
+    const modelIds = modelList.data.map((m) => m.id);
+    console.log(modelIds);
 
-    const response = await generateText({
-      model: groq(modelName),
-      prompt: 'Respond with a short paragraph confirming that the Groq API connection is active and working properly.',
-      temperature: 0.2,
+    const testModel = 'openai/gpt-oss-120b';
+
+    console.log(`\nTesting chat completion with: ${testModel}...`);
+    const completion = await client.chat.completions.create({
+      model: testModel,
+      messages: [{ role: 'user', content: 'Say hello in Bangla and confirm you are running on Groq!' }],
     });
 
-    const duration = Date.now() - startTime;
-
-    console.log('\n====================================================');
-    console.log('✅ STATUS: GROQ API CONNECTION SUCCESSFUL');
-    console.log(`⏱️ Latency: ${duration}ms`);
-    console.log('====================================================');
-    console.log('💬 Groq Response:\n');
-    console.log(response.text.trim());
-    console.log('====================================================\n');
+    console.log('\nResponse from Groq:');
+    console.log(completion.choices[0]?.message?.content);
+    console.log('\nRecommended GROQ_MODEL setting:', testModel);
   } catch (err: any) {
-    console.log('\n====================================================');
-    console.log('❌ STATUS: GROQ API REQUEST FAILED');
-    console.log('====================================================');
-    console.error('Error Message:', err?.message || err);
-    if (err?.status) console.error('HTTP Status:', err.status);
-    console.log('====================================================\n');
+    console.error('Groq error:', err?.message || err);
   }
 }
 
 testGroqApi();
+

@@ -2,63 +2,19 @@ import { config } from 'dotenv';
 config({ path: '.env' });
 
 import pg from 'pg';
-import { GoogleGenAI } from '@google/genai';
 import { QdrantClient } from '@qdrant/js-client-rest';
+import { generateEmbedding } from '../src/ai/embeddings';
 
 const DATABASE_URL = process.env.DATABASE_URL!;
 const QDRANT_URL = process.env.QDRANT_URL || 'http://localhost:6333';
 const QDRANT_COLLECTION_PREFIX = process.env.QDRANT_COLLECTION_PREFIX || 'uaa_';
 const ADMISSION_DOCS_COLLECTION = process.env.QDRANT_ADMISSION_DOCS_COLLECTION || `${QDRANT_COLLECTION_PREFIX}admission-docs`;
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001';
-const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434';
-const OLLAMA_EMBEDDING_MODEL = process.env.OLLAMA_EMBEDDING_MODEL || 'bge-m3';
-const EMBEDDING_PROVIDER = (process.env.EMBEDDING_PROVIDER || 'auto').toLowerCase();
-
-async function generateMultilingualEmbedding(genai: GoogleGenAI | null, text: string): Promise<{ vector: number[]; model: string }> {
-  // Option 1: Google Gemini gemini-embedding-001 (Free Tier - 768 dimensions)
-  if ((EMBEDDING_PROVIDER === 'google' || EMBEDDING_PROVIDER === 'gemini' || EMBEDDING_PROVIDER === 'auto') && genai && GEMINI_API_KEY) {
-    try {
-      const response: any = await genai.models.embedContent({
-        model: GEMINI_EMBEDDING_MODEL,
-        contents: text,
-        config: {
-          outputDimensionality: 768,
-        },
-      });
-      const values = response?.embedding?.values || response?.embeddings?.[0]?.values;
-      if (values && Array.isArray(values) && values.length > 0) {
-        const sliced = values.length === 768 ? values : values.slice(0, 768);
-        return { vector: sliced, model: GEMINI_EMBEDDING_MODEL };
-      }
-    } catch (err: any) {
-      console.warn(`[Embeddings] Google ${GEMINI_EMBEDDING_MODEL} failed, trying local BAAI/bge-m3:`, err.message);
-    }
-  }
-
-  // Option 2: BAAI/bge-m3 Local Free via Ollama
-  try {
-    const res = await fetch(`${OLLAMA_BASE_URL}/api/embed`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: OLLAMA_EMBEDDING_MODEL, input: text }),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      if (data.embeddings && data.embeddings.length > 0) {
-        return { vector: data.embeddings[0], model: OLLAMA_EMBEDDING_MODEL };
-      }
-    }
-  } catch (ollamaErr: any) {
-    // Continue to fallback
-  }
-
-  // Fallback 768-dim pseudo-vector if offline during dev migration
-  const mockVector = new Array(768).fill(0).map((_, i) => Math.sin(i + text.length) * 0.1);
-  return { vector: mockVector, model: 'pseudo-768' };
+async function generateMultilingualEmbedding(_genai: any, text: string): Promise<{ vector: number[]; model: string }> {
+  const vector = await generateEmbedding(text);
+  return { vector, model: 'gemini-or-hf-fallback' };
 }
+
 
 const fallbackDocumentChunks = [
   {
@@ -164,8 +120,6 @@ async function main() {
       updated_at TIMESTAMP NOT NULL DEFAULT NOW()
     );
   `);
-
-  const genai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
 
   // 2. Fetch candidates from Qdrant if available
   let qdrantChunks: any[] = [];

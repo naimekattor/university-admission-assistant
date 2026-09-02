@@ -4,18 +4,21 @@ config({ path: '.env' });
 import { aiOrchestratorService } from '../src/modules/ai/ai-orchestrator.service';
 import { groqProvider } from '../src/modules/ai/providers/groq.provider';
 import { geminiProvider } from '../src/modules/ai/providers/gemini.provider';
+import { huggingFaceProvider } from '../src/modules/ai/providers/huggingface.provider';
+import { generateEmbedding, generateEmbeddings } from '../src/ai/embeddings';
 
 async function testAiPipeline() {
-  console.log('==============================================');
-  console.log('Testing EduGuide AI Pipeline (Gemini + Groq)');
-  console.log('==============================================');
+  console.log('====================================================');
+  console.log('   Testing EduGuide AI Pipeline (Groq + Gemini + HF) ');
+  console.log('====================================================');
 
   console.log('Gemini Configured:', geminiProvider.isConfigured());
   console.log('Groq Configured:', groqProvider.isConfigured());
+  console.log('Hugging Face Configured:', huggingFaceProvider.isConfigured());
 
-  // Test 1: Direct Groq Test (if key available)
+  // Test 1: Direct Groq Chat Test
   if (groqProvider.isConfigured()) {
-    console.log('\n[1] Testing Groq Provider directly...');
+    console.log('\n[1] Testing Groq Chat Provider directly...');
     try {
       const groqRes = await groqProvider.generateStructuredResponse(
         'What are the eligibility requirements for BUET CSE?',
@@ -27,11 +30,22 @@ async function testAiPipeline() {
       console.error('✗ Groq test failed:', err.message || err);
     }
   } else {
-    console.log('\n[1] GROQ_API_KEY is not set yet in .env');
+    console.log('\n[1] GROQ_API_KEY is not set in .env');
   }
 
-  // Test 2: AI Orchestrator with RAG Context + Fallback
-  console.log('\n[2] Testing AI Orchestrator Service (Advisor Mode)...');
+  // Test 2: Embeddings Pipeline (Gemini Primary -> HF Fallback)
+  console.log('\n[2] Testing Unified Embedding Pipeline (Gemini Primary / HF Fallback)...');
+  try {
+    const start = Date.now();
+    const vec = await generateEmbedding('বুয়েট ভর্তি পরীক্ষা ২০২৩-২৪ যোগ্যতা এবং সিলেবাস');
+    console.log(`✓ Embedding generated successfully in ${Date.now() - start}ms (Dimension: ${vec.length})`);
+    console.log(`  Sample values: [${vec.slice(0, 5).map((v) => v.toFixed(4)).join(', ')}...]`);
+  } catch (err: any) {
+    console.error('✗ Embedding test failed:', err.message || err);
+  }
+
+  // Test 3: AI Orchestrator with RAG Context (Advisor Mode)
+  console.log('\n[3] Testing AI Orchestrator Service (Advisor Mode via Groq)...');
   try {
     const result = await aiOrchestratorService.processQuery({
       roleType: 'advisor',
@@ -49,26 +63,10 @@ async function testAiPipeline() {
     console.error('✗ Orchestrator test failed:', err.message || err);
   }
 
-  // Test 3: AI Tutor Mode
-  console.log('\n[3] Testing AI Orchestrator Service (Tutor Mode)...');
-  try {
-    const tutorResult = await aiOrchestratorService.processQuery({
-      roleType: 'tutor',
-      userQuery: "Explain Newton's second law momentum formula J = F * dt",
-      studentContext: {
-        primaryGoal: 'BUET CSE',
-        weakTopics: ["Newton's Mechanics"],
-      },
-    });
-    console.log('✓ AI Tutor Result:');
-    console.log(JSON.stringify(tutorResult, null, 2));
-  } catch (err: any) {
-    console.error('✗ Tutor test failed:', err.message || err);
-  }
-
-  console.log('\n==============================================');
+  console.log('\n====================================================');
   console.log('AI Pipeline Test Complete!');
-  console.log('==============================================');
+  console.log('====================================================');
 }
 
 testAiPipeline().catch(console.error);
+
