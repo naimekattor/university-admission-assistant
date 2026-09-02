@@ -17,7 +17,7 @@ export function FeaturedUniversitiesSection({ config, universities = [] }: Featu
     'Explore engineering, general, medical, and agricultural universities across Bangladesh with verified admission data.';
 
   return (
-    <section id="explore-universities" className="py-12 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
+    <section id="explore-universities" className="py-12 container mx-auto px-4 sm:px-6 lg:px-8">
       <div className="space-y-6">
         {/* ── SECTION HEADER ── */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">

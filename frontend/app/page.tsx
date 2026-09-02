@@ -89,8 +89,8 @@ export default function DynamicHomepage() {
 
       {/* ── DRAFT PREVIEW BANNER (If ?preview=true) ── */}
       {isPreview && (
-        <div className="sticky top-0 z-[60] bg-[#FF5500] text-white px-4 py-2.5 font-semibold text-xs flex items-center justify-between shadow-md">
-          <div className="flex items-center gap-2 max-w-7xl mx-auto w-full justify-between">
+        <div className="sticky top-0 z-[60] bg-[#FF5500] text-white py-2.5 font-semibold text-xs shadow-md">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 font-bold">
               <Eye className="w-4 h-4" />
               <span>DRAFT PREVIEW MODE — You are previewing unpublished homepage changes.</span>

@@ -40,7 +40,7 @@ export function HeroSection({ config, onFindUniversitiesClick }: HeroSectionProp
   };
 
   return (
-    <section className="relative pt-6 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto overflow-hidden">
+    <section className="relative pt-6 pb-16 container mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden">
       {/* ── 1. EYEBROW BADGE ── */}
       <div className="flex justify-center mb-5">
         <div className="bg-white border border-orange-200/90 text-slate-700 text-xs font-semibold px-4 py-1.5 rounded-full inline-flex items-center gap-2 shadow-2xs">

@@ -177,7 +177,7 @@ export default function UniversityDetailsPage() {
   return (
     <main className="min-h-screen bg-background">
       {/* Back navigation */}
-      <div className="max-w-6xl mx-auto px-4 py-3">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3">
         <Link href="/universities" className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-[#FF5500] transition">
           <ChevronLeft className="w-4 h-4" />
           <span>Back to Universities</span>
@@ -186,7 +186,7 @@ export default function UniversityDetailsPage() {
 
       {/* Hero Section */}
       <section className="bg-primary/10 border-b border-border py-12">
-        <div className="max-w-6xl mx-auto px-4">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-start gap-6 mb-6">
             <div className="text-6xl">{uni.logo}</div>
             <div className="flex-1">
@@ -231,7 +231,7 @@ export default function UniversityDetailsPage() {
       </section>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Tabs */}
         <div className="flex gap-4 mb-8 border-b border-border pb-4 overflow-x-auto">
           {['overview', 'programs', 'admission', 'fees', 'facilities'].map((tab) => (

@@ -57,7 +57,7 @@ export function FooterSection({ config }: FooterSectionProps) {
 
   return (
     <footer className="border-t border-slate-200 bg-white text-slate-900 mt-12">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 space-y-10">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 space-y-10">
         {/* ── TOP SECTION: BRAND & LINK GROUPS ── */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
           {/* Brand Info (4 cols) */}

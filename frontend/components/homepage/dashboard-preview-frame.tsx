@@ -25,9 +25,9 @@ import {
 
 export function DashboardPreviewFrame() {
   return (
-    <div id="dashboard-preview" className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+    <div id="dashboard-preview" className="container mx-auto px-4 sm:px-6 lg:px-8 pb-16">
       {/* ── BROWSER / TABLET DEVICE FRAME ── */}
-      <div className="rounded-[2rem] border-[7px] border-slate-800 bg-[#FAFAF9] shadow-2xl overflow-hidden">
+      <div className="rounded-[2rem] border-[7px] border-slate-800 bg-[#FAFAF9] shadow-2xl overflow-hidden max-w-6xl mx-auto">
         
         {/* ── 1. DASHBOARD APP TOP BAR ── */}
         <div className="bg-white border-b border-slate-200/80 px-5 py-3 flex items-center justify-between gap-4">

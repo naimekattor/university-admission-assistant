@@ -133,7 +133,7 @@ export function EligibilityCheckerSection({ config }: EligibilityCheckerSectionP
   };
 
   return (
-    <section id="eligibility-checker" className="py-12 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
+    <section id="eligibility-checker" className="py-12 container mx-auto px-4 sm:px-6 lg:px-8">
       <div className="space-y-6">
         {/* ── SECTION TITLE ── */}
         <div className="text-center space-y-2">

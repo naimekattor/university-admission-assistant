@@ -26,7 +26,7 @@ export function PreparationCtaSection({ config }: PreparationCtaSectionProps) {
   const ctaUrl = config?.ctaUrl || '/prepare';
 
   return (
-    <section id="preparation-cta" className="py-12 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
+    <section id="preparation-cta" className="py-12 container mx-auto px-4 sm:px-6 lg:px-8">
       <div className="rounded-3xl bg-slate-900 text-white p-8 sm:p-10 shadow-xl relative overflow-hidden">
         {/* Glow */}
         <div className="absolute top-0 right-0 w-80 h-80 bg-[#FF5500]/20 rounded-full blur-3xl pointer-events-none" />

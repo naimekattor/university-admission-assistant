@@ -58,7 +58,7 @@ export function Navbar() {
 
     return (
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-[#FF5500] text-white font-black flex items-center justify-center text-xs shadow-md">
               EG
@@ -124,8 +124,8 @@ export function Navbar() {
     <div className="w-full relative z-50">
       {/* ── TOP ANNOUNCEMENT BANNER ── */}
       {bannerVisible && (
-        <div className="pt-3 px-4 flex justify-center">
-          <div className="w-full max-w-4xl bg-stone-900 text-white text-[11px] sm:text-xs font-medium py-1.5 px-4 rounded-full flex items-center justify-between shadow-sm">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-3">
+          <div className="bg-stone-900 text-white text-[11px] sm:text-xs font-medium py-1.5 px-4 rounded-full flex items-center justify-between shadow-sm max-w-4xl mx-auto">
             <div className="flex-1 text-center font-normal">
               University Admission 2026: Official Circulars & GPA Rules Live! <span className="text-[#FF5500] font-bold">Check Eligibility Free</span>
             </div>
@@ -140,8 +140,8 @@ export function Navbar() {
       )}
 
       {/* ── FLOATING PILL NAVBAR ── */}
-      <div className="sticky top-3 px-4 sm:px-6 pt-3 pb-2">
-        <header className="max-w-4xl mx-auto px-5 py-2.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/80 shadow-md flex items-center justify-between">
+      <div className="sticky top-3 container mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-2">
+        <header className="max-w-5xl mx-auto px-5 py-2.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/80 shadow-md flex items-center justify-between">
           
           {/* Brand Logo: EG badge + EduGuide brand name */}
           <Link href="/" className="flex items-center gap-2 group">

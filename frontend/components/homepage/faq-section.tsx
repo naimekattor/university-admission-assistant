@@ -39,8 +39,8 @@ export function FaqSection({ config, faqs = [] }: FaqSectionProps) {
   };
 
   return (
-    <section id="faq" className="py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
-      <div className="space-y-6">
+    <section id="faq" className="py-12 container mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="space-y-6 max-w-4xl mx-auto">
         {/* ── SECTION HEADER ── */}
         <div className="text-center space-y-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-[#FF5500] text-xs font-bold uppercase tracking-wider font-mono">
