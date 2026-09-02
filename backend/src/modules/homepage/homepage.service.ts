@@ -1313,16 +1313,49 @@ export class HomepageService {
     foundedYear?: number;
     admissionType?: string;
     cutoffMarks?: number;
+    metadata?: any;
+    applicationWindow?: string;
+    testDate?: string;
+    minGpa?: string;
+    group?: string;
+    units?: string;
+    seats?: number;
+    status?: string;
+    overview?: string;
+    programList?: string[];
+    admissionProcess?: string[];
+    fees?: any;
+    facilities?: string[];
   }): Promise<any> {
     try {
+      const meta = data.metadata || {
+        application_window: data.applicationWindow || 'Jan 15, 2026 – Feb 15, 2026',
+        test_date: data.testDate || 'To be announced',
+        min_gpa: data.minGpa || 'Combined GPA 8.00 (Min 3.50 each)',
+        group: data.group || 'All Groups',
+        units: data.units || 'Ka, Kha, Ga',
+        seats: data.seats || 1200,
+        status: data.status || 'Applications Open',
+        overview: data.overview || data.description || '',
+        program_list: data.programList || [],
+        admission_process: data.admissionProcess || [],
+        fees: data.fees || {},
+        facilities: data.facilities || [],
+      };
+
       const res = await this.pool.query(
-        `INSERT INTO universities (name, short_name, description, location, website, logo, founded_year, admission_type, cutoff_marks)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `INSERT INTO universities (name, short_name, description, location, website, logo, founded_year, admission_type, cutoff_marks, metadata)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          ON CONFLICT (short_name) DO UPDATE SET
            name = EXCLUDED.name,
            description = EXCLUDED.description,
            location = EXCLUDED.location,
-           website = EXCLUDED.website
+           website = EXCLUDED.website,
+           logo = EXCLUDED.logo,
+           founded_year = EXCLUDED.founded_year,
+           admission_type = EXCLUDED.admission_type,
+           cutoff_marks = EXCLUDED.cutoff_marks,
+           metadata = EXCLUDED.metadata
          RETURNING *`,
         [
           data.name,
@@ -1334,12 +1367,173 @@ export class HomepageService {
           data.foundedYear || 2026,
           data.admissionType || 'merit',
           data.cutoffMarks || 0,
+          JSON.stringify(meta),
         ]
       );
-      return res.rows[0];
+
+      const uni = res.rows[0];
+      if (uni?.id) {
+        // Upsert circular
+        await this.pool.query(
+          `INSERT INTO admission_circulars (university_id, title, unit, year, official_url, summary, requirements)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           ON CONFLICT DO NOTHING`,
+          [
+            uni.id,
+            `${data.shortName} Admission Circular 2026`,
+            data.units || 'All Units',
+            2026,
+            data.website || '#',
+            data.description || '',
+            JSON.stringify(meta),
+          ]
+        );
+      }
+
+      return { success: true, data: uni };
     } catch (err: any) {
       console.error('Error inserting university into PostgreSQL:', err.message);
       throw err;
+    }
+  }
+
+  public async updateUniversity(id: string, data: any): Promise<any> {
+    try {
+      const meta = data.metadata || {
+        application_window: data.applicationWindow,
+        test_date: data.testDate,
+        min_gpa: data.minGpa,
+        group: data.group,
+        units: data.units,
+        seats: data.seats,
+        status: data.status,
+        overview: data.overview || data.description,
+        program_list: data.programList,
+        admission_process: data.admissionProcess,
+        fees: data.fees,
+        facilities: data.facilities,
+      };
+
+      const res = await this.pool.query(
+        `UPDATE universities
+         SET name = COALESCE($1, name),
+             short_name = COALESCE($2, short_name),
+             description = COALESCE($3, description),
+             location = COALESCE($4, location),
+             website = COALESCE($5, website),
+             logo = COALESCE($6, logo),
+             founded_year = COALESCE($7, founded_year),
+             admission_type = COALESCE($8, admission_type),
+             cutoff_marks = COALESCE($9, cutoff_marks),
+             metadata = $10,
+             updated_at = NOW()
+         WHERE id = $11::uuid OR short_name = $11
+         RETURNING *`,
+        [
+          data.name,
+          data.shortName,
+          data.description,
+          data.location,
+          data.website,
+          data.logo,
+          data.foundedYear,
+          data.admissionType,
+          data.cutoffMarks,
+          JSON.stringify(meta),
+          id,
+        ]
+      );
+      return { success: true, data: res.rows[0] };
+    } catch (err: any) {
+      console.error('Error updating university in PostgreSQL:', err.message);
+      throw err;
+    }
+  }
+
+  public async getUniversityBySlug(slug: string): Promise<any | null> {
+    try {
+      const cleanSlug = slug.toLowerCase().trim();
+      const res = await this.pool.query(
+        `SELECT 
+           u.id::text,
+           u.name,
+           u.short_name AS "shortName",
+           LOWER(u.short_name) AS slug,
+           u.description,
+           COALESCE(u.location, 'Bangladesh') AS location,
+           COALESCE(u.website, '#') AS website,
+           COALESCE(u.logo, '🏛️') AS logo,
+           COALESCE(u.founded_year, 1950) AS "foundedYear",
+           COALESCE(u.admission_type, 'merit') AS "admissionType",
+           COALESCE(u.cutoff_marks, 0) AS "cutoffMarks",
+           COALESCE(u.metadata->>'group', 'All Groups') AS "group",
+           COALESCE(u.metadata->>'application_window', 'Jan 15, 2026 – Feb 15, 2026') AS "applicationWindow",
+           COALESCE(u.metadata->>'test_date', 'To be announced') AS "testDate",
+           COALESCE(u.metadata->>'min_gpa', 'SSC 4.00, HSC 4.00') AS "minGpa",
+           COALESCE(u.metadata->>'units', 'All Units') AS "units",
+           COALESCE((u.metadata->>'seats')::int, 1500) AS seats,
+           COALESCE(u.metadata->>'status', 'Applications Open') AS status,
+           u.metadata
+         FROM universities u
+         WHERE LOWER(u.short_name) = $1 
+            OR u.id::text = $1 
+            OR LOWER(REPLACE(u.name, ' ', '-')) = $1
+            OR LOWER(REGEXP_REPLACE(u.name, '[^a-zA-Z0-9]', '', 'g')) = LOWER(REGEXP_REPLACE($1, '[^a-zA-Z0-9]', '', 'g'))
+         LIMIT 1`,
+        [cleanSlug]
+      );
+
+      if (res.rows.length === 0) {
+        return null;
+      }
+
+      const uni = res.rows[0];
+
+      // Fetch related circulars
+      const circRes = await this.pool.query(
+        `SELECT id::text, title, unit, year, official_url as "officialUrl", summary, requirements, created_at as "createdAt"
+         FROM admission_circulars
+         WHERE university_id = $1::uuid
+         ORDER BY created_at DESC`,
+        [uni.id]
+      );
+
+      // Fetch related upcoming events/deadlines
+      const eventRes = await this.pool.query(
+        `SELECT id::text, unit, event_type as "eventType", title, event_date as "eventDate", description, source_url as "sourceUrl", status
+         FROM admission_events
+         WHERE university_id = $1::uuid OR LOWER(university_name) = LOWER($2)
+         ORDER BY event_date ASC`,
+        [uni.id, uni.name]
+      );
+
+      // Fetch related programs
+      const progRes = await this.pool.query(
+        `SELECT id::text, name, degree_level as "degreeLevel", faculty, duration_years as "durationYears", total_credits as "totalCredits", seats, min_gpa as "minGpa", description
+         FROM programs
+         WHERE university_id = $1::uuid
+         ORDER BY faculty ASC, name ASC`,
+        [uni.id]
+      );
+
+      return {
+        ...uni,
+        circulars: circRes.rows,
+        events: eventRes.rows.map((evt: any) => {
+          const evtDate = new Date(evt.eventDate);
+          const diffDays = Math.max(0, Math.ceil((evtDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+          return {
+            ...evt,
+            eventDate: evtDate.toISOString(),
+            dateDisplay: evtDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            remainingDays: diffDays,
+          };
+        }),
+        programs: progRes.rows,
+      };
+    } catch (err: any) {
+      console.error('Error fetching university by slug:', err.message);
+      return null;
     }
   }
 
@@ -1351,6 +1545,10 @@ export class HomepageService {
       );
       await this.pool.query(
         `DELETE FROM programs WHERE university_id IN (SELECT id FROM universities WHERE id::text = $1 OR short_name = $1)`,
+        [id]
+      );
+      await this.pool.query(
+        `DELETE FROM admission_events WHERE university_id IN (SELECT id FROM universities WHERE id::text = $1 OR short_name = $1)`,
         [id]
       );
       await this.pool.query(`DELETE FROM universities WHERE id::text = $1 OR short_name = $1`, [id]);

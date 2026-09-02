@@ -304,9 +304,32 @@ apiRouter.get('/universities', async (req: Request, res: Response, next) => {
   }
 });
 
+apiRouter.get('/universities/:slug', async (req: Request, res: Response, next) => {
+  try {
+    const slug = Array.isArray(req.params.slug) ? req.params.slug[0] : req.params.slug;
+    const data = await homepageService.getUniversityBySlug(slug);
+    if (!data) {
+      return res.status(404).json({ success: false, message: 'University not found' });
+    }
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
 apiRouter.post('/universities', async (req: Request, res: Response, next) => {
   try {
     const result = await homepageService.createUniversity(req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+apiRouter.put('/universities/:id', async (req: Request, res: Response, next) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const result = await homepageService.updateUniversity(id, req.body);
     res.json(result);
   } catch (error) {
     next(error);

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { AdminShell } from '@/components/layout/admin-shell';
 import {
@@ -15,44 +14,77 @@ import {
   ExternalLink,
   Calendar,
   CheckCircle2,
+  MapPin,
+  Building2,
+  Users,
+  AlertTriangle,
+  Loader2,
+  BookOpen,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/custom-toast';
-import { AlertTriangle, Loader2 } from 'lucide-react';
 
-const RichEditor = dynamic(
-  () => import('@/components/admin/rich-editor').then((m) => m.RichEditor),
-  { ssr: false, loading: () => <div className="h-48 bg-[var(--eg-surface-subtle)] border border-[var(--eg-border)] rounded-xl animate-pulse" /> }
-);
+interface UniversityItem {
+  id: string;
+  name: string;
+  shortName: string;
+  slug?: string;
+  location: string;
+  logo: string;
+  foundedYear?: number;
+  admissionType?: string;
+  cutoffMarks?: number;
+  group?: string;
+  applicationWindow?: string;
+  testDate?: string;
+  minGpa?: string;
+  units?: string;
+  seats?: number;
+  status?: string;
+  website?: string;
+  description?: string;
+}
 
 export default function AdminUniversitiesPage() {
   const toast = useToast();
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [msg, setMsg] = useState<{ success: boolean; text: string } | null>(null);
-
-  // Form states
-  const [uniName, setUniName] = useState('');
-  const [uniShortName, setUniShortName] = useState('');
-  const [uniLocation, setUniLocation] = useState('');
-  const [uniType, setUniType] = useState('Engineering');
-  const [uniDeadline, setUniDeadline] = useState('December 31, 2026');
-  const [uniWebsite, setUniWebsite] = useState('');
-  const [uniBody, setUniBody] = useState('');
-  const [universitiesList, setUniversitiesList] = useState<any[]>([]);
+  const [universitiesList, setUniversitiesList] = useState<UniversityItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedType, setSelectedType] = useState('All');
 
-  // SweetAlert-style Delete Dialog State
+  // Modal State
+  const [modalOpen, setModalOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Form Fields
+  const [name, setName] = useState('');
+  const [shortName, setShortName] = useState('');
+  const [location, setLocation] = useState('');
+  const [group, setGroup] = useState('Science');
+  const [units, setUnits] = useState('Ka, Kha, Ga');
+  const [minGpa, setMinGpa] = useState('SSC 4.00, HSC 4.00');
+  const [seats, setSeats] = useState(1200);
+  const [applicationWindow, setApplicationWindow] = useState('Jan 15, 2026 – Feb 15, 2026');
+  const [testDate, setTestDate] = useState('Mar 15, 2026');
+  const [status, setStatus] = useState('Applications Open');
+  const [website, setWebsite] = useState('');
+  const [logo, setLogo] = useState('🏛️');
+  const [foundedYear, setFoundedYear] = useState(1950);
+  const [description, setDescription] = useState('');
+
+  // Delete Dialog State
   const [deleteDialog, setDeleteDialog] = useState<{
     isOpen: boolean;
     title: string;
     message: string;
+    confirmText?: string;
     isDeleting?: boolean;
     onConfirm: () => Promise<void> | void;
   }>({
     isOpen: false,
     title: '',
     message: '',
+    confirmText: 'Yes, delete university',
     isDeleting: false,
     onConfirm: () => {},
   });
@@ -78,39 +110,88 @@ export default function AdminUniversitiesPage() {
     loadUniversities();
   }, []);
 
-  const handleCreateUni = async (e: React.FormEvent) => {
+  const handleOpenCreateModal = () => {
+    setIsEditing(false);
+    setEditingId(null);
+    setName('');
+    setShortName('');
+    setLocation('Dhaka');
+    setGroup('Science');
+    setUnits('Ka, Kha, Ga');
+    setMinGpa('Combined GPA 8.00 (Min 3.50 each)');
+    setSeats(1200);
+    setApplicationWindow('Jan 15, 2026 – Feb 15, 2026');
+    setTestDate('Mar 15, 2026');
+    setStatus('Applications Open');
+    setWebsite('https://');
+    setLogo('🏛️');
+    setFoundedYear(1950);
+    setDescription('');
+    setModalOpen(true);
+  };
+
+  const handleOpenEditModal = (u: UniversityItem) => {
+    setIsEditing(true);
+    setEditingId(u.id);
+    setName(u.name || '');
+    setShortName(u.shortName || '');
+    setLocation(u.location || 'Bangladesh');
+    setGroup(u.group || u.admissionType || 'Science');
+    setUnits(u.units || 'All Units');
+    setMinGpa(u.minGpa || 'Combined GPA 8.00 (Min 3.50 each)');
+    setSeats(u.seats || 1200);
+    setApplicationWindow(u.applicationWindow || 'Jan 15, 2026 – Feb 15, 2026');
+    setTestDate(u.testDate || 'To be announced');
+    setStatus(u.status || 'Applications Open');
+    setWebsite(u.website || '');
+    setLogo(u.logo || '🏛️');
+    setFoundedYear(u.foundedYear || 1950);
+    setDescription(u.description || '');
+    setModalOpen(true);
+  };
+
+  const handleSaveUniversity = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const payload = {
-        name: uniName,
-        shortName: uniShortName || uniName.split(' ').map(w => w[0]).join('').toUpperCase(),
-        location: uniLocation,
-        admissionType: uniType.toLowerCase(),
-        website: uniWebsite || undefined,
-        description: uniBody || undefined,
+        name,
+        shortName: shortName.toUpperCase(),
+        location,
+        group,
+        admissionType: group.toLowerCase(),
+        units,
+        minGpa,
+        seats: Number(seats),
+        applicationWindow,
+        testDate,
+        status,
+        website,
+        logo,
+        foundedYear: Number(foundedYear),
+        description,
       };
 
-      const res = await fetch('/api/v1/universities', {
-        method: 'POST',
+      const url = isEditing && editingId ? `/api/v1/universities/${editingId}` : '/api/v1/universities';
+      const method = isEditing ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
       if (res.ok) {
-        toast.success(`University "${uniName}" saved to database!`, 'University Created');
-        setMsg({ success: true, text: `University "${uniName}" saved to PostgreSQL database!` });
-        setShowAddModal(false);
-        setUniName('');
-        setUniShortName('');
-        setUniLocation('');
-        setUniWebsite('');
-        setUniBody('');
-        loadUniversities();
+        toast.success(
+          isEditing ? `University "${shortName}" updated successfully!` : `University "${name}" created in PostgreSQL!`,
+          isEditing ? 'University Updated' : 'University Created'
+        );
+        setModalOpen(false);
+        await loadUniversities();
       } else {
         toast.error('Failed to save university to database.', 'Database Error');
       }
     } catch (err: any) {
-      toast.error(err.message || 'Error creating university.', 'Error');
+      toast.error(err.message || 'Error saving university.', 'Error');
     }
   };
 
@@ -118,14 +199,15 @@ export default function AdminUniversitiesPage() {
     setDeleteDialog({
       isOpen: true,
       title: 'Delete University?',
-      message: `Are you sure you want to permanently delete "${name}" from PostgreSQL? This action cannot be undone.`,
+      message: `Are you sure you want to permanently delete "${name}" and all associated circulars & programs from PostgreSQL?`,
+      confirmText: 'Yes, delete university',
       onConfirm: async () => {
         setDeleteDialog((prev) => ({ ...prev, isDeleting: true }));
         try {
           const res = await fetch(`/api/v1/universities/${id}`, { method: 'DELETE' });
           if (res.ok) {
             toast.success(`University "${name}" deleted.`, 'Deleted');
-            loadUniversities();
+            await loadUniversities();
           } else {
             toast.error('Failed to delete university from database.', 'Delete Failed');
           }
@@ -138,291 +220,422 @@ export default function AdminUniversitiesPage() {
     });
   };
 
+  const filteredUniversities = universitiesList.filter((u) => {
+    const q = searchQuery.toLowerCase();
+    const matchesSearch =
+      searchQuery === '' ||
+      u.name.toLowerCase().includes(q) ||
+      u.shortName.toLowerCase().includes(q) ||
+      (u.location && u.location.toLowerCase().includes(q));
+
+    let matchesType = true;
+    if (selectedType !== 'All') {
+      matchesType = u.group === selectedType || u.admissionType === selectedType.toLowerCase();
+    }
+
+    return matchesSearch && matchesType;
+  });
+
   return (
     <AdminShell
-      pageTitle="University Directory & Circular Intelligence"
+      pageTitle="University Directory & Intelligence Manager"
       breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Universities' }]}
       actions={
         <button
-          onClick={() => setShowAddModal(true)}
-          className="btn btn-primary btn-sm font-semibold shadow-sm"
+          onClick={handleOpenCreateModal}
+          className="px-4 py-2 rounded-full bg-[#FF5500] hover:bg-[#E64D00] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer"
         >
-          <PlusCircle className="w-4 h-4" />
+          <PlusCircle className="w-3.5 h-3.5" />
           <span>+ Add University</span>
         </button>
       }
     >
       <div className="space-y-6">
-        
-        {msg && (
-          <div className="p-4 rounded-xl text-xs font-semibold flex items-center gap-2 bg-[var(--eg-success-soft)] text-[var(--eg-success)] border border-[var(--eg-success)]/20">
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
-            <span>{msg.text}</span>
-          </div>
-        )}
-
-        {/* Toolbar Filter */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 absolute left-3 top-3 text-[var(--eg-text-muted)]" />
+        {/* Top Filter & Metrics Bar */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="relative flex-1 w-full max-w-md">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Search universities by name or city..."
+              placeholder="Search universities by name, short code, or district..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="eg-input pl-9"
+              className="w-full h-10 pl-10 pr-4 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500] bg-slate-50/50 focus:bg-white transition"
             />
           </div>
 
-          <div className="flex gap-2">
-            <select className="eg-input w-auto text-xs font-medium">
-              <option>All Types</option>
-              <option>Engineering</option>
-              <option>General Public</option>
-              <option>Medical</option>
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-between">
+            <select
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              className="h-10 px-3 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:border-[#FF5500] bg-slate-50/50 cursor-pointer"
+            >
+              <option value="All">All Categories</option>
+              <option value="Engineering">Engineering</option>
+              <option value="Medical">Medical</option>
+              <option value="Science">Science & Tech</option>
+              <option value="General">General Public</option>
             </select>
+
+            <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-2 rounded-xl whitespace-nowrap">
+              Total: <strong className="text-slate-900">{filteredUniversities.length}</strong> in PostgreSQL
+            </span>
           </div>
         </div>
 
-        {/* Universities Table */}
-        <div className="eg-card p-0 overflow-hidden shadow-card">
+        {/* Universities Management Table */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
-            <table className="w-full text-left admin-table">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr>
-                  <th>University & Code</th>
-                  <th>Location</th>
-                  <th>Units / Programs</th>
-                  <th>Seats</th>
-                  <th>Status</th>
-                  <th>Actions</th>
+                <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                  <th className="py-3 px-4">University</th>
+                  <th className="py-3 px-4">Location</th>
+                  <th className="py-3 px-4">Units & Group</th>
+                  <th className="py-3 px-4">Seats</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">Exam Date</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody>
-                {universitiesList.length === 0 ? (
+              <tbody className="divide-y divide-slate-100 text-xs">
+                {loading ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-8 text-xs text-[var(--eg-text-muted)]">
-                      {loading ? 'Loading universities from database...' : 'No universities found in database.'}
+                    <td colSpan={7} className="py-12 text-center text-slate-500 font-medium">
+                      Loading database records...
+                    </td>
+                  </tr>
+                ) : filteredUniversities.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-slate-500 font-medium">
+                      No universities found. Click "+ Add University" to create a new record.
                     </td>
                   </tr>
                 ) : (
-                  universitiesList
-                    .filter(
-                      (u) =>
-                        searchQuery === '' ||
-                        u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        u.shortName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        u.location?.toLowerCase().includes(searchQuery.toLowerCase())
-                    )
-                    .map((u) => (
-                      <tr key={u.id}>
-                        <td>
-                          <div>
-                            <div className="font-bold text-[var(--eg-text-primary)]">{u.name}</div>
-                            <div className="text-caption font-mono text-[var(--eg-primary)]">{u.shortName}</div>
+                  filteredUniversities.map((u) => {
+                    const isOpen = u.status === 'Applications Open';
+                    const isOpeningSoon = u.status === 'Opening Soon';
+                    const targetSlug = (u.slug || u.shortName || u.id).toLowerCase().trim().replace(/[^a-z0-9]/g, '-');
+
+                    return (
+                      <tr key={u.id} className="hover:bg-slate-50/60 transition">
+                        <td className="py-3.5 px-4 font-bold text-slate-900">
+                          <div className="flex items-center gap-2.5">
+                            <span className="text-xl">{u.logo || '🏛️'}</span>
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono text-xs font-black text-[#FF5500]">{u.shortName}</span>
+                              </div>
+                              <span className="text-slate-700 font-medium text-xs line-clamp-1">{u.name}</span>
+                            </div>
                           </div>
                         </td>
-                        <td className="text-xs text-[var(--eg-text-muted)] font-medium">{u.location || 'Bangladesh'}</td>
-                        <td className="font-semibold text-xs text-[var(--eg-text-primary)]">
-                          {u.units || 'Multiple Units'}
+                        <td className="py-3.5 px-4 text-slate-600">{u.location}</td>
+                        <td className="py-3.5 px-4">
+                          <span className="font-mono text-slate-800 font-semibold">{u.units}</span>
+                          <span className="block text-[10px] text-slate-500 capitalize">{u.group || u.admissionType}</span>
                         </td>
-                        <td className="text-xs font-mono font-semibold text-[var(--eg-text-primary)]">
-                          {u.seats ? `${u.seats.toLocaleString()} Seats` : '—'}
+                        <td className="py-3.5 px-4 font-mono font-bold text-slate-900">
+                          {u.seats ? Number(u.seats).toLocaleString() : '1,200'}
                         </td>
-                        <td>
-                          <Badge
-                            variant={u.status === 'Applications Open' ? 'success' : u.status === 'Deadline Passed' ? 'error' : 'warning'}
-                            size="sm"
+                        <td className="py-3.5 px-4">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                              isOpen
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : isOpeningSoon
+                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                : 'bg-slate-100 text-slate-600 border border-slate-200'
+                            }`}
                           >
-                            {u.status || 'Active'}
-                          </Badge>
+                            <span className={`w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-emerald-500 animate-pulse' : isOpeningSoon ? 'bg-amber-500' : 'bg-slate-400'}`} />
+                            <span>{u.status || 'Scheduled'}</span>
+                          </span>
                         </td>
-                        <td>
-                          <div className="flex items-center gap-2">
-                            {u.circularUrl && (
-                              <a
-                                href={u.circularUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-1.5 rounded hover:bg-[var(--eg-surface-subtle)] text-[var(--eg-text-muted)] hover:text-[var(--eg-primary)]"
-                                title="Visit Website"
-                              >
-                                <ExternalLink className="w-4 h-4" />
-                              </a>
-                            )}
+                        <td className="py-3.5 px-4 text-slate-700 font-medium">{u.testDate || 'TBA'}</td>
+                        <td className="py-3.5 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Link
+                              href={`/universities/${targetSlug}`}
+                              target="_blank"
+                              className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition"
+                              title="Preview Details Page"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </Link>
                             <button
-                              onClick={() => promptDeleteUni(u.id, u.name)}
-                              className="p-1.5 rounded hover:bg-rose-950/20 text-slate-500 hover:text-rose-400 transition"
+                              onClick={() => handleOpenEditModal(u)}
+                              className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition cursor-pointer"
+                              title="Edit University"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => promptDeleteUni(u.id, u.shortName || u.name)}
+                              className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition cursor-pointer"
                               title="Delete University"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </td>
                       </tr>
-                    ))
+                    );
+                  })
                 )}
               </tbody>
             </table>
           </div>
         </div>
+      </div>
 
-        {/* Modal: Add University */}
-        {showAddModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto">
-            <div className="bg-[var(--eg-surface)] border border-[var(--eg-border)] rounded-2xl max-w-2xl w-full p-6 space-y-5 shadow-modal max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between border-b border-[var(--eg-border)] pb-3">
-                <h3 className="font-bold text-lg text-[var(--eg-text-primary)]">
-                  Add University to PostgreSQL Database
+      {/* ── CREATE / EDIT UNIVERSITY MODAL ── */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="w-full max-w-2xl rounded-3xl bg-white border border-slate-200 p-6 sm:p-7 shadow-2xl space-y-4 my-8">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-bold text-base text-slate-900">
+                  {isEditing ? `Edit University Details (${shortName})` : 'Create New Bangladesh University'}
                 </h3>
-                <button onClick={() => setShowAddModal(false)} className="text-xs text-[var(--eg-text-muted)] hover:text-[var(--eg-text-primary)]">
-                  Close
-                </button>
+                <p className="text-xs text-slate-500">Save complete admission intelligence directly into PostgreSQL.</p>
               </div>
+              <button
+                onClick={() => setModalOpen(false)}
+                className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition"
+              >
+                ✕
+              </button>
+            </div>
 
-              <form onSubmit={handleCreateUni} className="space-y-4 text-xs">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="sm:col-span-2">
-                    <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">University Full Name *</label>
-                    <input
-                      required
-                      value={uniName}
-                      onChange={(e) => setUniName(e.target.value)}
-                      placeholder="e.g. Bangladesh University of Engineering and Technology"
-                      className="eg-input"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Short Code *</label>
-                    <input
-                      required
-                      value={uniShortName}
-                      onChange={(e) => setUniShortName(e.target.value)}
-                      placeholder="e.g. BUET"
-                      className="eg-input font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Location / City *</label>
-                    <input
-                      required
-                      value={uniLocation}
-                      onChange={(e) => setUniLocation(e.target.value)}
-                      placeholder="e.g. Dhaka"
-                      className="eg-input"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Official Website / Circular URL</label>
-                    <input
-                      value={uniWebsite}
-                      onChange={(e) => setUniWebsite(e.target.value)}
-                      placeholder="https://..."
-                      className="eg-input"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">University Type</label>
-                    <select value={uniType} onChange={(e) => setUniType(e.target.value)} className="eg-input">
-                      <option>Engineering</option>
-                      <option>General Public</option>
-                      <option>Medical</option>
-                      <option>Agriculture</option>
-                      <option>Science & Tech</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Application Deadline</label>
-                    <input
-                      value={uniDeadline}
-                      onChange={(e) => setUniDeadline(e.target.value)}
-                      className="eg-input"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">
-                    Detailed Admission Overview (Quill Rich Editor)
-                  </label>
-                  <RichEditor
-                    placeholder="Write detailed admission instructions, eligibility criteria, and unit test details..."
-                    onChange={setUniBody}
+            <form onSubmit={handleSaveUniversity} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2 space-y-1">
+                  <label className="text-xs font-bold text-slate-900">University Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Bangladesh University of Engineering and Technology"
+                    className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
                   />
                 </div>
 
-                <div className="flex justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddModal(false)}
-                    className="btn btn-secondary btn-sm"
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary btn-sm font-semibold">
-                    Save to Database
-                  </button>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-900">Short Code (Acronym) *</label>
+                  <input
+                    type="text"
+                    required
+                    value={shortName}
+                    onChange={(e) => setShortName(e.target.value)}
+                    placeholder="e.g. BUET, DU"
+                    className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-mono font-bold focus:outline-none focus:border-[#FF5500]"
+                  />
                 </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* ── CUSTOM SWEETALERT-STYLE DELETE CONFIRMATION MODAL ── */}
-        {deleteDialog.isOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="w-full max-w-md rounded-3xl bg-white border border-slate-200 p-6 sm:p-7 shadow-2xl text-center space-y-4 animate-in zoom-in-95 duration-200">
-              {/* Warning Pulsing Icon */}
-              <div className="mx-auto w-16 h-16 rounded-full bg-rose-50 border-2 border-rose-200 text-rose-600 flex items-center justify-center shadow-lg shadow-rose-500/10">
-                <AlertTriangle className="w-8 h-8 text-rose-600 animate-pulse" />
               </div>
 
-              <div className="space-y-1.5">
-                <h3 className="text-lg font-bold text-slate-900">{deleteDialog.title}</h3>
-                <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
-                  {deleteDialog.message}
-                </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-900">Campus City / Location</label>
+                  <input
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="e.g. Dhaka"
+                    className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-900">Category Group</label>
+                  <select
+                    value={group}
+                    onChange={(e) => setGroup(e.target.value)}
+                    className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                  >
+                    <option value="Science">Science & Engineering</option>
+                    <option value="Medical">Medical & Dental</option>
+                    <option value="General">General Public</option>
+                    <option value="Agriculture">Agricultural Science</option>
+                    <option value="All Groups">All Groups</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-900">Admission Status</label>
+                  <select
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value)}
+                    className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                  >
+                    <option value="Applications Open">Applications Open</option>
+                    <option value="Opening Soon">Opening Soon</option>
+                    <option value="Deadline Passed">Deadline Passed</option>
+                    <option value="Scheduled">Scheduled</option>
+                  </select>
+                </div>
               </div>
 
-              <div className="flex items-center justify-center gap-3 pt-3 border-t border-slate-100">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-900">Units Breakdown</label>
+                  <input
+                    type="text"
+                    value={units}
+                    onChange={(e) => setUnits(e.target.value)}
+                    placeholder="e.g. Ka (Engg), Kha (Arch)"
+                    className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-900">Total Seats Capacity</label>
+                  <input
+                    type="number"
+                    value={seats}
+                    onChange={(e) => setSeats(Number(e.target.value))}
+                    className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-mono font-medium focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-900">Minimum GPA & Subject Criteria</label>
+                <input
+                  type="text"
+                  value={minGpa}
+                  onChange={(e) => setMinGpa(e.target.value)}
+                  placeholder="e.g. SSC 4.00, HSC 4.00 (Combined 8.00)"
+                  className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-900">Application Window</label>
+                  <input
+                    type="text"
+                    value={applicationWindow}
+                    onChange={(e) => setApplicationWindow(e.target.value)}
+                    placeholder="e.g. Jan 15, 2026 – Feb 05, 2026"
+                    className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-900">Admission Test Date</label>
+                  <input
+                    type="text"
+                    value={testDate}
+                    onChange={(e) => setTestDate(e.target.value)}
+                    placeholder="e.g. Feb 28, 2026"
+                    className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-900">Official Portal / Circular URL</label>
+                  <input
+                    type="text"
+                    value={website}
+                    onChange={(e) => setWebsite(e.target.value)}
+                    placeholder="https://buet.ac.bd"
+                    className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-900">Emblem Logo Emoji</label>
+                  <input
+                    type="text"
+                    value={logo}
+                    onChange={(e) => setLogo(e.target.value)}
+                    placeholder="🏛️"
+                    className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-900">Description / Overview</label>
+                <textarea
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Provide an overview of faculties, research, and admission criteria..."
+                  className="w-full p-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
-                  disabled={deleteDialog.isDeleting}
-                  onClick={() => setDeleteDialog((prev) => ({ ...prev, isOpen: false }))}
-                  className="px-5 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+                  onClick={() => setModalOpen(false)}
+                  className="px-4 py-2 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
-                  type="button"
-                  disabled={deleteDialog.isDeleting}
-                  onClick={deleteDialog.onConfirm}
-                  className="px-6 py-2.5 rounded-full bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white text-xs font-bold shadow-lg shadow-rose-600/25 transition cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                  type="submit"
+                  className="px-6 py-2 rounded-full bg-[#FF5500] hover:bg-[#E64D00] text-white text-xs font-bold shadow-md shadow-orange-500/20 transition cursor-pointer"
                 >
-                  {deleteDialog.isDeleting ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Deleting...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Yes, delete it!</span>
-                    </>
-                  )}
+                  {isEditing ? 'Update University' : 'Save to Database'}
                 </button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── CUSTOM SWEETALERT DELETE DIALOG ── */}
+      {deleteDialog.isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-3xl bg-white border border-slate-200 p-6 sm:p-7 shadow-2xl text-center space-y-4 animate-in zoom-in-95 duration-200">
+            <div className="mx-auto w-16 h-16 rounded-full bg-rose-50 border-2 border-rose-200 text-rose-600 flex items-center justify-center shadow-lg shadow-rose-500/10">
+              <AlertTriangle className="w-8 h-8 text-rose-600 animate-pulse" />
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-bold text-slate-900">{deleteDialog.title}</h3>
+              <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
+                {deleteDialog.message}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-center gap-3 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                disabled={deleteDialog.isDeleting}
+                onClick={() => setDeleteDialog((prev) => ({ ...prev, isOpen: false }))}
+                className="px-5 py-2.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleteDialog.isDeleting}
+                onClick={deleteDialog.onConfirm}
+                className="px-6 py-2.5 rounded-full bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-lg shadow-rose-600/25 transition cursor-pointer flex items-center gap-2 disabled:opacity-50"
+              >
+                {deleteDialog.isDeleting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>{deleteDialog.confirmText || 'Yes, delete it!'}</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
-        )}
-
-      </div>
+        </div>
+      )}
     </AdminShell>
   );
 }
