@@ -90,14 +90,8 @@ export default function AdmissionDirectoryPage() {
   }, []);
 
   const allRows: AdmissionRowItem[] = useMemo(() => {
-    if (backendAdmissions && backendAdmissions.length > 0) {
-      return backendAdmissions;
-    }
-    if (config?.admissionSection?.customRows && config.admissionSection.customRows.length > 0) {
-      return config.admissionSection.customRows;
-    }
-    return [];
-  }, [backendAdmissions, config?.admissionSection?.customRows]);
+    return backendAdmissions || [];
+  }, [backendAdmissions]);
 
   // Reset to Page 1 on any filter or search query change
   useEffect(() => {

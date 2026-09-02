@@ -568,12 +568,7 @@ export class HomepageService {
       totalPages: number;
     };
   }> {
-    const config = await this.getPublishedConfig();
-    let rows =
-      config.admissionSection?.customRows && config.admissionSection.customRows.length > 0
-        ? config.admissionSection.customRows
-        : await this.getDynamicAdmissionOverview();
-
+    const rows = await this.getDynamicAdmissionOverview();
     const { search = '', group = 'All', status = 'All', sortBy = 'default', page = 1, limit = 10 } = query;
 
     let filtered = rows.filter((item: any) => {

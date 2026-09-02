@@ -84,6 +84,9 @@ export default function AdminHomepageCMSPage() {
         if (stored) {
           const parsed = JSON.parse(stored);
           if (parsed && typeof parsed === 'object') {
+            if (parsed.admissionSection) {
+              delete parsed.admissionSection.customRows;
+            }
             setDraftConfig(parsed);
           }
         }
@@ -344,10 +347,7 @@ export default function AdminHomepageCMSPage() {
     { id: 'seo', label: 'SEO & Meta Tags', icon: FileText },
   ];
 
-  const admissionRows =
-    draftConfig.admissionSection?.customRows && draftConfig.admissionSection.customRows.length > 0
-      ? draftConfig.admissionSection.customRows
-      : universities;
+  const admissionRows = universities;
 
   return (
     <AdminShell
