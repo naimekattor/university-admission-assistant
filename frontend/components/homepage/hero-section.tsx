@@ -18,12 +18,12 @@ interface HeroSectionProps {
 }
 
 export function HeroSection({ config, onFindUniversitiesClick }: HeroSectionProps) {
-  const eyebrow = config?.eyebrow || 'Trusted by over 50,000+ students';
-  const headlineLine1 = 'Your Ultimate LMS for';
-  const headlineLine2 = 'Seamless Learning & Growth';
+  const eyebrow = config?.eyebrow || 'Trusted by over 50,000+ admission aspirants';
+  const headlineLine1 = config?.headline?.split(' ')[0] ? 'Find Where You Can Apply.' : 'Your Ultimate Platform for';
+  const headlineLine2 = 'Seamless Admission & Growth';
   const subheading =
     config?.subheading ||
-    'Transform the way you teach and learn with our AI-driven Learning Management System. Manage courses, track progress, and engage learners like never before.';
+    'Check university admission dates, GPA requirements, units, and past question trends — all unified with AI guidance in one place.';
   const primaryCtaLabel = config?.primaryCtaLabel || 'Get Started for Free';
 
   const handlePrimaryClick = (e: React.MouseEvent) => {
@@ -31,7 +31,7 @@ export function HeroSection({ config, onFindUniversitiesClick }: HeroSectionProp
       e.preventDefault();
       onFindUniversitiesClick();
     } else {
-      const el = document.getElementById('dashboard-preview');
+      const el = document.getElementById('eligibility-checker');
       if (el) {
         e.preventDefault();
         el.scrollIntoView({ behavior: 'smooth' });
@@ -52,8 +52,8 @@ export function HeroSection({ config, onFindUniversitiesClick }: HeroSectionProp
       {/* ── 2. HERO HEADLINE & COPY ── */}
       <div className="max-w-4xl mx-auto text-center space-y-4">
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.12]">
-          <span className="block font-medium">{headlineLine1}</span>
-          <span className="block font-black">{headlineLine2}</span>
+          <span className="block font-medium">Your Ultimate Platform for</span>
+          <span className="block font-black text-slate-900">Seamless Admission & Growth</span>
         </h1>
 
         <p className="text-xs sm:text-sm md:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed text-balance">
@@ -64,7 +64,7 @@ export function HeroSection({ config, onFindUniversitiesClick }: HeroSectionProp
         <div className="flex justify-center pt-2">
           <button
             onClick={handlePrimaryClick}
-            className="bg-gradient-to-r from-[#FF5500] to-[#FF6B00] hover:from-[#E64D00] hover:to-[#FF5500] text-white pl-2 pr-6 py-2.5 rounded-full font-bold text-sm shadow-md hover:shadow-orange-500/25 transition-all flex items-center gap-3 cursor-pointer group"
+            className="btn-primary-brand pl-2 pr-6 py-2.5 text-sm flex items-center gap-3 cursor-pointer group"
           >
             <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-white">
               <ChevronsRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
@@ -100,7 +100,7 @@ export function HeroSection({ config, onFindUniversitiesClick }: HeroSectionProp
       {/* ── 5. FLOATING TILTED CARDS (LEFT & RIGHT) ── */}
       <div className="hidden lg:block relative pointer-events-none">
         
-        {/* ── LEFT TILTED CARD: PERFORMANCE GAUGE (-14deg) ── */}
+        {/* ── LEFT TILTED CARD: PERFORMANCE GAUGE (-12deg) ── */}
         <div className="absolute -top-64 left-4 xl:left-8 transform -rotate-12 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xl w-56 pointer-events-auto backdrop-blur-sm">
           <div className="flex items-center justify-between text-xs font-bold text-slate-800">
             <span>Performance</span>
@@ -133,7 +133,7 @@ export function HeroSection({ config, onFindUniversitiesClick }: HeroSectionProp
               </svg>
               <div className="absolute text-center">
                 <div className="text-base font-black text-slate-900 font-mono leading-none">80%</div>
-                <div className="text-[9px] text-slate-400 font-medium">Performance</div>
+                <div className="text-[9px] text-slate-400 font-medium">Readiness</div>
               </div>
             </div>
           </div>
@@ -143,7 +143,7 @@ export function HeroSection({ config, onFindUniversitiesClick }: HeroSectionProp
           </div>
         </div>
 
-        {/* ── RIGHT TILTED CARD: TIME SPENT BAR CHART (+14deg) ── */}
+        {/* ── RIGHT TILTED CARD: TIME SPENT BAR CHART (+12deg) ── */}
         <div className="absolute -top-64 right-4 xl:right-8 transform rotate-12 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xl w-60 pointer-events-auto backdrop-blur-sm">
           <div className="flex items-center justify-between">
             <div>
@@ -167,7 +167,6 @@ export function HeroSection({ config, onFindUniversitiesClick }: HeroSectionProp
 
           {/* Mini Bar Chart with Tooltip */}
           <div className="relative pt-4">
-            {/* Tooltip on active bar */}
             <div className="absolute top-0 right-12 px-1.5 py-0.5 rounded bg-slate-900 text-white text-[9px] font-mono font-bold shadow-xs">
               12.5 H
             </div>

@@ -11,7 +11,7 @@ interface FooterSectionProps {
 export function FooterSection({ config }: FooterSectionProps) {
   const description =
     config?.description ||
-    'EduGuide is Bangladesh’s premier data-driven university admission intelligence and preparation platform, consolidating circulars, eligibility criteria, deadlines, and smart prep in one unified place.';
+    'EduGuide is Bangladesh’s premier data-driven university admission intelligence and preparation platform, consolidating official circulars, GPA rules, deadlines, and smart preparation in one unified place.';
   const navGroups = config?.navGroups || [
     {
       title: 'Admission',
@@ -39,14 +39,13 @@ export function FooterSection({ config }: FooterSectionProps) {
         { label: 'Admission Guides', url: '/guides' },
         { label: 'BUET Preparation Guide', url: '/guides/buet-admission-guide-2026' },
         { label: 'DU Ka Unit Guide', url: '/guides/du-ka-unit-guide' },
-        { label: 'Medical Admission Tips', url: '/guides' },
+        { label: 'Medical Tips', url: '/guides' },
       ],
     },
     {
       title: 'Platform',
       links: [
         { label: 'Pricing & Passes', url: '/pricing' },
-        { label: 'Admin Portal', url: '/admin' },
         { label: 'Terms of Service', url: '#' },
         { label: 'Privacy Policy', url: '#' },
       ],
@@ -57,26 +56,26 @@ export function FooterSection({ config }: FooterSectionProps) {
     '© 2026 EduGuide Bangladesh. All rights reserved. Official admission data sourced from university circulars.';
 
   return (
-    <footer className="border-t border-slate-800 bg-slate-950 text-slate-100">
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 space-y-12">
+    <footer className="border-t border-slate-200 bg-white text-slate-900 mt-12">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 space-y-10">
         {/* ── TOP SECTION: BRAND & LINK GROUPS ── */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
           {/* Brand Info (4 cols) */}
-          <div className="md:col-span-4 space-y-4">
-            <Link href="/" className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-amber-500 text-slate-950 font-black flex items-center justify-center text-sm shadow-md">
+          <div className="md:col-span-4 space-y-3.5">
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-[#FF5500] text-white font-black flex items-center justify-center text-xs shadow-sm">
                 EG
               </div>
-              <span className="font-extrabold text-xl tracking-tight text-white">
-                Edu<span className="text-amber-400">Guide</span>
+              <span className="font-extrabold text-xl tracking-tight text-slate-900">
+                Edu<span className="text-[#FF5500]">Guide</span>
               </span>
             </Link>
 
-            <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
+            <p className="text-xs text-slate-600 leading-relaxed max-w-sm">
               {description}
             </p>
 
-            <div className="text-xs text-slate-400 font-mono">
+            <div className="text-[11px] text-slate-400 font-mono">
               Designed for HSC Candidates & University Aspirants across Bangladesh.
             </div>
           </div>
@@ -85,7 +84,7 @@ export function FooterSection({ config }: FooterSectionProps) {
           <div className="md:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-6">
             {navGroups.map((group, idx) => (
               <div key={idx} className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-white font-mono">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 font-mono">
                   {group.title}
                 </h4>
                 <ul className="space-y-2 text-xs">
@@ -93,7 +92,7 @@ export function FooterSection({ config }: FooterSectionProps) {
                     <li key={lIdx}>
                       <Link
                         href={link.url}
-                        className="text-slate-400 hover:text-amber-400 transition"
+                        className="text-slate-600 hover:text-[#FF5500] transition"
                       >
                         {link.label}
                       </Link>
@@ -105,20 +104,20 @@ export function FooterSection({ config }: FooterSectionProps) {
           </div>
         </div>
 
-        {/* ── BOTTOM BAR: COPYRIGHT & OFFICIAL SOURCE DISCLOSURE ── */}
-        <div className="pt-8 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+        {/* ── BOTTOM BAR ── */}
+        <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
           <div>{copyrightText}</div>
-          <div className="flex items-center gap-4">
-            <Link href="/admin" className="hover:text-amber-400 transition">
-              Admin CMS
-            </Link>
-            <span>•</span>
-            <Link href="/eligibility" className="hover:text-amber-400 transition">
+          <div className="flex items-center gap-4 text-xs font-medium">
+            <Link href="/eligibility" className="hover:text-[#FF5500] transition">
               Eligibility Engine
             </Link>
             <span>•</span>
-            <Link href="/chat" className="hover:text-amber-400 transition">
+            <Link href="/chat" className="hover:text-[#FF5500] transition">
               AI Advisor
+            </Link>
+            <span>•</span>
+            <Link href="/prepare" className="hover:text-[#FF5500] transition font-bold text-[#FF5500]">
+              Start Preparing
             </Link>
           </div>
         </div>

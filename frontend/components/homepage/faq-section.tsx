@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ChevronDown, HelpCircle, Sparkles } from 'lucide-react';
+import { ChevronDown, HelpCircle } from 'lucide-react';
 import { FaqConfig } from '@/../backend/src/modules/homepage/homepage.service';
 import { RichTextRenderer } from '@/components/rich-text/rich-text-renderer';
 
@@ -22,7 +22,7 @@ export function FaqSection({ config, faqs = [] }: FaqSectionProps) {
   const title = config?.title || 'Frequently Asked Questions';
   const description =
     config?.description ||
-    'Quick answers to common questions regarding Bangladesh university admissions, circulars, and EduGuide.';
+    'Quick answers to common questions regarding Bangladesh university admission circulars, GPA rules, and preparation.';
 
   const [openIndex, setOpenIndex] = useState<number | null>(0);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -39,18 +39,18 @@ export function FaqSection({ config, faqs = [] }: FaqSectionProps) {
   };
 
   return (
-    <section id="faq" className="py-16 px-4 sm:px-6 lg:px-8 max-w-[1440px] mx-auto border-t border-slate-800 bg-slate-950">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <section id="faq" className="py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+      <div className="space-y-6">
         {/* ── SECTION HEADER ── */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider font-mono">
-            <HelpCircle className="w-3.5 h-3.5 text-amber-400" />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-[#FF5500] text-xs font-bold uppercase tracking-wider font-mono">
+            <HelpCircle className="w-3.5 h-3.5 text-[#FF5500]" />
             <span>ADMISSION CLARIFICATIONS</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-white">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
             {title}
           </h2>
-          <p className="text-sm text-slate-300 max-w-xl mx-auto">
+          <p className="text-sm text-slate-600 max-w-xl mx-auto">
             {description}
           </p>
         </div>
@@ -64,10 +64,10 @@ export function FaqSection({ config, faqs = [] }: FaqSectionProps) {
                 setSelectedCategory(cat);
                 setOpenIndex(null);
               }}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition cursor-pointer ${
                 selectedCategory === cat
-                  ? 'bg-amber-500 text-slate-950 font-bold shadow-2xs'
-                  : 'bg-slate-900 text-slate-300 hover:text-white border border-slate-800'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-white text-slate-700 hover:text-slate-900 border border-slate-200'
               }`}
             >
               {cat}
@@ -76,41 +76,35 @@ export function FaqSection({ config, faqs = [] }: FaqSectionProps) {
         </div>
 
         {/* ── ACCORDIONS ── */}
-        <div className="space-y-3">
-          {filteredFaqs.length === 0 ? (
-            <div className="py-10 text-center text-xs text-slate-400 bg-slate-900 border border-slate-800 rounded-xl">
-              No questions found under this category.
-            </div>
-          ) : (
-            filteredFaqs.map((faq, idx) => {
-              const isOpen = openIndex === idx;
+        <div className="space-y-2.5">
+          {filteredFaqs.map((faq, idx) => {
+            const isOpen = openIndex === idx;
 
-              return (
-                <div
-                  key={faq.id || idx}
-                  className="rounded-xl border border-slate-800 bg-slate-900/90 overflow-hidden transition-all shadow-2xs"
+            return (
+              <div
+                key={faq.id || idx}
+                className="rounded-2xl border border-slate-200 bg-white overflow-hidden transition-all shadow-2xs"
+              >
+                <button
+                  onClick={() => toggleFaq(idx)}
+                  className="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 font-bold text-xs sm:text-sm text-slate-900 hover:bg-slate-50 transition cursor-pointer"
                 >
-                  <button
-                    onClick={() => toggleFaq(idx)}
-                    className="w-full p-5 text-left flex items-center justify-between gap-4 font-semibold text-sm sm:text-base text-white hover:bg-slate-800/40 transition cursor-pointer"
-                  >
-                    <span>{faq.question}</span>
-                    <ChevronDown
-                      className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
-                        isOpen ? 'rotate-180 text-amber-400' : ''
-                      }`}
-                    />
-                  </button>
+                  <span>{faq.question}</span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
+                      isOpen ? 'rotate-180 text-[#FF5500]' : ''
+                    }`}
+                  />
+                </button>
 
-                  {isOpen && (
-                    <div className="px-5 pb-5 pt-1 text-sm text-slate-300 border-t border-slate-800 leading-relaxed bg-slate-950/40">
-                      <RichTextRenderer content={faq.answer} className="text-slate-300" />
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          )}
+                {isOpen && (
+                  <div className="px-4 sm:px-5 pb-5 pt-1 text-xs text-slate-600 border-t border-slate-100 leading-relaxed bg-slate-50/40">
+                    <RichTextRenderer content={faq.answer} className="text-slate-600" />
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

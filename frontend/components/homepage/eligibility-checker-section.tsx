@@ -10,10 +10,10 @@ interface EligibilityCheckerSectionProps {
 }
 
 export function EligibilityCheckerSection({ config }: EligibilityCheckerSectionProps) {
-  const title = config?.title || 'Find where you qualify.';
+  const title = config?.title || 'Find Where You Qualify.';
   const description =
     config?.description ||
-    'Enter your academic information and discover universities and units you may be eligible for.';
+    'Enter your academic information and discover universities and units you are eligible to apply for.';
   const primaryCtaLabel = config?.primaryCtaLabel || 'Find My Universities';
   const helperText =
     config?.helperText ||
@@ -70,13 +70,13 @@ export function EligibilityCheckerSection({ config }: EligibilityCheckerSectionP
       const json = await res.json();
       setEvaluationResult(json.data || json);
     } catch {
-      // Fallback deterministic evaluation client-side if offline
+      // Fallback deterministic evaluation client-side
       const combined = sscVal + hscVal;
       const eligibleList = [
         {
           id: 'buet-cse',
-          university: 'BUET',
-          department: 'Computer Science & Engineering',
+          university: 'BUET (Bangladesh University of Engineering and Technology)',
+          department: 'Computer Science & Engineering (Ka Unit)',
           program: 'Ka Unit',
           status: sscVal >= 4.0 && hscVal >= 4.0 && group === 'Science' ? 'eligible' : 'ineligible',
           isEligible: sscVal >= 4.0 && hscVal >= 4.0 && group === 'Science',
@@ -118,21 +118,6 @@ export function EligibilityCheckerSection({ config }: EligibilityCheckerSectionP
           satisfiedRequirements: ['Science Group verified', 'Minimum GPA satisfied'],
           unsatisfiedRequirements: [],
         },
-        {
-          id: 'ruet-eng',
-          university: 'RUET',
-          department: 'Faculty of Engineering',
-          program: 'Ka Unit',
-          status: sscVal >= 4.0 && hscVal >= 4.0 && group === 'Science' ? 'eligible' : 'ineligible',
-          isEligible: sscVal >= 4.0 && hscVal >= 4.0 && group === 'Science',
-          isPending: false,
-          deadline: 'Oct 12, 2026',
-          testDate: 'Nov 15, 2026',
-          minGpa: '4.00 (Combined 9.0)',
-          gpaMargin: combined - 9.0,
-          satisfiedRequirements: ['Science Group verified', 'Minimum GPA satisfied'],
-          unsatisfiedRequirements: [],
-        },
       ];
 
       setEvaluationResult({
@@ -148,35 +133,35 @@ export function EligibilityCheckerSection({ config }: EligibilityCheckerSectionP
   };
 
   return (
-    <section id="eligibility-checker" className="py-16 px-4 sm:px-6 lg:px-8 max-w-[1440px] mx-auto border-t border-slate-800 bg-slate-950">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <section id="eligibility-checker" className="py-12 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
+      <div className="space-y-6">
         {/* ── SECTION TITLE ── */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider font-mono">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-[#FF5500] text-xs font-bold uppercase tracking-wider font-mono">
+            <Sparkles className="w-3.5 h-3.5 text-[#FF5500]" />
             <span>INSTANT ADMISSION QUALIFIER</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
             {title}
           </h2>
-          <p className="text-sm text-slate-300 max-w-xl mx-auto">
+          <p className="text-sm text-slate-600 max-w-xl mx-auto">
             {description}
           </p>
         </div>
 
-        {/* ── ELIGIBILITY FORM ── */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-sm">
+        {/* ── ELIGIBILITY FORM CONTAINER ── */}
+        <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               {/* Academic Group */}
               <div className="space-y-1.5">
-                <label className="block text-sm font-semibold text-slate-200">
-                  Academic Group <span className="text-amber-400">*</span>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Academic Group <span className="text-[#FF5500]">*</span>
                 </label>
                 <select
                   value={group}
                   onChange={(e) => setGroup(e.target.value as any)}
-                  className="w-full h-11 px-3.5 rounded-lg border border-slate-800 bg-slate-950 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
+                  className="w-full h-11 px-3.5 rounded-xl border border-slate-200 bg-slate-50/60 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#FF5500] focus:bg-white font-medium"
                 >
                   <option value="Science">Science (বিজ্ঞান বিভাগ)</option>
                   <option value="Commerce">Commerce / Business Studies (ব্যবসায় শিক্ষা)</option>
@@ -187,8 +172,8 @@ export function EligibilityCheckerSection({ config }: EligibilityCheckerSectionP
 
               {/* SSC GPA */}
               <div className="space-y-1.5">
-                <label className="block text-sm font-semibold text-slate-200">
-                  SSC GPA <span className="text-amber-400">*</span>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  SSC GPA <span className="text-[#FF5500]">*</span>
                 </label>
                 <input
                   type="number"
@@ -199,15 +184,15 @@ export function EligibilityCheckerSection({ config }: EligibilityCheckerSectionP
                   onChange={(e) => setSscGpa(e.target.value)}
                   placeholder="e.g. 5.00"
                   required
-                  className="w-full h-11 px-3.5 rounded-lg border border-slate-800 bg-slate-950 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono font-medium"
+                  className="w-full h-11 px-3.5 rounded-xl border border-slate-200 bg-slate-50/60 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#FF5500] focus:bg-white font-mono font-medium"
                 />
                 <p className="text-[11px] text-slate-400">Scale 0.00 to 5.00 (with 4th subject).</p>
               </div>
 
               {/* HSC GPA */}
               <div className="space-y-1.5">
-                <label className="block text-sm font-semibold text-slate-200">
-                  HSC GPA <span className="text-amber-400">*</span>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  HSC GPA <span className="text-[#FF5500]">*</span>
                 </label>
                 <input
                   type="number"
@@ -218,20 +203,20 @@ export function EligibilityCheckerSection({ config }: EligibilityCheckerSectionP
                   onChange={(e) => setHscGpa(e.target.value)}
                   placeholder="e.g. 5.00"
                   required
-                  className="w-full h-11 px-3.5 rounded-lg border border-slate-800 bg-slate-950 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono font-medium"
+                  className="w-full h-11 px-3.5 rounded-xl border border-slate-200 bg-slate-50/60 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#FF5500] focus:bg-white font-mono font-medium"
                 />
                 <p className="text-[11px] text-slate-400">Scale 0.00 to 5.00 (estimated or actual).</p>
               </div>
 
               {/* HSC Passing Year */}
               <div className="space-y-1.5">
-                <label className="block text-sm font-semibold text-slate-200">
-                  HSC Passing Year <span className="text-amber-400">*</span>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  HSC Passing Year <span className="text-[#FF5500]">*</span>
                 </label>
                 <select
                   value={hscYear}
                   onChange={(e) => setHscYear(Number(e.target.value))}
-                  className="w-full h-11 px-3.5 rounded-lg border border-slate-800 bg-slate-950 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
+                  className="w-full h-11 px-3.5 rounded-xl border border-slate-200 bg-slate-50/60 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#FF5500] focus:bg-white font-medium"
                 >
                   <option value={2026}>2026 (First Time Candidate)</option>
                   <option value={2025}>2025 (Second Time Candidate)</option>
@@ -239,62 +224,26 @@ export function EligibilityCheckerSection({ config }: EligibilityCheckerSectionP
                 </select>
                 <p className="text-[11px] text-slate-400">Determines 1st-time vs 2nd-time rules.</p>
               </div>
-
-              {/* Preferred Field (Optional) */}
-              <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-slate-300">
-                  Preferred Stream (Optional)
-                </label>
-                <select
-                  value={preferredField}
-                  onChange={(e) => setPreferredField(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-lg border border-slate-800 bg-slate-950 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                >
-                  <option value="Engineering / Tech">Engineering & Technology</option>
-                  <option value="General Science">General Science & Research</option>
-                  <option value="Medical / Dental">Medical & Life Sciences</option>
-                  <option value="Business Administration">Business / IBA / BBA</option>
-                  <option value="Law / Social Science">Law & Social Sciences</option>
-                </select>
-              </div>
-
-              {/* Preferred Location (Optional) */}
-              <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-slate-300">
-                  Preferred Location (Optional)
-                </label>
-                <select
-                  value={preferredLocation}
-                  onChange={(e) => setPreferredLocation(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-lg border border-slate-800 bg-slate-950 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                >
-                  <option value="Any Location">Any Location in Bangladesh</option>
-                  <option value="Dhaka Division">Dhaka Division</option>
-                  <option value="Chittagong Division">Chittagong Division</option>
-                  <option value="Rajshahi / Khulna">Rajshahi / Khulna</option>
-                  <option value="Sylhet Division">Sylhet Division</option>
-                </select>
-              </div>
             </div>
 
             {/* Error Message */}
             {errorMessage && (
-              <div className="p-3 bg-red-500/15 border border-red-500/30 rounded-lg text-red-300 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
                 <span>{errorMessage}</span>
               </div>
             )}
 
             {/* Submit Button & Helper */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-slate-800">
-              <span className="text-xs text-slate-400 text-center sm:text-left">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
+              <span className="text-xs text-slate-500 text-center sm:text-left">
                 {helperText}
               </span>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full sm:w-auto px-7 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 text-sm font-bold rounded-lg shadow-md hover:shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                className="btn-primary-brand px-7 py-3 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
               >
                 {isLoading ? (
                   <>
@@ -312,7 +261,7 @@ export function EligibilityCheckerSection({ config }: EligibilityCheckerSectionP
           </form>
         </div>
 
-        {/* ── ELIGIBILITY RESULTS (Rendered below on submission) ── */}
+        {/* ── ELIGIBILITY RESULTS ── */}
         {evaluationResult && (
           <EligibilityResultsDisplay evaluation={evaluationResult} />
         )}

@@ -10,10 +10,10 @@ interface AiAdvisorPreviewSectionProps {
 }
 
 export function AiAdvisorPreviewSection({ config }: AiAdvisorPreviewSectionProps) {
-  const title = config?.title || 'Ask anything about university admission.';
+  const title = config?.title || 'Ask Anything About University Admission';
   const description =
     config?.description ||
-    'Confused about eligibility, units, deadlines or admission requirements? Ask EduGuide.';
+    'Confused about GPA criteria, second-time rules, unit conversions, or circular requirements? Ask EduGuide.';
   const ctaText = config?.ctaText || 'Ask Admission Advisor';
   const exampleQuestions = config?.exampleQuestions || [
     { id: 'q1', text: 'Which universities are accepting applications right now?', category: 'Deadlines', order: 1, enabled: true },
@@ -27,34 +27,34 @@ export function AiAdvisorPreviewSection({ config }: AiAdvisorPreviewSectionProps
   );
 
   return (
-    <section id="ai-advisor" className="py-16 px-4 sm:px-6 lg:px-8 max-w-[1440px] mx-auto bg-slate-950">
-      <div className="space-y-8">
+    <section id="ai-advisor" className="py-12 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
+      <div className="space-y-6">
         {/* ── SECTION HEADER ── */}
-        <div className="text-center space-y-2 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider font-mono">
-            <Bot className="w-3.5 h-3.5 text-amber-400" />
+        <div className="text-center space-y-2 max-w-2xl mx-auto">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-[#FF5500] text-xs font-bold uppercase tracking-wider font-mono">
+            <Bot className="w-3.5 h-3.5 text-[#FF5500]" />
             <span>AI ADMISSION INTELLIGENCE</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-white">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
             {title}
           </h2>
-          <p className="text-sm text-slate-300">
+          <p className="text-sm text-slate-600">
             {description}
           </p>
         </div>
 
         {/* ── QUESTION CHIPS ── */}
-        <div className="flex flex-wrap items-center justify-center gap-2 max-w-4xl mx-auto">
+        <div className="flex flex-wrap items-center justify-center gap-2 max-w-3xl mx-auto">
           {exampleQuestions
             .filter((q) => q.enabled)
             .map((q) => (
               <button
                 key={q.id}
                 onClick={() => setActiveQuestion(q.text)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-medium border transition-all flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${
                   activeQuestion === q.text
-                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm'
-                    : 'bg-slate-900 text-slate-300 hover:text-white border-slate-800 hover:border-slate-700'
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                    : 'bg-white text-slate-700 hover:text-slate-900 border-slate-200 hover:border-slate-300'
                 }`}
               >
                 <HelpCircle className="w-3.5 h-3.5 opacity-80" />
@@ -63,69 +63,51 @@ export function AiAdvisorPreviewSection({ config }: AiAdvisorPreviewSectionProps
             ))}
         </div>
 
-        {/* ── INTERACTIVE PREVIEW CHAT CONTAINER ── */}
-        <div className="max-w-3xl mx-auto rounded-2xl border border-slate-800 bg-slate-900/90 p-6 shadow-sm space-y-5">
+        {/* ── PREVIEW CHAT CONTAINER ── */}
+        <div className="max-w-2xl mx-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
           {/* User Message */}
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-slate-800 text-slate-200 flex items-center justify-center text-xs font-bold shrink-0 border border-slate-700">
-              STU
+          <div className="flex items-start gap-2.5">
+            <div className="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold shrink-0">
+              ST
             </div>
-            <div className="p-3.5 rounded-2xl rounded-tl-none bg-slate-950 border border-slate-800 text-sm text-slate-100 font-medium">
+            <div className="p-3 rounded-2xl rounded-tl-none bg-slate-100 text-xs text-slate-800 font-medium">
               {activeQuestion}
             </div>
           </div>
 
           {/* AI Response Card */}
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center text-xs font-bold shrink-0 shadow-sm">
-              <Sparkles className="w-4 h-4 fill-slate-950" />
+          <div className="flex items-start gap-2.5">
+            <div className="w-7 h-7 rounded-full bg-[#FF5500] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
+              <Sparkles className="w-3.5 h-3.5" />
             </div>
 
-            <div className="flex-1 p-5 rounded-2xl rounded-tl-none bg-slate-950 border border-slate-800 shadow-2xs space-y-4 text-xs">
-              {/* Top verification header */}
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-                <div className="flex items-center gap-1.5 text-emerald-400 font-semibold">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Official Circular Verification</span>
+            <div className="flex-1 p-4 rounded-2xl rounded-tl-none bg-orange-50/50 border border-orange-200/80 space-y-3 text-xs">
+              <div className="flex items-center justify-between border-b border-orange-100 pb-2">
+                <div className="flex items-center gap-1 text-emerald-700 font-bold">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Verified from Official Circular</span>
                 </div>
-                <span className="text-[11px] text-slate-400 font-mono">
-                  Verified: Sep 2026
+                <span className="text-[10px] text-slate-400 font-mono">
+                  Updated: Sep 2026
                 </span>
               </div>
 
-              {/* Summary Text */}
-              <p className="text-slate-200 leading-relaxed font-normal">
-                For BUET Undergraduate Admission 2026, candidates from the <strong className="text-amber-400">Science Group</strong> must satisfy the following deterministic criteria:
+              <p className="text-slate-700 leading-relaxed font-normal">
+                For BUET Undergraduate Admission 2026, candidates from the <strong className="text-slate-900 font-bold">Science Group</strong> must satisfy:
               </p>
 
-              {/* Structured Points */}
-              <ul className="space-y-1.5 text-slate-300 pl-3 list-disc">
-                <li><strong className="text-white">SSC GPA</strong>: Minimum 4.00 out of 5.00 (with 4th subject).</li>
-                <li><strong className="text-white">HSC GPA</strong>: Minimum 4.00 out of 5.00 in Physics, Chemistry, Higher Mathematics, English.</li>
-                <li><strong className="text-white">Total Combined Score</strong>: Subject grades in PHY + CHE + MATH must total minimum 270 points (Grade A+ in all three subjects strongly recommended for preliminary shortlisting).</li>
-                <li><strong className="text-white">Second-time Policy</strong>: Strictly disallowed. Only 1st-time candidates may sit for the test.</li>
+              <ul className="space-y-1 text-slate-700 pl-3 list-disc text-[11px]">
+                <li><strong className="text-slate-900">SSC GPA</strong>: Minimum 4.00 out of 5.00.</li>
+                <li><strong className="text-slate-900">HSC GPA</strong>: Minimum 4.00 in PHY, CHE, MATH, ENG.</li>
+                <li><strong className="text-slate-900">Combined Grades</strong>: Total points in PHY + CHE + MATH must equal or exceed 270 points (Grade A+ in all three recommended).</li>
+                <li><strong className="text-slate-900">Second-time Policy</strong>: Strictly disallowed.</li>
               </ul>
-
-              {/* Sources & Citations */}
-              <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-                <span className="font-medium text-slate-300">Source: BUET Admission Circular 2026</span>
-                <a
-                  href="https://buet.ac.bd/admission"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-amber-400 font-semibold flex items-center gap-1 hover:underline"
-                >
-                  <span>View PDF Circular</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
             </div>
           </div>
 
-          {/* Bottom CTA to Full Advisor */}
           <div className="text-center pt-2">
             <Link href="/chat">
-              <button className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-lg shadow-sm hover:shadow transition flex items-center justify-center gap-1.5 mx-auto cursor-pointer">
+              <button className="btn-primary-brand px-6 py-2 text-xs font-bold flex items-center justify-center gap-1.5 mx-auto cursor-pointer">
                 <span>{ctaText}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
