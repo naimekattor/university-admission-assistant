@@ -64,27 +64,27 @@ export function AdmissionAtGlance({ config, admissions = [] }: AdmissionAtGlance
     switch (status) {
       case 'Applications Open':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             Applications Open
           </span>
         );
       case 'Opening Soon':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-            <Clock className="w-3 h-3 text-blue-500" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+            <Clock className="w-3 h-3 text-amber-400" />
             Opening Soon
           </span>
         );
       case 'Deadline Passed':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/30">
             Deadline Passed
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
             Not Announced
           </span>
         );
@@ -92,24 +92,24 @@ export function AdmissionAtGlance({ config, admissions = [] }: AdmissionAtGlance
   };
 
   return (
-    <section id="admission-table" className="py-16 px-4 sm:px-6 lg:px-8 max-w-[1440px] mx-auto">
+    <section id="admission-table" className="py-16 px-4 sm:px-6 lg:px-8 max-w-[1440px] mx-auto bg-slate-950">
       <div className="space-y-6">
         {/* ── SECTION HEADER ── */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-[var(--eg-primary)] font-mono">
+            <span className="text-xs font-bold uppercase tracking-wider text-amber-400 font-mono">
               OFFICIAL 2026 SCHEDULES
             </span>
-            <h2 className="text-2xl sm:text-3xl font-bold text-[var(--eg-text-primary)] mt-1">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white mt-1">
               {title}
             </h2>
-            <p className="text-sm text-[var(--eg-text-secondary)] mt-1 max-w-2xl">
+            <p className="text-sm text-slate-300 mt-1 max-w-2xl">
               {description}
             </p>
           </div>
 
           <Link href="/universities" className="shrink-0">
-            <button className="text-xs font-semibold text-[var(--eg-primary)] hover:text-[var(--eg-primary-hover)] flex items-center gap-1 px-3 py-2 rounded-lg bg-[var(--eg-primary-soft)] border border-[var(--eg-primary)]/20 transition cursor-pointer">
+            <button className="text-xs font-semibold text-amber-400 hover:text-amber-300 flex items-center gap-1 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 transition cursor-pointer">
               <span>View All Universities Directory</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
@@ -117,26 +117,26 @@ export function AdmissionAtGlance({ config, admissions = [] }: AdmissionAtGlance
         </div>
 
         {/* ── SEARCH & FILTERS BAR ── */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3 bg-[var(--eg-surface)] border border-[var(--eg-border)] rounded-xl shadow-sm">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-3 bg-slate-900/90 border border-slate-800 rounded-xl shadow-sm">
           {/* Search Box */}
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-[var(--eg-text-muted)] absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by university, acronym (BUET, DU), or unit..."
-              className="w-full pl-9 pr-3 py-2 text-sm bg-transparent border-0 focus:outline-none focus:ring-0 text-[var(--eg-text-primary)] placeholder:text-[var(--eg-text-muted)]"
+              className="w-full pl-9 pr-3 py-2 text-sm bg-transparent border-0 focus:outline-none focus:ring-0 text-white placeholder:text-slate-400"
             />
           </div>
 
           {/* Group Filter */}
-          <div className="flex items-center gap-1.5 border-t sm:border-t-0 sm:border-l border-[var(--eg-border)] pt-2 sm:pt-0 sm:pl-3">
-            <span className="text-xs text-[var(--eg-text-muted)] font-medium shrink-0">Group:</span>
+          <div className="flex items-center gap-1.5 border-t sm:border-t-0 sm:border-l border-slate-800 pt-2 sm:pt-0 sm:pl-3">
+            <span className="text-xs text-slate-400 font-medium shrink-0">Group:</span>
             <select
               value={selectedGroup}
               onChange={(e) => setSelectedGroup(e.target.value)}
-              className="text-xs bg-[var(--eg-surface-subtle)] border border-[var(--eg-border)] text-[var(--eg-text-primary)] rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--eg-primary)] font-medium"
+              className="text-xs bg-slate-950 border border-slate-800 text-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium"
             >
               <option value="All">All Groups</option>
               <option value="Science">Science</option>
@@ -146,12 +146,12 @@ export function AdmissionAtGlance({ config, admissions = [] }: AdmissionAtGlance
           </div>
 
           {/* Status Filter */}
-          <div className="flex items-center gap-1.5 border-t sm:border-t-0 sm:border-l border-[var(--eg-border)] pt-2 sm:pt-0 sm:pl-3">
-            <span className="text-xs text-[var(--eg-text-muted)] font-medium shrink-0">Status:</span>
+          <div className="flex items-center gap-1.5 border-t sm:border-t-0 sm:border-l border-slate-800 pt-2 sm:pt-0 sm:pl-3">
+            <span className="text-xs text-slate-400 font-medium shrink-0">Status:</span>
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="text-xs bg-[var(--eg-surface-subtle)] border border-[var(--eg-border)] text-[var(--eg-text-primary)] rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--eg-primary)] font-medium"
+              className="text-xs bg-slate-950 border border-slate-800 text-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium"
             >
               <option value="All">All Statuses</option>
               <option value="Applications Open">Applications Open</option>
@@ -163,11 +163,11 @@ export function AdmissionAtGlance({ config, admissions = [] }: AdmissionAtGlance
         </div>
 
         {/* ── DESKTOP DATA TABLE (Visible >= 768px) ── */}
-        <div className="hidden md:block rounded-xl border border-[var(--eg-border)] bg-[var(--eg-surface)] shadow-sm overflow-hidden">
+        <div className="hidden md:block rounded-xl border border-slate-800 bg-slate-900/90 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-[var(--eg-surface-subtle)] border-b border-[var(--eg-border)] text-xs font-semibold text-[var(--eg-text-muted)] uppercase tracking-wider">
+                <tr className="bg-slate-950 border-b border-slate-800 text-xs font-semibold text-slate-400 uppercase tracking-wider">
                   <th className="py-3.5 px-4">University</th>
                   <th className="py-3.5 px-4">Application Window</th>
                   <th className="py-3.5 px-4">Admission Test</th>
@@ -178,10 +178,10 @@ export function AdmissionAtGlance({ config, admissions = [] }: AdmissionAtGlance
                   <th className="py-3.5 px-4 text-center">Circular</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[var(--eg-border)] text-sm">
+              <tbody className="divide-y divide-slate-800 text-sm">
                 {filteredAdmissions.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-sm text-[var(--eg-text-muted)]">
+                    <td colSpan={8} className="py-12 text-center text-sm text-slate-400">
                       No university admissions matched your search filters.
                     </td>
                   </tr>
@@ -189,22 +189,22 @@ export function AdmissionAtGlance({ config, admissions = [] }: AdmissionAtGlance
                   filteredAdmissions.map((item) => (
                     <tr
                       key={item.id}
-                      className="hover:bg-[var(--eg-surface-subtle)]/70 transition-colors min-h-[64px]"
+                      className="hover:bg-slate-800/40 transition-colors min-h-[64px]"
                     >
                       {/* University Column */}
                       <td className="py-4 px-4">
                         <Link href={`/universities`} className="flex items-center gap-3 group">
-                          <div className="w-10 h-10 rounded-lg bg-[var(--eg-surface-subtle)] border border-[var(--eg-border)] flex items-center justify-center text-lg shrink-0 shadow-2xs group-hover:border-[var(--eg-primary)] transition">
+                          <div className="w-10 h-10 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center text-lg shrink-0 shadow-2xs group-hover:border-amber-500/50 transition">
                             {item.logo || '🏛️'}
                           </div>
                           <div>
-                            <div className="font-bold text-[var(--eg-text-primary)] group-hover:text-[var(--eg-primary)] transition flex items-center gap-1.5">
+                            <div className="font-bold text-white group-hover:text-amber-400 transition flex items-center gap-1.5">
                               <span>{item.shortName}</span>
-                              <span className="text-xs text-[var(--eg-text-muted)] font-normal hidden lg:inline">
+                              <span className="text-xs text-slate-400 font-normal hidden lg:inline">
                                 ({item.location})
                               </span>
                             </div>
-                            <div className="text-xs text-[var(--eg-text-secondary)] line-clamp-1 max-w-[200px] lg:max-w-[280px]">
+                            <div className="text-xs text-slate-300 line-clamp-1 max-w-[200px] lg:max-w-[280px]">
                               {item.name}
                             </div>
                           </div>
@@ -213,32 +213,32 @@ export function AdmissionAtGlance({ config, admissions = [] }: AdmissionAtGlance
 
                       {/* Application Window */}
                       <td className="py-4 px-4">
-                        <div className="font-medium text-[var(--eg-text-primary)] text-xs">
+                        <div className="font-medium text-slate-200 text-xs">
                           {item.applicationWindow}
                         </div>
                       </td>
 
                       {/* Admission Test Date */}
                       <td className="py-4 px-4">
-                        <div className="font-semibold text-slate-800 text-xs">
+                        <div className="font-semibold text-amber-300 text-xs">
                           {item.testDate}
                         </div>
                       </td>
 
                       {/* Minimum GPA */}
                       <td className="py-4 px-4">
-                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 text-xs font-semibold font-mono">
+                        <span className="px-2 py-0.5 rounded bg-slate-800 text-amber-300 text-xs font-semibold font-mono border border-slate-700">
                           {item.minGpa}
                         </span>
                       </td>
 
                       {/* Units */}
-                      <td className="py-4 px-4 text-xs font-medium text-[var(--eg-text-secondary)]">
+                      <td className="py-4 px-4 text-xs font-medium text-slate-300">
                         {item.units}
                       </td>
 
                       {/* Seats */}
-                      <td className="py-4 px-4 text-xs font-semibold text-[var(--eg-text-primary)] text-right font-mono">
+                      <td className="py-4 px-4 text-xs font-semibold text-slate-200 text-right font-mono">
                         {item.seats ? item.seats.toLocaleString() : 'N/A'}
                       </td>
 
@@ -253,7 +253,7 @@ export function AdmissionAtGlance({ config, admissions = [] }: AdmissionAtGlance
                           href={item.circularUrl || '#'}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--eg-primary)] hover:text-[var(--eg-primary-hover)] px-2.5 py-1 rounded bg-[var(--eg-primary-soft)] hover:bg-[var(--eg-primary)]/15 border border-[var(--eg-primary)]/20 transition"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-amber-400 hover:text-amber-300 px-2.5 py-1 rounded bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition"
                         >
                           <span>Circular</span>
                           <ExternalLink className="w-3 h-3" />
@@ -270,52 +270,52 @@ export function AdmissionAtGlance({ config, admissions = [] }: AdmissionAtGlance
         {/* ── MOBILE STACKED ADMISSION CARDS (Visible < 768px) ── */}
         <div className="md:hidden space-y-3">
           {filteredAdmissions.length === 0 ? (
-            <div className="py-8 text-center text-sm text-[var(--eg-text-muted)] bg-[var(--eg-surface)] border border-[var(--eg-border)] rounded-xl">
+            <div className="py-8 text-center text-sm text-slate-400 bg-slate-900 border border-slate-800 rounded-xl">
               No admission records matched your search.
             </div>
           ) : (
             filteredAdmissions.map((item) => (
               <div
                 key={item.id}
-                className="p-4 rounded-xl border border-[var(--eg-border)] bg-[var(--eg-surface)] shadow-2xs space-y-3"
+                className="p-4 rounded-xl border border-slate-800 bg-slate-900/90 shadow-2xs space-y-3"
               >
                 {/* Header: Logo, Name, Status */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-10 h-10 rounded-lg bg-[var(--eg-surface-subtle)] border border-[var(--eg-border)] flex items-center justify-center text-xl shrink-0">
+                    <div className="w-10 h-10 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center text-xl shrink-0">
                       {item.logo || '🏛️'}
                     </div>
                     <div>
-                      <h3 className="font-bold text-base text-[var(--eg-text-primary)] leading-tight">
+                      <h3 className="font-bold text-base text-white leading-tight">
                         {item.shortName}
                       </h3>
-                      <span className="text-xs text-[var(--eg-text-muted)]">{item.location}</span>
+                      <span className="text-xs text-slate-400">{item.location}</span>
                     </div>
                   </div>
                   {getStatusBadge(item.status)}
                 </div>
 
-                <div className="text-xs text-[var(--eg-text-secondary)]">
+                <div className="text-xs text-slate-300">
                   {item.name}
                 </div>
 
                 {/* Details Grid */}
-                <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-[var(--eg-border)]">
+                <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-800">
                   <div className="space-y-0.5">
-                    <span className="text-[11px] text-[var(--eg-text-muted)]">Application</span>
-                    <div className="font-medium text-[var(--eg-text-primary)]">{item.applicationWindow}</div>
+                    <span className="text-[11px] text-slate-400">Application</span>
+                    <div className="font-medium text-slate-200">{item.applicationWindow}</div>
                   </div>
                   <div className="space-y-0.5">
-                    <span className="text-[11px] text-[var(--eg-text-muted)]">Admission Test</span>
-                    <div className="font-medium text-[var(--eg-text-primary)]">{item.testDate}</div>
+                    <span className="text-[11px] text-slate-400">Admission Test</span>
+                    <div className="font-medium text-amber-300">{item.testDate}</div>
                   </div>
                   <div className="space-y-0.5">
-                    <span className="text-[11px] text-[var(--eg-text-muted)]">Minimum GPA</span>
-                    <div className="font-semibold text-slate-800">{item.minGpa}</div>
+                    <span className="text-[11px] text-slate-400">Minimum GPA</span>
+                    <div className="font-semibold text-slate-200">{item.minGpa}</div>
                   </div>
                   <div className="space-y-0.5">
-                    <span className="text-[11px] text-[var(--eg-text-muted)]">Units & Seats</span>
-                    <div className="font-medium text-[var(--eg-text-primary)]">{item.units} ({item.seats} seats)</div>
+                    <span className="text-[11px] text-slate-400">Units & Seats</span>
+                    <div className="font-medium text-slate-200">{item.units} ({item.seats} seats)</div>
                   </div>
                 </div>
 
@@ -325,13 +325,13 @@ export function AdmissionAtGlance({ config, admissions = [] }: AdmissionAtGlance
                     href={item.circularUrl || '#'}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 py-2 px-3 bg-[var(--eg-primary-soft)] hover:bg-[var(--eg-primary)]/15 border border-[var(--eg-primary)]/20 text-[var(--eg-primary)] text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition text-center"
+                    className="flex-1 py-2 px-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition text-center"
                   >
                     <span>View Circular</span>
                     <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                   <Link href="/universities" className="flex-1">
-                    <button className="w-full py-2 px-3 bg-[var(--eg-surface)] border border-[var(--eg-border-strong)] text-[var(--eg-text-primary)] text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition">
+                    <button className="w-full py-2 px-3 bg-slate-950 border border-slate-800 text-slate-200 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition">
                       <span>Details</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>

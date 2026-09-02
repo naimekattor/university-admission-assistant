@@ -27,18 +27,18 @@ export function AiAdvisorPreviewSection({ config }: AiAdvisorPreviewSectionProps
   );
 
   return (
-    <section id="ai-advisor" className="py-16 px-4 sm:px-6 lg:px-8 max-w-[1440px] mx-auto">
+    <section id="ai-advisor" className="py-16 px-4 sm:px-6 lg:px-8 max-w-[1440px] mx-auto bg-slate-950">
       <div className="space-y-8">
         {/* ── SECTION HEADER ── */}
         <div className="text-center space-y-2 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--eg-primary-soft)] text-[var(--eg-primary)] text-xs font-bold uppercase tracking-wider font-mono">
-            <Bot className="w-3.5 h-3.5 text-[var(--eg-primary)]" />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider font-mono">
+            <Bot className="w-3.5 h-3.5 text-amber-400" />
             <span>AI ADMISSION INTELLIGENCE</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-[var(--eg-text-primary)]">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white">
             {title}
           </h2>
-          <p className="text-sm text-[var(--eg-text-secondary)]">
+          <p className="text-sm text-slate-300">
             {description}
           </p>
         </div>
@@ -53,8 +53,8 @@ export function AiAdvisorPreviewSection({ config }: AiAdvisorPreviewSectionProps
                 onClick={() => setActiveQuestion(q.text)}
                 className={`px-3.5 py-2 rounded-xl text-xs font-medium border transition-all flex items-center gap-1.5 cursor-pointer ${
                   activeQuestion === q.text
-                    ? 'bg-[var(--eg-primary)] text-white border-[var(--eg-primary)] shadow-sm'
-                    : 'bg-[var(--eg-surface)] text-[var(--eg-text-secondary)] hover:text-[var(--eg-text-primary)] border-[var(--eg-border)] hover:border-[var(--eg-border-strong)]'
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm'
+                    : 'bg-slate-900 text-slate-300 hover:text-white border-slate-800 hover:border-slate-700'
                 }`}
               >
                 <HelpCircle className="w-3.5 h-3.5 opacity-80" />
@@ -64,56 +64,56 @@ export function AiAdvisorPreviewSection({ config }: AiAdvisorPreviewSectionProps
         </div>
 
         {/* ── INTERACTIVE PREVIEW CHAT CONTAINER ── */}
-        <div className="max-w-3xl mx-auto rounded-2xl border border-[var(--eg-border)] bg-[var(--eg-surface)] p-6 shadow-sm space-y-5">
+        <div className="max-w-3xl mx-auto rounded-2xl border border-slate-800 bg-slate-900/90 p-6 shadow-sm space-y-5">
           {/* User Message */}
           <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-slate-800 text-slate-100 flex items-center justify-center text-xs font-bold shrink-0">
+            <div className="w-8 h-8 rounded-full bg-slate-800 text-slate-200 flex items-center justify-center text-xs font-bold shrink-0 border border-slate-700">
               STU
             </div>
-            <div className="p-3.5 rounded-2xl rounded-tl-none bg-[var(--eg-surface-subtle)] border border-[var(--eg-border)] text-sm text-[var(--eg-text-primary)] font-medium">
+            <div className="p-3.5 rounded-2xl rounded-tl-none bg-slate-950 border border-slate-800 text-sm text-slate-100 font-medium">
               {activeQuestion}
             </div>
           </div>
 
           {/* AI Response Card */}
           <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-[var(--eg-primary)] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-sm">
-              <Sparkles className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center text-xs font-bold shrink-0 shadow-sm">
+              <Sparkles className="w-4 h-4 fill-slate-950" />
             </div>
 
-            <div className="flex-1 p-5 rounded-2xl rounded-tl-none bg-white border border-[var(--eg-border)] shadow-2xs space-y-4 text-xs">
+            <div className="flex-1 p-5 rounded-2xl rounded-tl-none bg-slate-950 border border-slate-800 shadow-2xs space-y-4 text-xs">
               {/* Top verification header */}
-              <div className="flex items-center justify-between border-b border-[var(--eg-border)] pb-2.5">
-                <div className="flex items-center gap-1.5 text-emerald-700 font-semibold">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <div className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                   <span>Official Circular Verification</span>
                 </div>
-                <span className="text-[11px] text-[var(--eg-text-muted)] font-mono">
+                <span className="text-[11px] text-slate-400 font-mono">
                   Verified: Sep 2026
                 </span>
               </div>
 
               {/* Summary Text */}
-              <p className="text-[var(--eg-text-primary)] leading-relaxed font-normal">
-                For BUET Undergraduate Admission 2026, candidates from the <strong>Science Group</strong> must satisfy the following deterministic criteria:
+              <p className="text-slate-200 leading-relaxed font-normal">
+                For BUET Undergraduate Admission 2026, candidates from the <strong className="text-amber-400">Science Group</strong> must satisfy the following deterministic criteria:
               </p>
 
               {/* Structured Points */}
-              <ul className="space-y-1.5 text-[var(--eg-text-secondary)] pl-3 list-disc">
-                <li><strong>SSC GPA</strong>: Minimum 4.00 out of 5.00 (with 4th subject).</li>
-                <li><strong>HSC GPA</strong>: Minimum 4.00 out of 5.00 in Physics, Chemistry, Higher Mathematics, English.</li>
-                <li><strong>Total Combined Score</strong>: Subject grades in PHY + CHE + MATH must total minimum 270 points (Grade A+ in all three subjects strongly recommended for preliminary shortlisting).</li>
-                <li><strong>Second-time Policy</strong>: Strictly disallowed. Only 1st-time candidates may sit for the test.</li>
+              <ul className="space-y-1.5 text-slate-300 pl-3 list-disc">
+                <li><strong className="text-white">SSC GPA</strong>: Minimum 4.00 out of 5.00 (with 4th subject).</li>
+                <li><strong className="text-white">HSC GPA</strong>: Minimum 4.00 out of 5.00 in Physics, Chemistry, Higher Mathematics, English.</li>
+                <li><strong className="text-white">Total Combined Score</strong>: Subject grades in PHY + CHE + MATH must total minimum 270 points (Grade A+ in all three subjects strongly recommended for preliminary shortlisting).</li>
+                <li><strong className="text-white">Second-time Policy</strong>: Strictly disallowed. Only 1st-time candidates may sit for the test.</li>
               </ul>
 
               {/* Sources & Citations */}
-              <div className="p-2.5 rounded-lg bg-[var(--eg-surface-subtle)] border border-[var(--eg-border)]/70 flex items-center justify-between text-[11px] text-[var(--eg-text-muted)]">
-                <span className="font-medium text-[var(--eg-text-secondary)]">Source: BUET Admission Circular 2026</span>
+              <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+                <span className="font-medium text-slate-300">Source: BUET Admission Circular 2026</span>
                 <a
                   href="https://buet.ac.bd/admission"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[var(--eg-primary)] font-semibold flex items-center gap-1 hover:underline"
+                  className="text-amber-400 font-semibold flex items-center gap-1 hover:underline"
                 >
                   <span>View PDF Circular</span>
                   <ExternalLink className="w-3 h-3" />
@@ -125,7 +125,7 @@ export function AiAdvisorPreviewSection({ config }: AiAdvisorPreviewSectionProps
           {/* Bottom CTA to Full Advisor */}
           <div className="text-center pt-2">
             <Link href="/chat">
-              <button className="px-6 py-2.5 bg-[var(--eg-primary)] hover:bg-[var(--eg-primary-hover)] text-white text-xs font-semibold rounded-lg shadow-sm hover:shadow transition flex items-center justify-center gap-1.5 mx-auto cursor-pointer">
+              <button className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-lg shadow-sm hover:shadow transition flex items-center justify-center gap-1.5 mx-auto cursor-pointer">
                 <span>{ctaText}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>

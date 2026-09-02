@@ -39,18 +39,18 @@ export function FaqSection({ config, faqs = [] }: FaqSectionProps) {
   };
 
   return (
-    <section id="faq" className="py-16 px-4 sm:px-6 lg:px-8 max-w-[1440px] mx-auto border-t border-[var(--eg-border)] bg-[var(--eg-surface-subtle)]">
+    <section id="faq" className="py-16 px-4 sm:px-6 lg:px-8 max-w-[1440px] mx-auto border-t border-slate-800 bg-slate-950">
       <div className="max-w-4xl mx-auto space-y-8">
         {/* ── SECTION HEADER ── */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--eg-primary-soft)] text-[var(--eg-primary)] text-xs font-bold uppercase tracking-wider font-mono">
-            <HelpCircle className="w-3.5 h-3.5 text-[var(--eg-primary)]" />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider font-mono">
+            <HelpCircle className="w-3.5 h-3.5 text-amber-400" />
             <span>ADMISSION CLARIFICATIONS</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-[var(--eg-text-primary)]">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white">
             {title}
           </h2>
-          <p className="text-sm text-[var(--eg-text-secondary)] max-w-xl mx-auto">
+          <p className="text-sm text-slate-300 max-w-xl mx-auto">
             {description}
           </p>
         </div>
@@ -66,8 +66,8 @@ export function FaqSection({ config, faqs = [] }: FaqSectionProps) {
               }}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                 selectedCategory === cat
-                  ? 'bg-[var(--eg-primary)] text-white shadow-2xs'
-                  : 'bg-[var(--eg-surface)] text-[var(--eg-text-secondary)] hover:text-[var(--eg-text-primary)] border border-[var(--eg-border)]'
+                  ? 'bg-amber-500 text-slate-950 font-bold shadow-2xs'
+                  : 'bg-slate-900 text-slate-300 hover:text-white border border-slate-800'
               }`}
             >
               {cat}
@@ -78,7 +78,7 @@ export function FaqSection({ config, faqs = [] }: FaqSectionProps) {
         {/* ── ACCORDIONS ── */}
         <div className="space-y-3">
           {filteredFaqs.length === 0 ? (
-            <div className="py-10 text-center text-xs text-[var(--eg-text-muted)] bg-[var(--eg-surface)] border border-[var(--eg-border)] rounded-xl">
+            <div className="py-10 text-center text-xs text-slate-400 bg-slate-900 border border-slate-800 rounded-xl">
               No questions found under this category.
             </div>
           ) : (
@@ -88,23 +88,23 @@ export function FaqSection({ config, faqs = [] }: FaqSectionProps) {
               return (
                 <div
                   key={faq.id || idx}
-                  className="rounded-xl border border-[var(--eg-border)] bg-[var(--eg-surface)] overflow-hidden transition-all shadow-2xs"
+                  className="rounded-xl border border-slate-800 bg-slate-900/90 overflow-hidden transition-all shadow-2xs"
                 >
                   <button
                     onClick={() => toggleFaq(idx)}
-                    className="w-full p-5 text-left flex items-center justify-between gap-4 font-semibold text-sm sm:text-base text-[var(--eg-text-primary)] hover:bg-[var(--eg-surface-subtle)]/60 transition cursor-pointer"
+                    className="w-full p-5 text-left flex items-center justify-between gap-4 font-semibold text-sm sm:text-base text-white hover:bg-slate-800/40 transition cursor-pointer"
                   >
                     <span>{faq.question}</span>
                     <ChevronDown
-                      className={`w-4 h-4 text-[var(--eg-text-muted)] shrink-0 transition-transform duration-200 ${
-                        isOpen ? 'rotate-180 text-[var(--eg-primary)]' : ''
+                      className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
+                        isOpen ? 'rotate-180 text-amber-400' : ''
                       }`}
                     />
                   </button>
 
                   {isOpen && (
-                    <div className="px-5 pb-5 pt-1 text-sm text-[var(--eg-text-secondary)] border-t border-[var(--eg-border)]/50 leading-relaxed bg-[var(--eg-surface-subtle)]/40">
-                      <RichTextRenderer content={faq.answer} />
+                    <div className="px-5 pb-5 pt-1 text-sm text-slate-300 border-t border-slate-800 leading-relaxed bg-slate-950/40">
+                      <RichTextRenderer content={faq.answer} className="text-slate-300" />
                     </div>
                   )}
                 </div>

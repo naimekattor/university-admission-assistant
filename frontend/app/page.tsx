@@ -59,7 +59,7 @@ export default function DynamicHomepage() {
   const config = homepageData?.config;
 
   return (
-    <div className="min-h-screen bg-[var(--eg-surface-subtle)] text-[var(--eg-text-primary)] font-sans antialiased selection:bg-[var(--eg-primary-soft)] selection:text-[var(--eg-primary)]">
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased selection:bg-amber-500/20 selection:text-amber-300">
       {/* ── JSON-LD STRUCTURED DATA SCHEMA FOR SEO ── */}
       <script
         type="application/ld+json"
@@ -84,7 +84,7 @@ export default function DynamicHomepage() {
       {isPreview && (
         <div className="sticky top-0 z-[60] bg-amber-500 text-slate-950 px-4 py-2.5 font-semibold text-xs flex items-center justify-between shadow-md">
           <div className="flex items-center gap-2 max-w-7xl mx-auto w-full justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 font-bold">
               <Eye className="w-4 h-4" />
               <span>DRAFT PREVIEW MODE — You are previewing unpublished homepage changes.</span>
             </div>
@@ -108,16 +108,16 @@ export default function DynamicHomepage() {
         <div className="max-w-[1440px] mx-auto px-4 py-16 space-y-12 animate-pulse">
           {/* Hero skeleton */}
           <div className="max-w-3xl mx-auto space-y-4 text-center">
-            <div className="h-6 w-48 bg-slate-200 rounded-full mx-auto" />
-            <div className="h-12 w-3/4 bg-slate-200 rounded-xl mx-auto" />
-            <div className="h-6 w-1/2 bg-slate-200 rounded-lg mx-auto" />
-            <div className="h-10 w-64 bg-slate-200 rounded-lg mx-auto" />
+            <div className="h-6 w-48 bg-slate-900 rounded-full mx-auto" />
+            <div className="h-12 w-3/4 bg-slate-900 rounded-xl mx-auto" />
+            <div className="h-6 w-1/2 bg-slate-900 rounded-lg mx-auto" />
+            <div className="h-10 w-64 bg-slate-900 rounded-lg mx-auto" />
           </div>
 
           {/* Table skeleton */}
           <div className="space-y-4">
-            <div className="h-8 w-64 bg-slate-200 rounded-lg" />
-            <div className="h-64 bg-slate-200 rounded-2xl" />
+            <div className="h-8 w-64 bg-slate-900 rounded-lg" />
+            <div className="h-64 bg-slate-900 rounded-2xl" />
           </div>
         </div>
       ) : (

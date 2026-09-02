@@ -39,21 +39,21 @@ export function HeroSection({ config, onFindUniversitiesClick }: HeroSectionProp
   };
 
   return (
-    <section className="relative pt-12 pb-16 md:pt-20 md:pb-24 px-4 sm:px-6 lg:px-8 max-w-[1440px] mx-auto border-b border-[var(--eg-border)] bg-[var(--eg-surface-subtle)]">
+    <section className="relative pt-12 pb-16 md:pt-20 md:pb-24 px-4 sm:px-6 lg:px-8 max-w-[1440px] mx-auto border-b border-slate-800/80 bg-slate-950">
       <div className="max-w-4xl mx-auto text-center space-y-6">
         {/* ── EYEBROW BADGE ── */}
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--eg-primary-soft)] border border-[var(--eg-primary)]/20 text-[var(--eg-primary)] text-xs font-semibold uppercase tracking-wider shadow-sm">
-          <ShieldCheck className="w-4 h-4 text-[var(--eg-primary)]" />
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold uppercase tracking-wider shadow-sm">
+          <ShieldCheck className="w-4 h-4 text-amber-400" />
           <span>{eyebrow}</span>
         </div>
 
         {/* ── HERO HEADLINE ── */}
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-[var(--eg-text-primary)] tracking-tight text-balance leading-[1.15]">
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight text-balance leading-[1.15]">
           {headline}
         </h1>
 
         {/* ── SUBHEADING ── */}
-        <p className="text-base sm:text-lg md:text-xl text-[var(--eg-text-secondary)] max-w-2xl mx-auto leading-relaxed text-balance">
+        <p className="text-base sm:text-lg md:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed text-balance">
           {subheading}
         </p>
 
@@ -61,24 +61,25 @@ export function HeroSection({ config, onFindUniversitiesClick }: HeroSectionProp
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
           <button
             onClick={handlePrimaryClick}
-            className="w-full sm:w-auto px-6 py-3.5 bg-[var(--eg-primary)] hover:bg-[var(--eg-primary-hover)] text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full sm:w-auto px-6 py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-sm font-bold rounded-lg shadow-md hover:shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
+            <Sparkles className="w-4 h-4 fill-slate-950" />
             <span>{primaryCtaLabel}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
 
           <Link href="#admission-table" className="w-full sm:w-auto">
-            <button className="w-full sm:w-auto px-6 py-3.5 bg-[var(--eg-surface)] hover:bg-slate-100 text-[var(--eg-text-primary)] border border-[var(--eg-border-strong)] text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer">
+            <button className="w-full sm:w-auto px-6 py-3.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer">
               <span>{secondaryCtaLabel}</span>
             </button>
           </Link>
         </div>
 
         {/* ── TRUST INDICATORS ── */}
-        <div className="pt-6 border-t border-[var(--eg-border)]/60 flex flex-wrap items-center justify-center gap-x-6 gap-y-2.5 text-xs text-[var(--eg-text-muted)] font-medium">
+        <div className="pt-6 border-t border-slate-800/80 flex flex-wrap items-center justify-center gap-x-6 gap-y-2.5 text-xs text-slate-400 font-medium">
           {trustIndicators.map((indicator, idx) => (
-            <div key={idx} className="flex items-center gap-1.5 text-[var(--eg-text-secondary)]">
-              <CheckCircle2 className="w-4 h-4 text-[var(--eg-success)] shrink-0" />
+            <div key={idx} className="flex items-center gap-1.5 text-slate-300">
+              <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
               <span>{indicator}</span>
             </div>
           ))}
