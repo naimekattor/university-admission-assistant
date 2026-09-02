@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useTransition } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Navbar } from '@/components/navbar';
 import { HeroSection } from '@/components/homepage/hero-section';
+import { DashboardPreviewFrame } from '@/components/homepage/dashboard-preview-frame';
 import { AdmissionAtGlance } from '@/components/homepage/admission-at-glance';
 import { EligibilityCheckerSection } from '@/components/homepage/eligibility-checker-section';
 import { DeadlinesSection } from '@/components/homepage/deadlines-section';
@@ -14,7 +15,7 @@ import { GuidesSection } from '@/components/homepage/guides-section';
 import { PreparationCtaSection } from '@/components/homepage/preparation-cta-section';
 import { FaqSection } from '@/components/homepage/faq-section';
 import { FooterSection } from '@/components/homepage/footer-section';
-import { Sparkles, Eye, ArrowLeft, RefreshCw, AlertCircle, ShieldCheck } from 'lucide-react';
+import { Eye, ArrowLeft } from 'lucide-react';
 
 export default function DynamicHomepage() {
   const searchParams = useSearchParams();
@@ -22,11 +23,9 @@ export default function DynamicHomepage() {
 
   const [homepageData, setHomepageData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const fetchHomepageData = async () => {
     setLoading(true);
-    setError(null);
     try {
       const res = await fetch(`/api/v1/homepage${isPreview ? '?preview=true' : ''}`, {
         cache: 'no-store',
@@ -37,8 +36,7 @@ export default function DynamicHomepage() {
       const data = await res.json();
       setHomepageData(data);
     } catch (err: any) {
-      console.warn('[Homepage] Fetch failed, using client fallback:', err.message);
-      // Fallback data provided by default in components if API fails
+      // Fallback
       setHomepageData({
         config: undefined,
         admissions: undefined,
@@ -59,7 +57,15 @@ export default function DynamicHomepage() {
   const config = homepageData?.config;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased selection:bg-amber-500/20 selection:text-amber-300">
+    <div className="min-h-screen bg-[#FAF8F5] text-slate-900 font-sans antialiased selection:bg-orange-500/20 selection:text-[#FF5500] relative">
+      {/* ── TOP RADIAL BACKGROUND GLOW ── */}
+      <div
+        className="absolute inset-x-0 top-0 h-[640px] pointer-events-none z-0"
+        style={{
+          background: 'radial-gradient(ellipse 80% 50% at 50% -5%, rgba(255, 110, 30, 0.14), transparent)',
+        }}
+      />
+
       {/* ── JSON-LD STRUCTURED DATA SCHEMA FOR SEO ── */}
       <script
         type="application/ld+json"
@@ -72,17 +78,13 @@ export default function DynamicHomepage() {
             description:
               config?.seo?.metaDescription ||
               'Bangladesh university admission intelligence and preparation platform for BUET, DU, Medical, and GST.',
-            sameAs: [
-              'https://facebook.com/eduguidebd',
-              'https://youtube.com/@eduguidebd',
-            ],
           }),
         }}
       />
 
       {/* ── DRAFT PREVIEW BANNER (If ?preview=true) ── */}
       {isPreview && (
-        <div className="sticky top-0 z-[60] bg-amber-500 text-slate-950 px-4 py-2.5 font-semibold text-xs flex items-center justify-between shadow-md">
+        <div className="sticky top-0 z-[60] bg-[#FF5500] text-white px-4 py-2.5 font-semibold text-xs flex items-center justify-between shadow-md">
           <div className="flex items-center gap-2 max-w-7xl mx-auto w-full justify-between">
             <div className="flex items-center gap-2 font-bold">
               <Eye className="w-4 h-4" />
@@ -100,89 +102,72 @@ export default function DynamicHomepage() {
         </div>
       )}
 
-      {/* ── 1. GLOBAL NAVBAR ── */}
+      {/* ── 1. FLOATING NAVBAR WITH TOP BANNER ── */}
       <Navbar />
 
-      {/* ── LOADING SKELETON ── */}
-      {loading ? (
-        <div className="max-w-[1440px] mx-auto px-4 py-16 space-y-12 animate-pulse">
-          {/* Hero skeleton */}
-          <div className="max-w-3xl mx-auto space-y-4 text-center">
-            <div className="h-6 w-48 bg-slate-900 rounded-full mx-auto" />
-            <div className="h-12 w-3/4 bg-slate-900 rounded-xl mx-auto" />
-            <div className="h-6 w-1/2 bg-slate-900 rounded-lg mx-auto" />
-            <div className="h-10 w-64 bg-slate-900 rounded-lg mx-auto" />
-          </div>
+      {/* ── MAIN CONTENT ── */}
+      <main className="relative z-10">
+        {/* ── 2. HERO SECTION WITH TILTED CARDS ── */}
+        <HeroSection config={config?.hero} />
 
-          {/* Table skeleton */}
-          <div className="space-y-4">
-            <div className="h-8 w-64 bg-slate-900 rounded-lg" />
-            <div className="h-64 bg-slate-900 rounded-2xl" />
-          </div>
-        </div>
-      ) : (
-        <main>
-          {/* ── 2. HERO SECTION ── */}
-          {(!config || config.hero?.enabled !== false) && (
-            <HeroSection config={config?.hero} />
-          )}
+        {/* ── 3. EXACT DASHBOARD PREVIEW FRAME AS IN IMAGE ── */}
+        <DashboardPreviewFrame />
 
-          {/* ── 3. ADMISSION AT A GLANCE (TABLE + MOBILE CARDS) ── */}
-          {(!config || config.admissionSection?.enabled !== false) && (
-            <AdmissionAtGlance
-              config={config?.admissionSection}
-              admissions={homepageData?.admissions}
-            />
-          )}
+        {/* ── 4. ADMISSION AT A GLANCE (DATA TABLE & MOBILE CARDS) ── */}
+        {(!config || config.admissionSection?.enabled !== false) && (
+          <AdmissionAtGlance
+            config={config?.admissionSection}
+            admissions={homepageData?.admissions}
+          />
+        )}
 
-          {/* ── 4 & 5. ELIGIBILITY CHECKER & RESULTS ── */}
-          {(!config || config.eligibilitySection?.enabled !== false) && (
-            <EligibilityCheckerSection config={config?.eligibilitySection} />
-          )}
+        {/* ── 5. ELIGIBILITY CHECKER & RESULTS ── */}
+        {(!config || config.eligibilitySection?.enabled !== false) && (
+          <EligibilityCheckerSection config={config?.eligibilitySection} />
+        )}
 
-          {/* ── 6. UPCOMING ADMISSION DEADLINES ── */}
-          {(!config || config.deadlineSection?.enabled !== false) && (
-            <DeadlinesSection
-              config={config?.deadlineSection}
-              deadlines={homepageData?.deadlines}
-            />
-          )}
+        {/* ── 6. UPCOMING ADMISSION DEADLINES ── */}
+        {(!config || config.deadlineSection?.enabled !== false) && (
+          <DeadlinesSection
+            config={config?.deadlineSection}
+            deadlines={homepageData?.deadlines}
+          />
+        )}
 
-          {/* ── 7. EXPLORE UNIVERSITIES ── */}
-          {(!config || config.featuredUniversities?.enabled !== false) && (
-            <FeaturedUniversitiesSection
-              config={config?.featuredUniversities}
-              universities={homepageData?.featuredUniversities}
-            />
-          )}
+        {/* ── 7. EXPLORE UNIVERSITIES ── */}
+        {(!config || config.featuredUniversities?.enabled !== false) && (
+          <FeaturedUniversitiesSection
+            config={config?.featuredUniversities}
+            universities={homepageData?.featuredUniversities}
+          />
+        )}
 
-          {/* ── 8. AI ADMISSION ADVISOR PREVIEW ── */}
-          {(!config || config.aiAdvisor?.enabled !== false) && (
-            <AiAdvisorPreviewSection config={config?.aiAdvisor} />
-          )}
+        {/* ── 8. AI ADMISSION ADVISOR PREVIEW ── */}
+        {(!config || config.aiAdvisor?.enabled !== false) && (
+          <AiAdvisorPreviewSection config={config?.aiAdvisor} />
+        )}
 
-          {/* ── 9. ADMISSION GUIDES ── */}
-          {(!config || config.guideSection?.enabled !== false) && (
-            <GuidesSection
-              config={config?.guideSection}
-              guides={homepageData?.guides}
-            />
-          )}
+        {/* ── 9. ADMISSION GUIDES ── */}
+        {(!config || config.guideSection?.enabled !== false) && (
+          <GuidesSection
+            config={config?.guideSection}
+            guides={homepageData?.guides}
+          />
+        )}
 
-          {/* ── 10. PREPARE WITH EDUGUIDE CTA ── */}
-          {(!config || config.preparation?.enabled !== false) && (
-            <PreparationCtaSection config={config?.preparation} />
-          )}
+        {/* ── 10. PREPARE WITH EDUGUIDE CTA ── */}
+        {(!config || config.preparation?.enabled !== false) && (
+          <PreparationCtaSection config={config?.preparation} />
+        )}
 
-          {/* ── 11. FAQ ACCORDION ── */}
-          {(!config || config.faq?.enabled !== false) && (
-            <FaqSection config={config?.faq} faqs={homepageData?.faqs} />
-          )}
+        {/* ── 11. FAQ ACCORDION ── */}
+        {(!config || config.faq?.enabled !== false) && (
+          <FaqSection config={config?.faq} faqs={homepageData?.faqs} />
+        )}
 
-          {/* ── 12. FOOTER ── */}
-          <FooterSection config={config?.footer} />
-        </main>
-      )}
+        {/* ── 12. FOOTER ── */}
+        <FooterSection config={config?.footer} />
+      </main>
     </div>
   );
 }
