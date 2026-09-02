@@ -245,7 +245,7 @@ export default function AdminUniversitiesPage() {
 
                 <div>
                   <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">
-                    Detailed Admission Overview (TipTap Rich Editor)
+                    Detailed Admission Overview (Quill Rich Editor)
                   </label>
                   <RichEditor
                     placeholder="Write detailed admission instructions, eligibility criteria, and unit test details..."

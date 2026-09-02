@@ -119,7 +119,7 @@ export default function AdminGuidesPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Content (TipTap Rich Editor)</label>
+                  <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Content (Quill Rich Editor)</label>
                   <RichEditor placeholder="Write formatted article content..." onChange={setBody} />
                 </div>
                 <div className="flex justify-end gap-2 pt-2">

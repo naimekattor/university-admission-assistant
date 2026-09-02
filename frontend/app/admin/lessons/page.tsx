@@ -123,7 +123,7 @@ export default function AdminLessonsPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Lesson Content (TipTap Rich Editor)</label>
+                  <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Lesson Content (Quill Rich Editor)</label>
                   <RichEditor placeholder="Write lesson notes, formulas, and examples..." onChange={setBody} />
                 </div>
                 <div className="flex justify-end gap-2 pt-2">

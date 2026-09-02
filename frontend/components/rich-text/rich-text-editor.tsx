@@ -1,7 +1,17 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Bold, Italic, List, ListOrdered, Heading1, Heading2, Link as LinkIcon, Code, Undo, Redo } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
+import 'react-quill-new/dist/quill.snow.css';
+
+const ReactQuill = dynamic(() => import('react-quill-new'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full rounded-2xl border border-slate-200 bg-white p-4 flex items-center justify-center text-xs text-slate-400 font-mono min-h-[180px]">
+      Loading Quill Editor...
+    </div>
+  ),
+});
 
 interface RichTextEditorProps {
   value: string;
@@ -11,6 +21,32 @@ interface RichTextEditorProps {
   minHeight?: string;
 }
 
+const quillModules = {
+  toolbar: [
+    [{ header: [1, 2, 3, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    [{ color: [] }, { background: [] }],
+    ['blockquote', 'code-block', 'link'],
+    ['clean'],
+  ],
+};
+
+const quillFormats = [
+  'header',
+  'bold',
+  'italic',
+  'underline',
+  'strike',
+  'list',
+  'bullet',
+  'color',
+  'background',
+  'blockquote',
+  'code-block',
+  'link',
+];
+
 export function RichTextEditor({
   value,
   onChange,
@@ -18,132 +54,74 @@ export function RichTextEditor({
   className = '',
   minHeight = '180px',
 }: RichTextEditorProps) {
-  const [mounted, setMounted] = useState(false);
-  const editorRef = useRef<HTMLDivElement>(null);
+  const [content, setContent] = useState(value);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    setContent(value || '');
+  }, [value]);
 
-  // Sync value to contentEditable when value changes externally
-  useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== value) {
-      editorRef.current.innerHTML = value || '';
-    }
-  }, [value, mounted]);
-
-  const handleInput = () => {
-    if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
-    }
+  const handleChange = (val: string) => {
+    setContent(val);
+    onChange(val);
   };
-
-  const execCommand = (command: string, val: string = '') => {
-    if (typeof document !== 'undefined') {
-      document.execCommand(command, false, val);
-      if (editorRef.current) {
-        onChange(editorRef.current.innerHTML);
-      }
-    }
-  };
-
-  if (!mounted) {
-    return (
-      <div
-        style={{ minHeight }}
-        className="w-full rounded-2xl border border-slate-200 bg-white p-4 flex items-center justify-center text-xs text-slate-400"
-      >
-        Loading rich text editor...
-      </div>
-    );
-  }
 
   return (
-    <div className={`rounded-2xl border border-slate-200 bg-white shadow-2xs overflow-hidden ${className}`}>
-      {/* ── TOOLBAR ── */}
-      <div className="bg-slate-50/80 border-b border-slate-200 px-3 py-2 flex flex-wrap items-center gap-1 text-xs">
-        <button
-          type="button"
-          onClick={() => execCommand('bold')}
-          title="Bold"
-          className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-700 transition"
-        >
-          <Bold className="w-3.5 h-3.5" />
-        </button>
-
-        <button
-          type="button"
-          onClick={() => execCommand('italic')}
-          title="Italic"
-          className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-700 transition"
-        >
-          <Italic className="w-3.5 h-3.5" />
-        </button>
-
-        <span className="w-[1px] h-4 bg-slate-200 mx-1" />
-
-        <button
-          type="button"
-          onClick={() => execCommand('formatBlock', '<h3>')}
-          title="Heading"
-          className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-700 font-bold text-xs transition"
-        >
-          H3
-        </button>
-
-        <button
-          type="button"
-          onClick={() => execCommand('formatBlock', '<p>')}
-          title="Paragraph"
-          className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-700 font-medium text-xs transition"
-        >
-          P
-        </button>
-
-        <span className="w-[1px] h-4 bg-slate-200 mx-1" />
-
-        <button
-          type="button"
-          onClick={() => execCommand('insertUnorderedList')}
-          title="Bullet List"
-          className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-700 transition"
-        >
-          <List className="w-3.5 h-3.5" />
-        </button>
-
-        <button
-          type="button"
-          onClick={() => execCommand('insertOrderedList')}
-          title="Numbered List"
-          className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-700 transition"
-        >
-          <ListOrdered className="w-3.5 h-3.5" />
-        </button>
-
-        <span className="w-[1px] h-4 bg-slate-200 mx-1" />
-
-        <button
-          type="button"
-          onClick={() => {
-            const url = prompt('Enter URL:');
-            if (url) execCommand('createLink', url);
-          }}
-          title="Insert Link"
-          className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-700 transition"
-        >
-          <LinkIcon className="w-3.5 h-3.5" />
-        </button>
-      </div>
-
-      {/* ── CONTENT EDITABLE CANVAS ── */}
-      <div
-        ref={editorRef}
-        contentEditable
-        onInput={handleInput}
-        style={{ minHeight }}
-        data-placeholder={placeholder}
-        className="p-4 text-xs text-slate-900 focus:outline-none leading-relaxed prose prose-sm max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-li:my-0.5"
+    <div className={`rounded-2xl border border-slate-200 overflow-hidden bg-white shadow-2xs quill-light-wrapper ${className}`}>
+      <style jsx global>{`
+        .quill-light-wrapper .ql-toolbar.ql-snow {
+          background-color: #f8fafc;
+          border: none;
+          border-bottom: 1px solid #e2e8f0;
+          padding: 8px 12px;
+        }
+        .quill-light-wrapper .ql-container.ql-snow {
+          border: none;
+          background-color: #ffffff;
+          color: #0f172a;
+          font-family: inherit;
+          min-height: ${minHeight};
+          font-size: 13px;
+        }
+        .quill-light-wrapper .ql-editor {
+          min-height: ${minHeight};
+          padding: 14px;
+          line-height: 1.6;
+        }
+        .quill-light-wrapper .ql-editor.ql-blank::before {
+          color: #94a3b8;
+          font-style: normal;
+        }
+        .quill-light-wrapper .ql-snow.ql-toolbar button:hover,
+        .quill-light-wrapper .ql-snow .ql-toolbar button:hover,
+        .quill-light-wrapper .ql-snow.ql-toolbar button.ql-active,
+        .quill-light-wrapper .ql-snow .ql-toolbar button.ql-active {
+          color: #ff5500;
+        }
+        .quill-light-wrapper .ql-snow.ql-toolbar button:hover .ql-stroke,
+        .quill-light-wrapper .ql-snow .ql-toolbar button:hover .ql-stroke,
+        .quill-light-wrapper .ql-snow.ql-toolbar button.ql-active .ql-stroke,
+        .quill-light-wrapper .ql-snow .ql-toolbar button.ql-active .ql-stroke {
+          stroke: #ff5500;
+        }
+        .quill-light-wrapper .ql-snow.ql-toolbar button:hover .ql-fill,
+        .quill-light-wrapper .ql-snow .ql-toolbar button:hover .ql-fill,
+        .quill-light-wrapper .ql-snow.ql-toolbar button.ql-active .ql-fill,
+        .quill-light-wrapper .ql-snow .ql-toolbar button.ql-active .ql-fill {
+          fill: #ff5500;
+        }
+      `}</style>
+      <ReactQuill
+        theme="snow"
+        value={content}
+        onChange={handleChange}
+        placeholder={placeholder}
+        modules={quillModules}
+        formats={quillFormats}
       />
+      <div className="flex items-center justify-between px-4 py-1.5 bg-slate-50 border-t border-slate-100 text-[10px] text-slate-400 font-mono">
+        <span>Rich HTML Format</span>
+        <span className="text-[#FF5500] font-semibold">Quill Editor</span>
+      </div>
     </div>
   );
 }
