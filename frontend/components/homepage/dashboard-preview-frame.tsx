@@ -20,6 +20,7 @@ import {
   MoreHorizontal,
   Palette,
   Atom,
+  GraduationCap,
 } from 'lucide-react';
 
 export function DashboardPreviewFrame() {
@@ -32,13 +33,13 @@ export function DashboardPreviewFrame() {
         <div className="bg-white border-b border-slate-200/80 px-5 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-6">
             {/* Logo */}
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 text-[#FF5500]">
-                <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                  <path d="M12 2L14.8 9.2L22 12L14.8 14.8L12 22L9.2 14.8L2 12L9.2 9.2L12 2Z" />
-                </svg>
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-[#FF5500] text-white flex items-center justify-center text-[10px] font-black shadow-2xs">
+                EG
               </div>
-              <span className="font-black text-base text-slate-900 tracking-tight">duvex</span>
+              <span className="font-extrabold text-base text-slate-900 tracking-tight">
+                Edu<span className="text-[#FF5500]">Guide</span>
+              </span>
             </div>
 
             <h2 className="font-extrabold text-sm text-slate-900 hidden sm:block">Overview</h2>
@@ -49,7 +50,7 @@ export function DashboardPreviewFrame() {
             <input
               type="text"
               readOnly
-              value="Find a course that interests you"
+              value="Find universities, circulars, or subjects..."
               className="w-full pl-3.5 pr-8 py-1.5 rounded-full bg-slate-100/80 text-[11px] text-slate-500 border border-slate-200/60 focus:outline-none cursor-default"
             />
             <div className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center">
@@ -66,9 +67,9 @@ export function DashboardPreviewFrame() {
 
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
-                RR
+                ST
               </div>
-              <span className="text-xs font-bold text-slate-900 hidden sm:inline">Ronal Richards</span>
+              <span className="text-xs font-bold text-slate-900 hidden sm:inline">HSC Candidate</span>
             </div>
           </div>
         </div>
@@ -84,38 +85,33 @@ export function DashboardPreviewFrame() {
             </div>
 
             <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl hover:bg-slate-100 transition cursor-pointer">
-              <BookOpen className="w-4 h-4 text-slate-500" />
-              <span>Course</span>
+              <GraduationCap className="w-4 h-4 text-slate-500" />
+              <span>Universities</span>
             </div>
 
             <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl hover:bg-slate-100 transition cursor-pointer">
               <FolderClosed className="w-4 h-4 text-slate-500" />
-              <span>Resource</span>
+              <span>Circulars</span>
             </div>
 
             <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl hover:bg-slate-100 transition cursor-pointer">
               <Bot className="w-4 h-4 text-[#FF5500]" />
-              <span className="text-[#FF5500] font-semibold">AI Powered</span>
+              <span className="text-[#FF5500] font-semibold">AI Tutor</span>
             </div>
 
             <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl hover:bg-slate-100 transition cursor-pointer">
-              <MessageSquare className="w-4 h-4 text-slate-500" />
-              <span>Discussion</span>
+              <BookOpen className="w-4 h-4 text-slate-500" />
+              <span>Mock Tests</span>
             </div>
 
             <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl hover:bg-slate-100 transition cursor-pointer">
               <Users className="w-4 h-4 text-slate-500" />
-              <span>Communities</span>
+              <span>Study Groups</span>
             </div>
 
             <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl hover:bg-slate-100 transition cursor-pointer">
               <Calendar className="w-4 h-4 text-slate-500" />
-              <span>Schedule</span>
-            </div>
-
-            <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl hover:bg-slate-100 transition cursor-pointer">
-              <Video className="w-4 h-4 text-slate-500" />
-              <span>Recording</span>
+              <span>Deadlines</span>
             </div>
           </div>
 
@@ -129,7 +125,7 @@ export function DashboardPreviewFrame() {
               <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-2 flex flex-col justify-between">
                 <div className="flex items-start justify-between">
                   <div>
-                    <span className="text-[10px] text-slate-400 font-medium">Time Spent</span>
+                    <span className="text-[10px] text-slate-400 font-medium">Study Hours</span>
                     <div className="text-sm font-black text-slate-900 leading-tight">13.6 Hours</div>
                   </div>
                   <div className="w-5 h-5 rounded-full bg-orange-50 text-[#FF5500] flex items-center justify-center">
@@ -139,10 +135,10 @@ export function DashboardPreviewFrame() {
 
                 <div className="flex items-center gap-2 text-[9px] text-slate-500 font-medium">
                   <div className="flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500]" /> Study
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500]" /> MCQs
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-300" /> Exams
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-300" /> Mocks
                   </div>
                 </div>
 
@@ -189,7 +185,7 @@ export function DashboardPreviewFrame() {
               {/* Card 2: Performance Circular Gauge */}
               <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs flex flex-col justify-between space-y-2">
                 <div className="flex items-start justify-between">
-                  <span className="text-xs font-bold text-slate-800">Performance</span>
+                  <span className="text-xs font-bold text-slate-800">Mock Accuracy</span>
                   <div className="w-5 h-5 rounded-full bg-orange-50 text-[#FF5500] flex items-center justify-center">
                     <ArrowUpRight className="w-3.5 h-3.5" />
                   </div>
@@ -218,19 +214,19 @@ export function DashboardPreviewFrame() {
                     </svg>
                     <div className="absolute text-center">
                       <div className="text-sm font-black text-slate-900 font-mono leading-none">80%</div>
-                      <div className="text-[8px] text-slate-400 font-medium">Performance</div>
+                      <div className="text-[8px] text-slate-400 font-medium">Readiness</div>
                     </div>
                   </div>
                 </div>
 
                 <div className="text-center text-[10px] font-semibold text-slate-600 pt-1 border-t border-slate-100">
-                  You did a great job!
+                  Target: BUET Ka Unit
                 </div>
               </div>
 
-              {/* Card 3: Upcoming Lesson */}
+              {/* Card 3: Upcoming Lesson / Test */}
               <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-2.5 flex flex-col justify-between">
-                <div className="font-bold text-xs text-slate-900">Upcoming Lesson</div>
+                <div className="font-bold text-xs text-slate-900">Upcoming Live Drill</div>
 
                 {/* Lesson 1 */}
                 <div className="flex items-center justify-between gap-2 p-1.5 rounded-xl hover:bg-slate-50 transition">
@@ -239,15 +235,17 @@ export function DashboardPreviewFrame() {
                       <Palette className="w-3.5 h-3.5" />
                     </div>
                     <div>
-                      <div className="font-bold text-[11px] text-slate-800 truncate max-w-[90px]">UX Design</div>
+                      <div className="font-bold text-[11px] text-slate-800 truncate max-w-[90px]">BUET Physics</div>
                       <div className="text-[9px] text-slate-400 flex items-center gap-0.5">
                         <Clock className="w-2.5 h-2.5" /> 5:30hrs
                       </div>
                     </div>
                   </div>
-                  <button className="px-2.5 py-1 rounded-full bg-slate-900 text-white text-[10px] font-bold shadow-2xs">
-                    Join
-                  </button>
+                  <Link href="/prepare">
+                    <button className="px-2.5 py-1 rounded-full bg-slate-900 text-white text-[10px] font-bold shadow-2xs">
+                      Join
+                    </button>
+                  </Link>
                 </div>
 
                 {/* Lesson 2 */}
@@ -257,15 +255,17 @@ export function DashboardPreviewFrame() {
                       <Atom className="w-3.5 h-3.5" />
                     </div>
                     <div>
-                      <div className="font-bold text-[11px] text-slate-800 truncate max-w-[90px]">Motion Design</div>
+                      <div className="font-bold text-[11px] text-slate-800 truncate max-w-[90px]">DU Chem Drill</div>
                       <div className="text-[9px] text-slate-400 flex items-center gap-0.5">
                         <Clock className="w-2.5 h-2.5" /> 5:30hrs
                       </div>
                     </div>
                   </div>
-                  <button className="px-2.5 py-1 rounded-full bg-orange-50 text-[#FF5500] text-[10px] font-bold">
-                    Join
-                  </button>
+                  <Link href="/prepare">
+                    <button className="px-2.5 py-1 rounded-full bg-orange-50 text-[#FF5500] text-[10px] font-bold">
+                      Join
+                    </button>
+                  </Link>
                 </div>
               </div>
 
@@ -289,7 +289,7 @@ export function DashboardPreviewFrame() {
                   <BookOpen className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <div className="font-extrabold text-xs text-slate-900">21 Tasks</div>
+                  <div className="font-extrabold text-xs text-slate-900">21 Chapters</div>
                 </div>
               </div>
 

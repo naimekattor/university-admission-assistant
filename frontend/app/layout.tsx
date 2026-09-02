@@ -27,8 +27,8 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  colorScheme: 'dark',
-  themeColor: '#020617',
+  colorScheme: 'light',
+  themeColor: '#FAF8F5',
 }
 
 export default function RootLayout({
@@ -37,8 +37,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="bg-slate-950 text-slate-100">
-      <body className="antialiased min-h-screen flex flex-col bg-slate-950 text-slate-100">
+    <html lang="en" className="bg-[#FAF8F5] text-slate-900">
+      <body className="antialiased min-h-screen flex flex-col bg-[#FAF8F5] text-slate-900">
         <Navbar />
         <main className="flex-1">{children}</main>
         {process.env.NODE_ENV === 'production' && <Analytics />}

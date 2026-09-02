@@ -47,7 +47,7 @@ export function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/admin" className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-[#FF5500] text-white font-black flex items-center justify-center text-xs shadow-md">
-              ADM
+              EG
             </div>
             <div className="flex flex-col">
               <span className="font-extrabold text-base text-white tracking-tight leading-none flex items-center gap-1.5">
@@ -98,15 +98,15 @@ export function Navbar() {
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2.5">
-            {/* Orange 4-pointed star logo */}
-            <div className="w-7 h-7 flex items-center justify-center text-[#FF5500]">
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7">
-                <path d="M12 2L14.8 9.2L22 12L14.8 14.8L12 22L9.2 14.8L2 12L9.2 9.2L12 2Z" />
-              </svg>
+            <div className="w-8 h-8 rounded-lg bg-[#FF5500] text-white font-black flex items-center justify-center text-xs shadow-md">
+              EG
             </div>
-            <span className="font-extrabold text-lg text-slate-900 tracking-tight">
-              eduguide
-            </span>
+            <div className="flex flex-col">
+              <span className="font-extrabold text-base text-slate-900 tracking-tight leading-none flex items-center gap-1.5">
+                Edu<span className="text-[#FF5500]">Guide</span> <span className="text-[#FF5500] font-mono text-xs font-bold uppercase">[STUDENT PASS]</span>
+              </span>
+              <span className="text-[10px] text-slate-500 font-medium">BUET CSE Target • 62 Days Remaining</span>
+            </div>
           </Link>
 
           <nav className="hidden lg:flex items-center gap-1 text-xs font-semibold">
@@ -133,7 +133,7 @@ export function Navbar() {
             </div>
             <Link href="/dashboard">
               <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 font-bold text-xs">
-                RR
+                STU
               </div>
             </Link>
           </div>
@@ -147,24 +147,25 @@ export function Navbar() {
   }
 
   // ==========================================
-  // 3. PUBLIC MARKETING FLOATING NAVBAR (AS SHOWN IN DESIGN)
+  // 3. PUBLIC MARKETING FLOATING NAVBAR (EDUGUIDE BRAND & REAL LINKS)
   // ==========================================
   const publicLinks = [
     { href: '/', label: 'Home' },
-    { href: '/universities', label: 'Features' },
-    { href: '/eligibility', label: 'About Us' },
+    { href: '/universities', label: 'Universities' },
+    { href: '/eligibility', label: 'Eligibility' },
+    { href: '/admission', label: 'Admission Circulars' },
+    { href: '/guides', label: 'Guides' },
     { href: '/pricing', label: 'Pricing' },
-    { href: '/guides', label: 'Blog' },
   ];
 
   return (
     <div className="w-full relative z-50">
-      {/* ── TOP BLACK ANNOUNCEMENT PILL BAR ── */}
+      {/* ── TOP ANNOUNCEMENT BANNER ── */}
       {bannerVisible && (
         <div className="pt-3 px-4 flex justify-center">
           <div className="w-full max-w-4xl bg-stone-900 text-white text-[11px] sm:text-xs font-medium py-1.5 px-4 rounded-full flex items-center justify-between shadow-sm">
             <div className="flex-1 text-center font-normal">
-              Limited-Time Offer! Get Up to <span className="text-[#FF5500] font-bold">50% OFF!</span>
+              University Admission 2026: Official Circulars & GPA Rules Live! <span className="text-[#FF5500] font-bold">Check Eligibility Free</span>
             </div>
             <button
               onClick={() => setBannerVisible(false)}
@@ -176,24 +177,22 @@ export function Navbar() {
         </div>
       )}
 
-      {/* ── FLOATING WHITE PILL NAVBAR ── */}
+      {/* ── FLOATING PILL NAVBAR ── */}
       <div className="sticky top-3 px-4 sm:px-6 pt-3 pb-2">
         <header className="max-w-4xl mx-auto px-5 py-2.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/80 shadow-md flex items-center justify-between">
           
-          {/* Brand Logo: 4-pointed orange star icon + bold brand name */}
+          {/* Brand Logo: EG badge + EduGuide brand name */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-6 h-6 flex items-center justify-center text-[#FF5500] group-hover:rotate-45 transition-transform duration-300">
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-                <path d="M12 2L14.8 9.2L22 12L14.8 14.8L12 22L9.2 14.8L2 12L9.2 9.2L12 2Z" />
-              </svg>
+            <div className="w-8 h-8 rounded-full bg-[#FF5500] text-white font-black flex items-center justify-center text-xs shadow-sm group-hover:scale-105 transition-transform">
+              EG
             </div>
             <span className="font-extrabold text-xl tracking-tight text-slate-900">
-              duvex
+              Edu<span className="text-[#FF5500]">Guide</span>
             </span>
           </Link>
 
           {/* Navigation Links */}
-          <nav className="hidden md:flex items-center gap-6 text-xs font-medium text-slate-600">
+          <nav className="hidden md:flex items-center gap-5 text-xs font-medium text-slate-600">
             {publicLinks.map((link) => {
               const isActive = pathname === link.href;
               return (
@@ -202,7 +201,7 @@ export function Navbar() {
                   href={link.href}
                   className={`transition ${
                     isActive
-                      ? 'text-[#FF5500] font-semibold'
+                      ? 'text-[#FF5500] font-bold'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -212,14 +211,14 @@ export function Navbar() {
             })}
           </nav>
 
-          {/* Contact Us / Start Preparing Pill Button with Double Arrow */}
+          {/* Start Preparing Action CTA */}
           <div className="hidden md:flex items-center">
             <Link href="/prepare">
-              <button className="bg-gradient-to-r from-[#FF5500] to-[#FF6B00] hover:from-[#E64D00] hover:to-[#FF5500] text-white pl-1.5 pr-4 py-1.5 rounded-full font-semibold text-xs shadow-sm hover:shadow transition-all flex items-center gap-2 cursor-pointer group">
+              <button className="bg-gradient-to-r from-[#FF5500] to-[#FF6B00] hover:from-[#E64D00] hover:to-[#FF5500] text-white pl-1.5 pr-4 py-1.5 rounded-full font-bold text-xs shadow-sm hover:shadow transition-all flex items-center gap-2 cursor-pointer group">
                 <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white">
                   <ChevronsRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                 </div>
-                <span>Contact Us</span>
+                <span>Start Preparing</span>
               </button>
             </Link>
           </div>
@@ -248,7 +247,7 @@ export function Navbar() {
             ))}
             <Link href="/prepare" onClick={() => setMobileMenuOpen(false)}>
               <button className="w-full mt-2 py-2.5 bg-[#FF5500] text-white font-bold text-xs rounded-full shadow-sm flex items-center justify-center gap-2">
-                <span>Contact Us / Start Preparing</span>
+                <span>Start Preparing</span>
                 <ChevronsRight className="w-3.5 h-3.5" />
               </button>
             </Link>

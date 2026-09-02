@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Navbar } from '@/components/navbar';
 import { HeroSection } from '@/components/homepage/hero-section';
 import { DashboardPreviewFrame } from '@/components/homepage/dashboard-preview-frame';
 import { AdmissionAtGlance } from '@/components/homepage/admission-at-glance';
@@ -101,9 +100,6 @@ export default function DynamicHomepage() {
           </div>
         </div>
       )}
-
-      {/* ── 1. FLOATING NAVBAR WITH TOP BANNER ── */}
-      <Navbar />
 
       {/* ── MAIN CONTENT ── */}
       <main className="relative z-10">
