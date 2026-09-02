@@ -1209,94 +1209,138 @@ export class HomepageService {
     return defaultGuides.slice(0, limit);
   }
 
-  public async getPublishedFaqs(): Promise<any[]> {
-    const defaultFaqs = [
-      {
-        id: 'faq-1',
-        question: 'How does EduGuide evaluate university admission eligibility?',
-        answer: '<p>EduGuide evaluates eligibility deterministically using published official admission circulars from Bangladeshi public and engineering universities. It validates your <strong>SSC GPA</strong>, <strong>HSC GPA</strong>, <strong>Academic Group</strong> (Science, Commerce, Humanities), and <strong>Passing Year</strong> against each university’s cutoff thresholds.</p>',
-        category: 'Eligibility',
-        order: 1,
-      },
-      {
-        id: 'faq-2',
-        question: 'Are second-time candidates allowed to apply to BUET and DU?',
-        answer: '<p>Per current regulations, <strong>BUET</strong> strictly disallows second-time admission candidates. <strong>University of Dhaka (DU)</strong> allows second-time applicants only in specific faculties under prescribed circular guidelines. EduGuide clearly flags second-time eligibility for each university in your result view.</p>',
-        category: 'Admission',
-        order: 2,
-      },
-      {
-        id: 'faq-3',
-        question: 'How frequently are admission circulars and deadlines updated on EduGuide?',
-        answer: '<p>Our admission intelligence team verifies and updates circulars within <strong>2 hours</strong> of official university notifications. Every deadline record displays an official source citation and a <em>Last Verified</em> verification timestamp.</p>',
-        category: 'General',
-        order: 3,
-      },
-      {
-        id: 'faq-4',
-        question: 'What is included in the "Prepare with EduGuide" learning platform?',
-        answer: '<p>EduGuide provides interactive visual lessons, chapter-wise MCQs with detailed explanations, past 15 years solved questions for BUET/DU/Medical, realistic mock tests with negative marking, and a 24/7 AI Admission Tutor for instant problem step-by-step solutions.</p>',
-        category: 'Preparation',
-        order: 4,
-      },
-      {
-        id: 'faq-5',
-        question: 'Is EduGuide free to use for checking eligibility and circulars?',
-        answer: '<p><strong>Yes.</strong> Exploring universities, viewing admission dates, checking personal eligibility, reading admission guides, and asking admission guidance questions to the AI Advisor are 100% free.</p>',
-        category: 'General',
-        order: 5,
-      },
-    ];
+  public async ensureFaqsTable(): Promise<void> {
+    try {
+      await this.pool.query(`
+        CREATE TABLE IF NOT EXISTS faqs (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          question TEXT NOT NULL,
+          answer TEXT NOT NULL,
+          category TEXT DEFAULT 'General',
+          "order" INTEGER DEFAULT 0,
+          is_published BOOLEAN DEFAULT true,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+          updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+        );
+      `);
 
+      const { rows } = await this.pool.query('SELECT COUNT(*) as count FROM faqs');
+      if (parseInt(rows[0]?.count || '0', 10) === 0) {
+        const initialFaqs = [
+          {
+            question: 'How does EduGuide evaluate university admission eligibility?',
+            answer: '<p>EduGuide evaluates eligibility deterministically using published official admission circulars from Bangladeshi public and engineering universities. It validates your <strong>SSC GPA</strong>, <strong>HSC GPA</strong>, <strong>Academic Group</strong> (Science, Commerce, Humanities), and <strong>Passing Year</strong> against each university’s cutoff thresholds.</p>',
+            category: 'Eligibility',
+            order: 1,
+          },
+          {
+            question: 'Are second-time candidates allowed to apply to BUET and DU?',
+            answer: '<p>Per current regulations, <strong>BUET</strong> strictly disallows second-time admission candidates. <strong>University of Dhaka (DU)</strong> allows second-time applicants only in specific faculties under prescribed circular guidelines. EduGuide clearly flags second-time eligibility for each university in your result view.</p>',
+            category: 'Admission',
+            order: 2,
+          },
+          {
+            question: 'How frequently are admission circulars and deadlines updated on EduGuide?',
+            answer: '<p>Our admission intelligence team verifies and updates circulars within <strong>2 hours</strong> of official university notifications. Every deadline record displays an official source citation and a <em>Last Verified</em> verification timestamp.</p>',
+            category: 'General',
+            order: 3,
+          },
+          {
+            question: 'What is included in the "Prepare with EduGuide" learning platform?',
+            answer: '<p>EduGuide provides interactive visual lessons, chapter-wise MCQs with detailed explanations, past 15 years solved questions for BUET/DU/Medical, realistic mock tests with negative marking, and a 24/7 AI Admission Tutor for instant problem step-by-step solutions.</p>',
+            category: 'Preparation',
+            order: 4,
+          },
+          {
+            question: 'Is EduGuide free to use for checking eligibility and circulars?',
+            answer: '<p><strong>Yes.</strong> Exploring universities, viewing admission dates, checking personal eligibility, reading admission guides, and asking admission guidance questions to the AI Advisor are 100% free.</p>',
+            category: 'General',
+            order: 5,
+          },
+        ];
+
+        for (const f of initialFaqs) {
+          await this.pool.query(
+            `INSERT INTO faqs (question, answer, category, "order", is_published) VALUES ($1, $2, $3, $4, true)`,
+            [f.question, f.answer, f.category, f.order]
+          );
+        }
+      }
+    } catch (err: any) {
+      console.error('Error ensuring faqs table in PostgreSQL:', err.message);
+    }
+  }
+
+  public async getPublishedFaqs(): Promise<any[]> {
+    await this.ensureFaqsTable();
     try {
       const res = await this.pool.query(
-        `SELECT id, question, answer, category, "order" FROM faqs WHERE is_published = true ORDER BY "order" ASC`
+        `SELECT id::text, question, answer, category, "order", is_published as "isPublished"
+         FROM faqs 
+         WHERE is_published = true 
+         ORDER BY "order" ASC, created_at ASC`
       );
-      if (res.rows.length > 0) {
-        return res.rows;
-      }
-    } catch {
-      // Fallback
+      return res.rows;
+    } catch (err: any) {
+      console.error('Error loading published FAQs from PostgreSQL:', err.message);
+      return [];
     }
-
-    return defaultFaqs;
   }
 
   public async getAllFaqs(): Promise<any[]> {
+    await this.ensureFaqsTable();
     try {
-      const res = await this.pool.query(`SELECT * FROM faqs ORDER BY "order" ASC, created_at DESC`);
-      if (res.rows.length > 0) {
-        return res.rows;
-      }
-    } catch {
-      // Fallback
+      const res = await this.pool.query(
+        `SELECT id::text, question, answer, category, "order", is_published as "isPublished"
+         FROM faqs 
+         ORDER BY "order" ASC, created_at ASC`
+      );
+      return res.rows;
+    } catch (err: any) {
+      console.error('Error loading all FAQs from PostgreSQL:', err.message);
+      return [];
     }
-    return this.getPublishedFaqs();
   }
 
-  public async saveFaq(faq: { id?: string; question: string; answer: string; category: string; order: number; isPublished: boolean }): Promise<any> {
-    if (faq.id && !faq.id.startsWith('faq-')) {
-      await this.pool.query(
-        `UPDATE faqs SET question = $1, answer = $2, category = $3, "order" = $4, is_published = $5, updated_at = NOW() WHERE id = $6`,
-        [faq.question, faq.answer, faq.category || 'General', faq.order || 0, faq.isPublished ?? true, faq.id]
-      );
-      return { success: true, id: faq.id };
-    } else {
+  public async saveFaq(faq: any): Promise<any> {
+    await this.ensureFaqsTable();
+    try {
+      const { id, question, answer, category, order, isPublished } = faq;
+      if (id && !id.startsWith('faq-new-') && !id.startsWith('faq-temp-') && !id.startsWith('faq-1') && !id.startsWith('faq-2') && !id.startsWith('faq-3') && !id.startsWith('faq-4') && !id.startsWith('faq-5')) {
+        const res = await this.pool.query(
+          `UPDATE faqs 
+           SET question = $1, answer = $2, category = $3, "order" = $4, is_published = $5, updated_at = NOW() 
+           WHERE id::text = $6 OR id = $6::uuid
+           RETURNING id::text, question, answer, category, "order", is_published as "isPublished"`,
+          [question, answer, category || 'General', Number(order) || 1, isPublished ?? true, id]
+        );
+        if (res.rows.length > 0) {
+          return { success: true, data: res.rows[0] };
+        }
+      }
+
       const res = await this.pool.query(
-        `INSERT INTO faqs (question, answer, category, "order", is_published) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-        [faq.question, faq.answer, faq.category || 'General', faq.order || 0, faq.isPublished ?? true]
+        `INSERT INTO faqs (question, answer, category, "order", is_published) 
+         VALUES ($1, $2, $3, $4, $5) 
+         RETURNING id::text, question, answer, category, "order", is_published as "isPublished"`,
+        [question, answer, category || 'General', Number(order) || 1, isPublished ?? true]
       );
-      return { success: true, id: res.rows[0]?.id };
+      return { success: true, data: res.rows[0] };
+    } catch (err: any) {
+      console.error('Error saving FAQ to PostgreSQL:', err.message);
+      return { success: false, error: err.message };
     }
   }
 
   public async deleteFaq(id: string): Promise<any> {
+    await this.ensureFaqsTable();
     try {
-      await this.pool.query(`DELETE FROM faqs WHERE id = $1`, [id]);
-    } catch {
-      // Ignore
+      await this.pool.query(`DELETE FROM faqs WHERE id::text = $1 OR id = $1::uuid`, [id]);
+      return { success: true, id };
+    } catch (err: any) {
+      console.error('Error deleting FAQ from PostgreSQL:', err.message);
+      return { success: false, error: err.message };
     }
-    return { success: true, id };
   }
 
   public async getAllUniversities(): Promise<any[]> {

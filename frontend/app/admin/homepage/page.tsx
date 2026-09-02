@@ -135,6 +135,17 @@ export default function AdminHomepageCMSPage() {
         }
       }
     } catch {}
+
+    // 5. Ensure live PostgreSQL FAQs are loaded
+    try {
+      const faqRes = await fetch('/api/v1/admin/homepage/faqs');
+      if (faqRes.ok) {
+        const faqData = await faqRes.json();
+        if (faqData.data && Array.isArray(faqData.data)) {
+          setFaqs(faqData.data);
+        }
+      }
+    } catch {}
   };
 
   useEffect(() => {
@@ -298,32 +309,28 @@ export default function AdminHomepageCMSPage() {
     if (!editingFaq) return;
 
     try {
-      const isNew = !editingFaq.id || editingFaq.id.startsWith('faq-new-');
+      const isNew = !editingFaq.id || editingFaq.id.startsWith('faq-new-') || editingFaq.id.startsWith('faq-temp-') || editingFaq.id.startsWith('faq-1') || editingFaq.id.startsWith('faq-2') || editingFaq.id.startsWith('faq-3') || editingFaq.id.startsWith('faq-4') || editingFaq.id.startsWith('faq-5');
       const url = isNew
         ? '/api/v1/admin/homepage/faqs'
         : `/api/v1/admin/homepage/faqs/${editingFaq.id}`;
       const method = isNew ? 'POST' : 'PUT';
 
-      await fetch(url, {
+      const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editingFaq),
       });
 
-      setFaqModalOpen(false);
-      setEditingFaq(null);
-      await fetchAdminData();
-      toast.success('FAQ question saved to database!', 'FAQ Saved');
-    } catch (err: any) {
-      // Fallback local update
-      if (editingFaq.id && !editingFaq.id.startsWith('faq-new-')) {
-        setFaqs(faqs.map((f) => (f.id === editingFaq.id ? editingFaq : f)));
+      if (res.ok) {
+        setFaqModalOpen(false);
+        setEditingFaq(null);
+        await fetchAdminData();
+        toast.success('FAQ saved to database!', 'FAQ Saved');
       } else {
-        setFaqs([...faqs, { ...editingFaq, id: `faq-${Date.now()}` }]);
+        toast.error('Failed to save FAQ to database.', 'Database Error');
       }
-      setFaqModalOpen(false);
-      setEditingFaq(null);
-      toast.success('FAQ saved locally.', 'FAQ Updated');
+    } catch (err: any) {
+      toast.error(err.message || 'Error saving FAQ.', 'Error');
     }
   };
 
@@ -331,17 +338,21 @@ export default function AdminHomepageCMSPage() {
     setDeleteDialog({
       isOpen: true,
       title: 'Delete FAQ Item?',
-      message: `Are you sure you want to delete "${faq.question}"? This will permanently remove it from the admission platform FAQs.`,
+      message: `Are you sure you want to delete "${faq.question}"? This will permanently remove it from PostgreSQL.`,
       confirmText: 'Yes, delete FAQ',
       onConfirm: async () => {
         setDeleteDialog((prev) => ({ ...prev, isDeleting: true }));
         try {
-          await fetch(`/api/v1/admin/homepage/faqs/${faq.id}`, { method: 'DELETE' });
-          await fetchAdminData();
-          toast.success('FAQ item permanently deleted.', 'FAQ Deleted');
+          const res = await fetch(`/api/v1/admin/homepage/faqs/${faq.id}`, { method: 'DELETE' });
+          if (res.ok) {
+            setFaqs((prev) => prev.filter((f) => f.id !== faq.id));
+            toast.success('FAQ item permanently deleted from database.', 'FAQ Deleted');
+            await fetchAdminData();
+          } else {
+            toast.error('Failed to delete FAQ.', 'Delete Failed');
+          }
         } catch {
-          setFaqs(faqs.filter((f) => f.id !== faq.id));
-          toast.info('FAQ item removed.', 'FAQ Removed');
+          toast.error('Error deleting FAQ.', 'Error');
         } finally {
           setDeleteDialog((prev) => ({ ...prev, isOpen: false, isDeleting: false }));
         }
