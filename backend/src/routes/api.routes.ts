@@ -180,6 +180,27 @@ apiRouter.get('/universities', async (req: Request, res: Response, next) => {
   }
 });
 
+// Create University Endpoint
+apiRouter.post('/universities', async (req: Request, res: Response, next) => {
+  try {
+    const created = await homepageService.createUniversity(req.body);
+    res.json({ success: true, data: created });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Delete University Endpoint
+apiRouter.delete('/universities/:id', async (req: Request, res: Response, next) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const result = await homepageService.deleteUniversity(id);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Public FAQs Endpoint
 apiRouter.get('/faqs', async (req: Request, res: Response, next) => {
   try {

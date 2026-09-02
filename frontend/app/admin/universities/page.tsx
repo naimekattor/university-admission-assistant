@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { AdminShell } from '@/components/layout/admin-shell';
@@ -30,53 +30,82 @@ export default function AdminUniversitiesPage() {
 
   // Form states
   const [uniName, setUniName] = useState('');
-  const [uniSlug, setUniSlug] = useState('');
+  const [uniShortName, setUniShortName] = useState('');
   const [uniLocation, setUniLocation] = useState('');
   const [uniType, setUniType] = useState('Engineering');
-  const [uniDeadline, setUniDeadline] = useState('December 31, 2025');
+  const [uniDeadline, setUniDeadline] = useState('December 31, 2026');
+  const [uniWebsite, setUniWebsite] = useState('');
   const [uniBody, setUniBody] = useState('');
+  const [universitiesList, setUniversitiesList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const universities = [
-    {
-      id: 'u1',
-      name: 'Bangladesh University of Engineering and Technology (BUET)',
-      shortName: 'BUET',
-      location: 'Dhaka',
-      type: 'Engineering',
-      programsCount: 16,
-      circularStatus: 'Published',
-      deadline: 'Dec 31, 2025',
-      lastUpdated: '2 hours ago',
-    },
-    {
-      id: 'u2',
-      name: 'University of Dhaka (DU)',
-      shortName: 'DU',
-      location: 'Dhaka',
-      type: 'General Public',
-      programsCount: 84,
-      circularStatus: 'Published',
-      deadline: 'Jan 15, 2026',
-      lastUpdated: '1 day ago',
-    },
-    {
-      id: 'u3',
-      name: 'Khulna University of Engineering & Technology (KUET)',
-      shortName: 'KUET',
-      location: 'Khulna',
-      type: 'Engineering',
-      programsCount: 14,
-      circularStatus: 'Pending Verification',
-      deadline: 'Jan 20, 2026',
-      lastUpdated: '3 days ago',
-    },
-  ];
+  const loadUniversities = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/v1/universities');
+      if (res.ok) {
+        const json = await res.json();
+        if (json.data && Array.isArray(json.data)) {
+          setUniversitiesList(json.data);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load universities:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const handleCreateUni = (e: React.FormEvent) => {
+  useEffect(() => {
+    loadUniversities();
+  }, []);
+
+  const handleCreateUni = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMsg({ success: true, text: `University "${uniName}" published successfully!` });
-    setShowAddModal(false);
-    setUniName('');
+    try {
+      const payload = {
+        name: uniName,
+        shortName: uniShortName || uniName.split(' ').map(w => w[0]).join('').toUpperCase(),
+        location: uniLocation,
+        admissionType: uniType.toLowerCase(),
+        website: uniWebsite || undefined,
+        description: uniBody || undefined,
+      };
+
+      const res = await fetch('/api/v1/universities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        setMsg({ success: true, text: `University "${uniName}" saved to PostgreSQL database!` });
+        setShowAddModal(false);
+        setUniName('');
+        setUniShortName('');
+        setUniLocation('');
+        setUniWebsite('');
+        setUniBody('');
+        loadUniversities();
+      } else {
+        setMsg({ success: false, text: 'Failed to save university to database.' });
+      }
+    } catch (err: any) {
+      setMsg({ success: false, text: err.message || 'Error creating university.' });
+    }
+  };
+
+  const handleDeleteUni = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
+    try {
+      const res = await fetch(`/api/v1/universities/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setMsg({ success: true, text: `University "${name}" deleted.` });
+        loadUniversities();
+      }
+    } catch (err: any) {
+      setMsg({ success: false, text: 'Failed to delete university.' });
+    }
   };
 
   return (
@@ -131,57 +160,78 @@ export default function AdminUniversitiesPage() {
             <table className="w-full text-left admin-table">
               <thead>
                 <tr>
-                  <th>University</th>
-                  <th>Type</th>
-                  <th>Programs</th>
-                  <th>Next Deadline</th>
-                  <th>Circular Status</th>
-                  <th>Last Updated</th>
+                  <th>University & Code</th>
+                  <th>Location</th>
+                  <th>Units / Programs</th>
+                  <th>Seats</th>
+                  <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {universities.map((u) => (
-                  <tr key={u.id}>
-                    <td>
-                      <div>
-                        <div className="font-bold text-[var(--eg-text-primary)]">{u.name}</div>
-                        <div className="text-caption text-[var(--eg-text-muted)]">{u.location}</div>
-                      </div>
-                    </td>
-                    <td>
-                      <Badge variant="secondary" size="sm">{u.type}</Badge>
-                    </td>
-                    <td className="font-semibold text-xs text-[var(--eg-text-primary)]">
-                      {u.programsCount} Units/Dept
-                    </td>
-                    <td>
-                      <div className="flex items-center gap-1.5 text-xs text-[var(--eg-text-primary)] font-medium">
-                        <Calendar className="w-3.5 h-3.5 text-[var(--eg-primary)]" />
-                        <span>{u.deadline}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <Badge
-                        variant={u.circularStatus === 'Published' ? 'success' : 'warning'}
-                        size="sm"
-                      >
-                        {u.circularStatus}
-                      </Badge>
-                    </td>
-                    <td className="text-caption text-[var(--eg-text-muted)]">{u.lastUpdated}</td>
-                    <td>
-                      <div className="flex items-center gap-2">
-                        <Link href="/universities/buet" className="p-1.5 rounded hover:bg-[var(--eg-surface-subtle)] text-[var(--eg-text-muted)] hover:text-[var(--eg-primary)]">
-                          <Eye className="w-4 h-4" />
-                        </Link>
-                        <button className="p-1.5 rounded hover:bg-[var(--eg-surface-subtle)] text-[var(--eg-text-muted)] hover:text-[var(--eg-text-primary)]">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                      </div>
+                {universitiesList.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-8 text-xs text-[var(--eg-text-muted)]">
+                      {loading ? 'Loading universities from database...' : 'No universities found in database.'}
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  universitiesList
+                    .filter(
+                      (u) =>
+                        searchQuery === '' ||
+                        u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        u.shortName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        u.location?.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                    .map((u) => (
+                      <tr key={u.id}>
+                        <td>
+                          <div>
+                            <div className="font-bold text-[var(--eg-text-primary)]">{u.name}</div>
+                            <div className="text-caption font-mono text-[var(--eg-primary)]">{u.shortName}</div>
+                          </div>
+                        </td>
+                        <td className="text-xs text-[var(--eg-text-muted)] font-medium">{u.location || 'Bangladesh'}</td>
+                        <td className="font-semibold text-xs text-[var(--eg-text-primary)]">
+                          {u.units || 'Multiple Units'}
+                        </td>
+                        <td className="text-xs font-mono font-semibold text-[var(--eg-text-primary)]">
+                          {u.seats ? `${u.seats.toLocaleString()} Seats` : '—'}
+                        </td>
+                        <td>
+                          <Badge
+                            variant={u.status === 'Applications Open' ? 'success' : u.status === 'Deadline Passed' ? 'error' : 'warning'}
+                            size="sm"
+                          >
+                            {u.status || 'Active'}
+                          </Badge>
+                        </td>
+                        <td>
+                          <div className="flex items-center gap-2">
+                            {u.circularUrl && (
+                              <a
+                                href={u.circularUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1.5 rounded hover:bg-[var(--eg-surface-subtle)] text-[var(--eg-text-muted)] hover:text-[var(--eg-primary)]"
+                                title="Visit Website"
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </a>
+                            )}
+                            <button
+                              onClick={() => handleDeleteUni(u.id, u.name)}
+                              className="p-1.5 rounded hover:bg-rose-950/20 text-slate-500 hover:text-rose-400 transition"
+                              title="Delete University"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                )}
               </tbody>
             </table>
           </div>
@@ -193,7 +243,7 @@ export default function AdminUniversitiesPage() {
             <div className="bg-[var(--eg-surface)] border border-[var(--eg-border)] rounded-2xl max-w-2xl w-full p-6 space-y-5 shadow-modal max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between border-b border-[var(--eg-border)] pb-3">
                 <h3 className="font-bold text-lg text-[var(--eg-text-primary)]">
-                  Add University & Admission Circular
+                  Add University to PostgreSQL Database
                 </h3>
                 <button onClick={() => setShowAddModal(false)} className="text-xs text-[var(--eg-text-muted)] hover:text-[var(--eg-text-primary)]">
                   Close
@@ -201,8 +251,8 @@ export default function AdminUniversitiesPage() {
               </div>
 
               <form onSubmit={handleCreateUni} className="space-y-4 text-xs">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sm:col-span-2">
                     <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">University Full Name *</label>
                     <input
                       required
@@ -213,12 +263,34 @@ export default function AdminUniversitiesPage() {
                     />
                   </div>
                   <div>
+                    <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Short Code *</label>
+                    <input
+                      required
+                      value={uniShortName}
+                      onChange={(e) => setUniShortName(e.target.value)}
+                      placeholder="e.g. BUET"
+                      className="eg-input font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
                     <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Location / City *</label>
                     <input
                       required
                       value={uniLocation}
                       onChange={(e) => setUniLocation(e.target.value)}
                       placeholder="e.g. Dhaka"
+                      className="eg-input"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Official Website / Circular URL</label>
+                    <input
+                      value={uniWebsite}
+                      onChange={(e) => setUniWebsite(e.target.value)}
+                      placeholder="https://..."
                       className="eg-input"
                     />
                   </div>
@@ -231,6 +303,8 @@ export default function AdminUniversitiesPage() {
                       <option>Engineering</option>
                       <option>General Public</option>
                       <option>Medical</option>
+                      <option>Agriculture</option>
+                      <option>Science & Tech</option>
                     </select>
                   </div>
                   <div>
@@ -262,7 +336,7 @@ export default function AdminUniversitiesPage() {
                     Cancel
                   </button>
                   <button type="submit" className="btn btn-primary btn-sm font-semibold">
-                    Publish University
+                    Save to Database
                   </button>
                 </div>
               </form>

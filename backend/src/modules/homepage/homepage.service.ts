@@ -1325,6 +1325,56 @@ export class HomepageService {
     return this.getDynamicAdmissionOverview();
   }
 
+  public async createUniversity(data: {
+    name: string;
+    shortName: string;
+    description?: string;
+    location?: string;
+    website?: string;
+    logo?: string;
+    foundedYear?: number;
+    admissionType?: string;
+    cutoffMarks?: number;
+  }): Promise<any> {
+    try {
+      const res = await this.pool.query(
+        `INSERT INTO universities (name, short_name, description, location, website, logo, founded_year, admission_type, cutoff_marks)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         ON CONFLICT (short_name) DO UPDATE SET
+           name = EXCLUDED.name,
+           description = EXCLUDED.description,
+           location = EXCLUDED.location,
+           website = EXCLUDED.website
+         RETURNING *`,
+        [
+          data.name,
+          data.shortName,
+          data.description || null,
+          data.location || null,
+          data.website || null,
+          data.logo || '🏛️',
+          data.foundedYear || 2026,
+          data.admissionType || 'merit',
+          data.cutoffMarks || 0,
+        ]
+      );
+      return res.rows[0];
+    } catch (err: any) {
+      console.error('Error inserting university into PostgreSQL:', err.message);
+      throw err;
+    }
+  }
+
+  public async deleteUniversity(id: string): Promise<any> {
+    try {
+      await this.pool.query(`DELETE FROM universities WHERE id = $1`, [id]);
+      return { success: true, id };
+    } catch (err: any) {
+      console.error('Error deleting university:', err.message);
+      throw err;
+    }
+  }
+
   public async getAllGuides(): Promise<any[]> {
     return this.getPublishedGuides(20);
   }
