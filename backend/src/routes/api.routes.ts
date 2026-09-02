@@ -293,6 +293,47 @@ apiRouter.delete('/admin/homepage/faqs/:id', async (req: Request, res: Response,
 });
 
 // ==========================================
+// UNIVERSITIES CRUD ENDPOINTS
+// ==========================================
+apiRouter.get('/universities', async (req: Request, res: Response, next) => {
+  try {
+    const data = await homepageService.getDynamicAdmissionOverview();
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+apiRouter.post('/universities', async (req: Request, res: Response, next) => {
+  try {
+    const result = await homepageService.createUniversity(req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+apiRouter.delete('/universities/:id', async (req: Request, res: Response, next) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const result = await homepageService.deleteUniversity(id);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+apiRouter.delete('/admin/homepage/universities/:id', async (req: Request, res: Response, next) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const result = await homepageService.deleteUniversity(id);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ==========================================
 // ADMIN CONTROL PANEL ENDPOINTS
 // ==========================================
 

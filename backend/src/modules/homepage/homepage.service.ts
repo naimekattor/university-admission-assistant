@@ -351,7 +351,7 @@ export class HomepageService {
     const draft = await this.getDraftConfig();
     const published = await this.getPublishedConfig();
     const warnings = await this.scanContentQualityWarnings();
-    const allUniversities = await this.getAllUniversities();
+    const allUniversities = await this.getDynamicAdmissionOverview();
     const allGuides = await this.getAllGuides();
     const allFaqs = await this.getAllFaqs();
     const allDeadlines = await this.getUpcomingDeadlines(20);
@@ -663,33 +663,20 @@ export class HomepageService {
           COALESCE(u.logo, '🏛️') AS logo,
           COALESCE(u.location, 'Bangladesh') AS location,
           COALESCE(c.official_url, u.website, '#') AS "circularUrl",
-          COALESCE(u.admission_type, 'Science / Combined') AS "group",
-          COALESCE(
-            CASE 
-              WHEN c.application_start_date IS NOT NULL AND c.application_end_date IS NOT NULL 
-              THEN TO_CHAR(c.application_start_date, 'Mon DD, YYYY') || ' – ' || TO_CHAR(c.application_end_date, 'Mon DD, YYYY')
-              ELSE 'Jan 15, 2026 – Feb 15, 2026'
-            END, 'Jan 15, 2026 – Feb 15, 2026'
-          ) AS "applicationWindow",
-          COALESCE(TO_CHAR(c.exam_date, 'Mon DD, YYYY'), 'To be announced') AS "testDate",
-          COALESCE(e.min_gpa, 'SSC 4.00, HSC 4.00') AS "minGpa",
-          COALESCE(c.unit, 'All Units') AS "units",
-          COALESCE(SUM(p.seats), 1200)::int AS seats,
-          CASE 
-            WHEN c.application_end_date < NOW() THEN 'Deadline Passed'
-            WHEN c.application_start_date <= NOW() AND c.application_end_date >= NOW() THEN 'Applications Open'
-            WHEN c.application_start_date > NOW() THEN 'Opening Soon'
-            ELSE 'Applications Open'
-          END AS status
+          COALESCE(u.metadata->>'group', u.admission_type, 'All Groups') AS "group",
+          COALESCE(u.metadata->>'application_window', 'Jan 15, 2026 – Feb 15, 2026') AS "applicationWindow",
+          COALESCE(u.metadata->>'test_date', 'To be announced') AS "testDate",
+          COALESCE(u.metadata->>'min_gpa', 'SSC 4.00, HSC 4.00') AS "minGpa",
+          COALESCE(u.metadata->>'units', c.unit, 'All Units') AS "units",
+          COALESCE((u.metadata->>'seats')::int, 1200) AS seats,
+          COALESCE(u.metadata->>'status', 'Applications Open') AS status
         FROM universities u
         LEFT JOIN admission_circulars c ON u.id = c.university_id
-        LEFT JOIN programs p ON u.id = p.university_id
-        LEFT JOIN eligibility_criteria e ON p.id = e.program_id
-        GROUP BY u.id, u.name, u.short_name, u.logo, u.location, u.website, u.admission_type, c.official_url, c.application_start_date, c.application_end_date, c.exam_date, e.min_gpa, c.unit
+        GROUP BY u.id, u.name, u.short_name, u.logo, u.location, u.website, u.admission_type, u.metadata, c.official_url, c.unit
         ORDER BY 
           CASE 
-            WHEN c.application_start_date <= NOW() AND c.application_end_date >= NOW() THEN 1
-            WHEN c.application_start_date > NOW() THEN 2
+            WHEN COALESCE(u.metadata->>'status', 'Applications Open') = 'Applications Open' THEN 1
+            WHEN COALESCE(u.metadata->>'status', 'Applications Open') = 'Opening Soon' THEN 2
             ELSE 3
           END,
           u.name ASC;
@@ -698,8 +685,8 @@ export class HomepageService {
       if (res && res.rows && res.rows.length > 0) {
         return res.rows;
       }
-    } catch {
-      // Offline fallback
+    } catch (err: any) {
+      console.error('Failed to fetch from PostgreSQL:', err.message);
     }
 
     return this.getFallbackAdmissionsList();
@@ -1367,7 +1354,15 @@ export class HomepageService {
 
   public async deleteUniversity(id: string): Promise<any> {
     try {
-      await this.pool.query(`DELETE FROM universities WHERE id = $1`, [id]);
+      await this.pool.query(
+        `DELETE FROM admission_circulars WHERE university_id IN (SELECT id FROM universities WHERE id::text = $1 OR short_name = $1)`,
+        [id]
+      );
+      await this.pool.query(
+        `DELETE FROM programs WHERE university_id IN (SELECT id FROM universities WHERE id::text = $1 OR short_name = $1)`,
+        [id]
+      );
+      await this.pool.query(`DELETE FROM universities WHERE id::text = $1 OR short_name = $1`, [id]);
       return { success: true, id };
     } catch (err: any) {
       console.error('Error deleting university:', err.message);

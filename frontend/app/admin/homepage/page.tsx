@@ -93,17 +93,29 @@ export default function AdminHomepageCMSPage() {
     // 2. Fetch from backend
     try {
       const res = await fetch('/api/v1/admin/homepage');
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.draftConfig) setDraftConfig(data.draftConfig);
-      if (data.publishedConfig) setPublishedConfig(data.publishedConfig);
-      if (data.warnings) setWarnings(data.warnings);
-      if (data.universities && data.universities.length > 0) setUniversities(data.universities);
-      if (data.guides && data.guides.length > 0) setGuides(data.guides);
-      if (data.faqs && data.faqs.length > 0) setFaqs(data.faqs);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.draftConfig) setDraftConfig(data.draftConfig);
+        if (data.publishedConfig) setPublishedConfig(data.publishedConfig);
+        if (data.warnings) setWarnings(data.warnings);
+        if (data.universities && data.universities.length > 0) setUniversities(data.universities);
+        if (data.guides && data.guides.length > 0) setGuides(data.guides);
+        if (data.faqs && data.faqs.length > 0) setFaqs(data.faqs);
+      }
     } catch {
       // Fallback pre-populated state
     }
+
+    // 3. Ensure live PostgreSQL database universities are loaded
+    try {
+      const uniRes = await fetch('/api/v1/admissions?limit=0');
+      if (uniRes.ok) {
+        const uniData = await uniRes.json();
+        if (uniData.data && Array.isArray(uniData.data) && uniData.data.length > 0) {
+          setUniversities(uniData.data);
+        }
+      }
+    } catch {}
   };
 
   useEffect(() => {
@@ -178,12 +190,17 @@ export default function AdminHomepageCMSPage() {
     e.preventDefault();
     if (!editingRow) return;
 
-    const currentRows: AdmissionRowItem[] = draftConfig.admissionSection?.customRows || (DEFAULT_HOMEPAGE_CONFIG.admissionSection?.customRows as AdmissionRowItem[]) || [];
+    const currentRows: AdmissionRowItem[] =
+      draftConfig.admissionSection?.customRows && draftConfig.admissionSection.customRows.length > 0
+        ? draftConfig.admissionSection.customRows
+        : universities;
     let updatedRows: AdmissionRowItem[];
 
-    const exists = currentRows.some((r) => r.id === editingRow.id);
+    const exists = currentRows.some((r) => r.id === editingRow.id || (r.shortName && r.shortName === editingRow.shortName));
     if (exists) {
-      updatedRows = currentRows.map((r) => (r.id === editingRow.id ? editingRow : r));
+      updatedRows = currentRows.map((r) =>
+        r.id === editingRow.id || (r.shortName && r.shortName === editingRow.shortName) ? editingRow : r
+      );
     } else {
       updatedRows = [...currentRows, editingRow];
     }
@@ -219,12 +236,30 @@ export default function AdminHomepageCMSPage() {
   const promptDeleteAdmissionRow = (row: AdmissionRowItem) => {
     setDeleteDialog({
       isOpen: true,
-      title: 'Remove Admission Row?',
-      message: `Are you sure you want to remove "${row.name || row.shortName}" from the admission table? This will update your homepage draft configuration.`,
-      confirmText: 'Yes, remove row',
+      title: 'Delete Admission Row?',
+      message: `Are you sure you want to delete "${row.name || row.shortName}" from the admission table? This will send a DELETE request to remove it from PostgreSQL and update your homepage draft.`,
+      confirmText: 'Yes, delete row',
       onConfirm: async () => {
-        const currentRows: AdmissionRowItem[] = draftConfig.admissionSection?.customRows || [];
-        const updatedRows = currentRows.filter((r) => r.id !== row.id);
+        setDeleteDialog((prev) => ({ ...prev, isDeleting: true }));
+        try {
+          const targetId = row.id || row.shortName;
+          await fetch(`/api/v1/universities/${targetId}`, { method: 'DELETE' });
+        } catch (err) {
+          console.error('Failed to delete university:', err);
+        }
+
+        const currentRows: AdmissionRowItem[] =
+          draftConfig.admissionSection?.customRows && draftConfig.admissionSection.customRows.length > 0
+            ? draftConfig.admissionSection.customRows
+            : universities;
+
+        const updatedRows = currentRows.filter(
+          (r) => r.id !== row.id && (r.shortName && row.shortName ? r.shortName !== row.shortName : true)
+        );
+
+        setUniversities((prev) =>
+          prev.filter((u) => u.id !== row.id && (u.shortName && row.shortName ? u.shortName !== row.shortName : true))
+        );
 
         const updatedAdmissionSection = {
           ...draftConfig.admissionSection,
@@ -232,8 +267,8 @@ export default function AdminHomepageCMSPage() {
         };
 
         handleSaveSection('admissionSection', updatedAdmissionSection);
-        toast.info(`Removed ${row.shortName || row.name} from admission table`, 'Row Removed');
-        setDeleteDialog((prev) => ({ ...prev, isOpen: false }));
+        toast.success(`University "${row.shortName || row.name}" deleted successfully.`, 'Deleted');
+        setDeleteDialog((prev) => ({ ...prev, isOpen: false, isDeleting: false }));
       },
     });
   };
@@ -309,7 +344,10 @@ export default function AdminHomepageCMSPage() {
     { id: 'seo', label: 'SEO & Meta Tags', icon: FileText },
   ];
 
-  const admissionRows = draftConfig.admissionSection?.customRows || (DEFAULT_HOMEPAGE_CONFIG.admissionSection?.customRows as AdmissionRowItem[]) || [];
+  const admissionRows =
+    draftConfig.admissionSection?.customRows && draftConfig.admissionSection.customRows.length > 0
+      ? draftConfig.admissionSection.customRows
+      : universities;
 
   return (
     <AdminShell
