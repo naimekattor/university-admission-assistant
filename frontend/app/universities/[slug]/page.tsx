@@ -176,15 +176,13 @@ export default function UniversityDetailsPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <Link href="/universities" className="flex items-center gap-2 hover:opacity-80 text-primary">
-            <ChevronLeft className="w-4 h-4" />
-            Back to Universities
-          </Link>
-        </div>
-      </header>
+      {/* Back navigation */}
+      <div className="max-w-6xl mx-auto px-4 py-3">
+        <Link href="/universities" className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-[#FF5500] transition">
+          <ChevronLeft className="w-4 h-4" />
+          <span>Back to Universities</span>
+        </Link>
+      </div>
 
       {/* Hero Section */}
       <section className="bg-primary/10 border-b border-border py-12">

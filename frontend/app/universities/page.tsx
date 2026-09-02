@@ -104,27 +104,6 @@ export default function UniversitiesPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80">
-            <div className="text-2xl">🎓</div>
-            <span className="font-bold text-foreground">EduGuide</span>
-          </Link>
-          <nav className="hidden md:flex gap-4">
-            <Link href="/chat" className="text-muted-foreground hover:text-foreground">
-              Chat
-            </Link>
-            <Link href="/eligibility" className="text-muted-foreground hover:text-foreground">
-              Eligibility
-            </Link>
-            <Link href="/recommendations" className="text-muted-foreground hover:text-foreground">
-              Recommendations
-            </Link>
-          </nav>
-        </div>
-      </header>
-
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Title */}
         <div className="mb-8">
