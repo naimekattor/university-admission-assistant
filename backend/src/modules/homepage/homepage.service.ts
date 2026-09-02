@@ -1509,10 +1509,10 @@ export class HomepageService {
 
       // Fetch related programs
       const progRes = await this.pool.query(
-        `SELECT id::text, name, degree_level as "degreeLevel", faculty, duration_years as "durationYears", total_credits as "totalCredits", seats, min_gpa as "minGpa", description
+        `SELECT id::text, name, description, duration, seats, cutoff_marks as "cutoffMarks", subjects
          FROM programs
          WHERE university_id = $1::uuid
-         ORDER BY faculty ASC, name ASC`,
+         ORDER BY name ASC`,
         [uni.id]
       );
 
