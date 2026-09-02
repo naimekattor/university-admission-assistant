@@ -82,10 +82,20 @@ Your goal is to explain difficult subject concepts (Physics, Chemistry, Math, Bi
       : `You are an expert AI Admission Advisor for Bangladeshi university admissions.
 Your goal is to help students explore universities, check eligibility requirements, compare degree programs, track circular deadlines, and understand seat breakdowns.`;
 
-    prompt += `\n\nCRITICAL CONSTRAINTS:
-- Write strictly in BANGLA (বাংলা), ENGLISH, or natural BANGLISH matching the user's prompt language.
-- DO NOT invent or fabricate eligibility GPA cutoffs, dates, application fees, or seat numbers.
-- Base university and circular answers STRICTLY on the retrieved context provided below.`;
+    prompt += `\n\nRESPONSE FORMAT INSTRUCTIONS:
+You MUST respond with a valid JSON object matching one of these structures:
+For Advisor inquiries or general questions:
+{
+  "type": "general_answer",
+  "summary": "Detailed, friendly, and complete answer in the language of the prompt (Bangla / English / Banglish). If user says 'hi' or greeting, warmly introduce yourself and explain how you can help them prepare for BUET, DU, Medical, GST admission.",
+  "sections": [
+    { "heading": "Key Information", "content": "Relevant guidelines, circular points, or actionable advice." }
+  ],
+  "recommendedNextActions": [
+    { "label": "Check Eligibility", "action": "check_eligibility" },
+    { "label": "Start Preparation", "action": "start_practice" }
+  ]
+}`;
 
     if (studentContext) {
       prompt += `\n\nSTUDENT PROFILE CONTEXT:
@@ -103,7 +113,7 @@ Identified Weak Topics: ${(studentContext.weakTopics || []).join(', ') || 'None'
   }
 
   private normalizeStructuredResult(raw: Record<string, any>, userQuery: string, roleType: AiRoleType): StructuredAiResponse {
-    if (raw && raw.type) {
+    if (raw && raw.type && (raw.summary || raw.correctAnswer || raw.stepByStepSolution)) {
       return raw as StructuredAiResponse;
     }
 
@@ -111,27 +121,40 @@ Identified Weak Topics: ${(studentContext.weakTopics || []).join(', ') || 'None'
       return {
         type: 'question_explanation',
         questionText: userQuery,
-        correctAnswer: raw.correctAnswer || 'Step-by-step solution available.',
-        stepByStepSolution: Array.isArray(raw.steps) ? raw.steps : [
-          'Identify the fundamental physical/mathematical principle involved.',
-          'Apply the standard formula and derive the required parameter.',
-          'Double check calculation units and boundary conditions.',
-        ],
-        commonMistakesToAvoid: ['Watch out for SI unit conversions (cm to m, minutes to seconds).'],
-        recommendedNextActions: [{ label: 'Practice Similar MCQs', action: 'practice_topic' }],
+        correctAnswer: raw.correctAnswer || raw.answer || 'Step-by-step solution available.',
+        stepByStepSolution: Array.isArray(raw.stepByStepSolution || raw.steps)
+          ? (raw.stepByStepSolution || raw.steps)
+          : [raw.summary || 'Fundamental principle applied to solve the problem.'],
+        commonMistakesToAvoid: Array.isArray(raw.commonMistakesToAvoid)
+          ? raw.commonMistakesToAvoid
+          : ['Pay close attention to unit conversions and standard formulas.'],
+        recommendedNextActions: Array.isArray(raw.recommendedNextActions)
+          ? raw.recommendedNextActions
+          : [{ label: 'Practice Similar MCQs', action: 'practice_topic' }],
       };
     }
 
+    const summaryText =
+      raw.summary ||
+      raw.content ||
+      raw.message ||
+      raw.text ||
+      (typeof raw === 'string' ? raw : `Hello! How can I help you with university admission preparation today?`);
+
+    const sections = Array.isArray(raw.sections) && raw.sections.length > 0
+      ? raw.sections
+      : undefined;
+
     return {
       type: 'general_answer',
-      summary: raw.summary || `Analysis complete for: "${userQuery}".`,
-      sections: Array.isArray(raw.sections) ? raw.sections : [
-        { heading: 'Overview', content: 'Here is the relevant university admission and preparation guidance.' },
-      ],
-      recommendedNextActions: [
-        { label: 'Check Eligibility', action: 'check_eligibility' },
-        { label: 'Start Chapter Practice', action: 'start_practice' },
-      ],
+      summary: summaryText,
+      sections,
+      recommendedNextActions: Array.isArray(raw.recommendedNextActions) && raw.recommendedNextActions.length > 0
+        ? raw.recommendedNextActions
+        : [
+            { label: 'Check Eligibility', action: 'check_eligibility' },
+            { label: 'Start Chapter Practice', action: 'start_practice' },
+          ],
     };
   }
 }

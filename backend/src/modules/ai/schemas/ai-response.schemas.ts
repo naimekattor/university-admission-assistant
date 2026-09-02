@@ -88,19 +88,23 @@ export const QuestionExplanationSchema = z.object({
 export const GeneralAnswerSchema = z.object({
   type: z.literal('general_answer'),
   summary: z.string(),
-  sections: z.array(
-    z.object({
-      heading: z.string(),
-      content: z.string(),
-    })
-  ),
+  sections: z
+    .array(
+      z.object({
+        heading: z.string(),
+        content: z.string(),
+      })
+    )
+    .optional(),
   sourceCitations: z.array(z.string()).optional(),
-  recommendedNextActions: z.array(
-    z.object({
-      label: z.string(),
-      action: z.string(),
-    })
-  ),
+  recommendedNextActions: z
+    .array(
+      z.object({
+        label: z.string(),
+        action: z.string(),
+      })
+    )
+    .optional(),
 });
 
 export const StructuredAiResponseSchema = z.discriminatedUnion('type', [

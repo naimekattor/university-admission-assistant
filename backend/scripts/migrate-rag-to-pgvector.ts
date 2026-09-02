@@ -10,7 +10,7 @@ const QDRANT_URL = process.env.QDRANT_URL || 'http://localhost:6333';
 const QDRANT_COLLECTION_PREFIX = process.env.QDRANT_COLLECTION_PREFIX || 'uaa_';
 const ADMISSION_DOCS_COLLECTION = process.env.QDRANT_ADMISSION_DOCS_COLLECTION || `${QDRANT_COLLECTION_PREFIX}admission-docs`;
 
-async function generateMultilingualEmbedding(_genai: any, text: string): Promise<{ vector: number[]; model: string }> {
+async function generateMultilingualEmbedding(text: string): Promise<{ vector: number[]; model: string }> {
   const vector = await generateEmbedding(text);
   return { vector, model: 'gemini-or-hf-fallback' };
 }
@@ -151,7 +151,7 @@ async function main() {
     const page = chunk.page || 1;
     const type = chunk.type || 'circular';
 
-    const { vector: embedding, model: usedModel } = await generateMultilingualEmbedding(genai, textContent);
+    const { vector: embedding, model: usedModel } = await generateMultilingualEmbedding(textContent);
     const vectorValue = hasVector ? `[${embedding.join(',')}]` : JSON.stringify(embedding);
 
     await pool.query(
@@ -181,7 +181,7 @@ async function main() {
   try {
     if (hasVector) {
       const testQueryText = 'BUET admission minimum GPA requirement';
-      const { vector: testVector } = await generateMultilingualEmbedding(genai, testQueryText);
+      const { vector: testVector } = await generateMultilingualEmbedding(testQueryText);
       const testVectorStr = `[${testVector.join(',')}]`;
 
       const { rows } = await pool.query(

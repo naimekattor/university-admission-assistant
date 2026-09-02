@@ -44,8 +44,21 @@ async function testAiPipeline() {
     console.error('✗ Embedding test failed:', err.message || err);
   }
 
-  // Test 3: AI Orchestrator with RAG Context (Advisor Mode)
-  console.log('\n[3] Testing AI Orchestrator Service (Advisor Mode via Groq)...');
+  // Test 3: AI Orchestrator with Greeting ("hi")
+  console.log('\n[3] Testing AI Orchestrator Service with greeting ("hi")...');
+  try {
+    const greetingResult = await aiOrchestratorService.processQuery({
+      roleType: 'advisor',
+      userQuery: 'hi',
+    });
+    console.log('✓ AI Orchestrator Greeting Result:');
+    console.log(JSON.stringify(greetingResult, null, 2));
+  } catch (err: any) {
+    console.error('✗ Greeting test failed:', err.message || err);
+  }
+
+  // Test 4: AI Orchestrator with RAG Context (Advisor Mode)
+  console.log('\n[4] Testing AI Orchestrator Service (Advisor Mode via Groq)...');
   try {
     const result = await aiOrchestratorService.processQuery({
       roleType: 'advisor',
