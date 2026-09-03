@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Sparkles, CheckCircle2, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { EligibilitySectionConfig } from '@/lib/homepage-types';
 import { EligibilityResultsDisplay } from './eligibility-results-display';
@@ -30,6 +30,7 @@ export function EligibilityCheckerSection({ config }: EligibilityCheckerSectionP
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [evaluationResult, setEvaluationResult] = useState<any | null>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,6 +70,9 @@ export function EligibilityCheckerSection({ config }: EligibilityCheckerSectionP
 
       const json = await res.json();
       setEvaluationResult(json.data || json);
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
     } catch {
       // Fallback deterministic evaluation client-side
       const combined = sscVal + hscVal;
@@ -127,6 +131,9 @@ export function EligibilityCheckerSection({ config }: EligibilityCheckerSectionP
         ineligibleCount: eligibleList.filter((r) => !r.isEligible).length,
         results: eligibleList,
       });
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
     } finally {
       setIsLoading(false);
     }
@@ -263,7 +270,12 @@ export function EligibilityCheckerSection({ config }: EligibilityCheckerSectionP
 
         {/* ── ELIGIBILITY RESULTS ── */}
         {evaluationResult && (
-          <EligibilityResultsDisplay evaluation={evaluationResult} />
+          <div ref={resultsRef} className="scroll-mt-8">
+            <EligibilityResultsDisplay
+              evaluationResult={evaluationResult}
+              evaluation={evaluationResult}
+            />
+          </div>
         )}
       </div>
     </section>

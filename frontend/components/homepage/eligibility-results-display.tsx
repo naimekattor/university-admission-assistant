@@ -37,7 +37,7 @@ interface ResultItem {
 }
 
 interface EligibilityResultsDisplayProps {
-  evaluationResult: {
+  evaluationResult?: {
     profile?: {
       sscGPA: number;
       hscGPA: number;
@@ -49,16 +49,16 @@ interface EligibilityResultsDisplayProps {
     ineligibleCount?: number;
     results?: ResultItem[];
   } | null;
+  evaluation?: any;
 }
 
-export function EligibilityResultsDisplay({
-  evaluationResult,
-}: EligibilityResultsDisplayProps) {
-  if (!evaluationResult || !evaluationResult.results) {
+export function EligibilityResultsDisplay(props: EligibilityResultsDisplayProps) {
+  const activeData = props.evaluationResult || props.evaluation;
+  if (!activeData || !activeData.results) {
     return null;
   }
 
-  const { profile, totalEvaluated, eligibleCount = 0, results = [] } = evaluationResult;
+  const { profile, totalEvaluated, eligibleCount = 0, results = [] } = activeData;
 
   // Helper to parse deadline and check expiration
   const checkDeadlineStatus = (dateStr?: string | null) => {
