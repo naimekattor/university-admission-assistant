@@ -1230,73 +1230,51 @@ export class HomepageService {
       for (const r of circRes.rows) {
         const uniLabel = r.universityShortName || r.universityName;
 
-        // 1. Application Deadline
+        // 1. Upcoming Application Deadline
         if (r.applicationEndDate) {
           const endDate = new Date(r.applicationEndDate);
           const diffMs = endDate.getTime() - Date.now();
-          const remainingDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-          const dynamicStatus = remainingDays === 0 ? 'passed' : remainingDays <= 7 ? 'urgent' : remainingDays <= 30 ? 'upcoming' : 'scheduled';
-          events.push({
-            id: `${r.id}-deadline`,
-            circularId: r.id,
-            university: uniLabel,
-            universityFullName: r.universityName,
-            universityLogo: r.universityLogo,
-            unit: r.unit || 'All Units',
-            eventType: 'application_deadline',
-            eventTypeName: 'Application Deadline',
-            title: `${uniLabel} ${r.unit} Application Deadline`,
-            eventDate: endDate.toISOString(),
-            dateDisplay: endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-            remainingDays,
-            status: dynamicStatus,
-            sourceUrl: r.officialUrl || '#',
-          });
-        }
-
-        // 2. Admission Test Date
-        if (r.examDate) {
-          const examDate = new Date(r.examDate);
-          const diffMs = examDate.getTime() - Date.now();
-          const remainingDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-          const dynamicStatus = remainingDays === 0 ? 'passed' : remainingDays <= 7 ? 'urgent' : remainingDays <= 30 ? 'upcoming' : 'scheduled';
-          events.push({
-            id: `${r.id}-exam`,
-            circularId: r.id,
-            university: uniLabel,
-            universityFullName: r.universityName,
-            universityLogo: r.universityLogo,
-            unit: r.unit || 'All Units',
-            eventType: 'admission_test',
-            eventTypeName: 'Admission Test Exam',
-            title: `${uniLabel} ${r.unit} Admission Test`,
-            eventDate: examDate.toISOString(),
-            dateDisplay: examDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-            remainingDays,
-            status: dynamicStatus,
-            sourceUrl: r.officialUrl || '#',
-          });
-        }
-
-        // 3. Application Start Date (if upcoming)
-        if (r.applicationStartDate) {
-          const startDate = new Date(r.applicationStartDate);
-          const diffMs = startDate.getTime() - Date.now();
           if (diffMs > 0) {
-            const remainingDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-            const dynamicStatus = remainingDays <= 7 ? 'urgent' : 'upcoming';
+            const remainingDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+            const dynamicStatus = remainingDays <= 7 ? 'urgent' : remainingDays <= 30 ? 'upcoming' : 'scheduled';
             events.push({
-              id: `${r.id}-start`,
+              id: `${r.id}-deadline`,
               circularId: r.id,
               university: uniLabel,
               universityFullName: r.universityName,
               universityLogo: r.universityLogo,
               unit: r.unit || 'All Units',
-              eventType: 'application_open',
-              eventTypeName: 'Application Opens',
-              title: `${uniLabel} ${r.unit} Application Opens`,
-              eventDate: startDate.toISOString(),
-              dateDisplay: startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+              eventType: 'application_deadline',
+              eventTypeName: 'Application Deadline',
+              title: `${uniLabel} ${r.unit} Application Deadline`,
+              eventDate: endDate.toISOString(),
+              dateDisplay: endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+              remainingDays,
+              status: dynamicStatus,
+              sourceUrl: r.officialUrl || '#',
+            });
+          }
+        }
+
+        // 2. Upcoming Admission Test Exam
+        if (r.examDate) {
+          const examDate = new Date(r.examDate);
+          const diffMs = examDate.getTime() - Date.now();
+          if (diffMs > 0) {
+            const remainingDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+            const dynamicStatus = remainingDays <= 7 ? 'urgent' : remainingDays <= 30 ? 'upcoming' : 'scheduled';
+            events.push({
+              id: `${r.id}-exam`,
+              circularId: r.id,
+              university: uniLabel,
+              universityFullName: r.universityName,
+              universityLogo: r.universityLogo,
+              unit: r.unit || 'All Units',
+              eventType: 'admission_test',
+              eventTypeName: 'Admission Test Exam',
+              title: `${uniLabel} ${r.unit} Admission Test`,
+              eventDate: examDate.toISOString(),
+              dateDisplay: examDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
               remainingDays,
               status: dynamicStatus,
               sourceUrl: r.officialUrl || '#',
