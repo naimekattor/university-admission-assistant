@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown';
 interface Props {
   content: string;
   className?: string;
+  isUser?: boolean;
 }
 
 /**
@@ -66,9 +67,35 @@ function cleanLatexMath(expr: string): string {
     .replace(/\\\s/g, ' ');
 }
 
-export function MarkdownContent({ content, className = '' }: Props) {
+export function MarkdownContent({ content, className = '', isUser = false }: Props) {
   const processed = useMemo(() => preprocessMathAndMarkdown(content), [content]);
 
+  // ── USER MESSAGE RENDERER (FORCE CRISP PURE WHITE) ──
+  if (isUser) {
+    return (
+      <div className={`space-y-1 text-xs sm:text-sm text-white font-medium leading-relaxed ${className}`}>
+        <ReactMarkdown
+          components={{
+            p: ({ children }) => <p className="mb-1 leading-relaxed text-white font-medium">{children}</p>,
+            strong: ({ children }) => <strong className="font-extrabold text-white">{children}</strong>,
+            em: ({ children }) => <em className="italic text-white/95">{children}</em>,
+            ul: ({ children }) => <ul className="my-1.5 ml-4 list-disc space-y-1 text-white">{children}</ul>,
+            ol: ({ children }) => <ol className="my-1.5 ml-4 list-decimal space-y-1 text-white">{children}</ol>,
+            li: ({ children }) => <li className="leading-relaxed text-white">{children}</li>,
+            code: ({ children }) => (
+              <code className="px-1.5 py-0.5 rounded-md bg-white/20 text-white font-mono text-xs font-bold">
+                {children}
+              </code>
+            ),
+          }}
+        >
+          {processed}
+        </ReactMarkdown>
+      </div>
+    );
+  }
+
+  // ── ASSISTANT MESSAGE RENDERER (THEMED SLATE & BRAND ACCENTS) ──
   return (
     <div className={`space-y-2 text-xs sm:text-sm text-slate-700 leading-relaxed font-normal ${className}`}>
       <ReactMarkdown

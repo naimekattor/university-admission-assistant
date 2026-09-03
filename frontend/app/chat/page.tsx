@@ -376,7 +376,7 @@ export default function DualAiChatPage() {
                       : 'w-full'
                   }`}>
                     {m.role === 'user' ? (
-                      <MarkdownContent content={m.content} className="text-white" />
+                      <MarkdownContent content={m.content} className="text-white" isUser={true} />
                     ) : (
                       <StructuredAiMessageRenderer response={m.content} />
                     )}

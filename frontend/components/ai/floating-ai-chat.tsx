@@ -203,7 +203,7 @@ export function FloatingAiChat() {
                       : 'bg-slate-50 border border-slate-200/80 text-slate-800 p-3.5 rounded-2xl rounded-tl-xs shadow-2xs'
                   }`}
                 >
-                  <MarkdownContent content={m.text} className={m.role === 'user' ? 'text-white [&_p]:text-white [&_strong]:text-white' : ''} />
+                  <MarkdownContent content={m.text} isUser={m.role === 'user'} />
 
                   {/* Suggestion / Action Chips */}
                   {m.actions && m.actions.length > 0 && (
