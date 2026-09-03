@@ -590,3 +590,49 @@ apiRouter.get('/admin/universities/dropdown', async (req: Request, res: Response
     next(error);
   }
 });
+
+// ==========================================
+// ACADEMIC PROGRAMS & DEGREES ENDPOINTS
+// ==========================================
+
+// Get all programs joined with university and unit circular
+apiRouter.get('/admin/programs', async (req: Request, res: Response, next) => {
+  try {
+    const data = await admissionService.getPrograms();
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Create academic program
+apiRouter.post('/admin/programs', async (req: Request, res: Response, next) => {
+  try {
+    const created = await admissionService.createProgram(req.body);
+    res.status(201).json({ success: true, message: 'Program created successfully', data: created });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Update program
+apiRouter.put('/admin/programs/:id', async (req: Request, res: Response, next) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const updated = await admissionService.updateProgram(id, req.body);
+    res.json({ success: true, message: 'Program updated successfully', data: updated });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Delete program
+apiRouter.delete('/admin/programs/:id', async (req: Request, res: Response, next) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    await admissionService.deleteProgram(id);
+    res.json({ success: true, message: 'Program deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+});

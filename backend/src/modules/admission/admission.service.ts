@@ -220,6 +220,93 @@ export class AdmissionService {
   }
 
   /**
+   * Get all academic programs joined with university and parent unit circular.
+   */
+  public async getPrograms(): Promise<any[]> {
+    const rows = await db
+      .select({
+        program: schema.programs,
+        university: schema.universities,
+        circular: schema.admissionCirculars,
+      })
+      .from(schema.programs)
+      .leftJoin(schema.universities, eq(schema.programs.universityId, schema.universities.id))
+      .leftJoin(schema.admissionCirculars, eq(schema.programs.circularId, schema.admissionCirculars.id))
+      .orderBy(desc(schema.programs.createdAt));
+
+    return rows.map(({ program, university, circular }) => ({
+      id: program.id,
+      name: program.name,
+      shortCode: program.shortCode || program.name.split(' ').map((w) => w[0]).join('').slice(0, 4).toUpperCase(),
+      degree: program.degree || 'Bachelor',
+      seats: program.seats || 60,
+      description: program.description,
+      duration: program.duration || '4 Years',
+      cutoffMarks: program.cutoffMarks,
+      universityId: program.universityId,
+      universityName: university?.name || 'Unknown University',
+      universityShortName: university?.shortName || 'VAR',
+      universityLogo: university?.logo || '🏛️',
+      circularId: program.circularId,
+      unit: circular?.unit || 'Ka Unit',
+      unitName: circular?.unitName || circular?.title || 'Main Unit',
+      createdAt: program.createdAt.toISOString(),
+    }));
+  }
+
+  /**
+   * Create academic program.
+   */
+  public async createProgram(data: any): Promise<any> {
+    const [inserted] = await db
+      .insert(schema.programs)
+      .values({
+        universityId: data.universityId,
+        circularId: data.circularId || null,
+        name: data.name,
+        shortCode: data.shortCode || null,
+        degree: data.degree || 'Bachelor',
+        seats: Number(data.seats) || 60,
+        description: data.description || null,
+        duration: data.duration || '4 Years',
+      })
+      .returning();
+
+    return inserted;
+  }
+
+  /**
+   * Update academic program.
+   */
+  public async updateProgram(id: string, data: any): Promise<any> {
+    const updatePayload: any = {};
+    if (data.universityId !== undefined) updatePayload.universityId = data.universityId;
+    if (data.circularId !== undefined) updatePayload.circularId = data.circularId || null;
+    if (data.name !== undefined) updatePayload.name = data.name;
+    if (data.shortCode !== undefined) updatePayload.shortCode = data.shortCode;
+    if (data.degree !== undefined) updatePayload.degree = data.degree;
+    if (data.seats !== undefined) updatePayload.seats = Number(data.seats);
+    if (data.description !== undefined) updatePayload.description = data.description;
+    if (data.duration !== undefined) updatePayload.duration = data.duration;
+
+    const [updated] = await db
+      .update(schema.programs)
+      .set(updatePayload)
+      .where(eq(schema.programs.id, id))
+      .returning();
+
+    return updated;
+  }
+
+  /**
+   * Delete academic program.
+   */
+  public async deleteProgram(id: string): Promise<boolean> {
+    await db.delete(schema.programs).where(eq(schema.programs.id, id));
+    return true;
+  }
+
+  /**
    * Get all universities for dropdown selectors.
    */
   public async getUniversitiesDropdown(): Promise<any[]> {
