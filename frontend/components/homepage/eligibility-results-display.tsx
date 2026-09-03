@@ -13,6 +13,10 @@ import {
   ExternalLink,
   Users,
   Sparkles,
+  Clock,
+  AlertTriangle,
+  GraduationCap,
+  HelpCircle,
 } from 'lucide-react';
 
 interface ResultItem {
@@ -27,13 +31,13 @@ interface ResultItem {
   testDate?: string;
   minGpa?: string;
   gpaMargin?: number;
+  allowSecondTime?: boolean;
   satisfiedRequirements?: any[];
   unsatisfiedRequirements?: any[];
-  unverifiedRequirements?: any[];
 }
 
 interface EligibilityResultsDisplayProps {
-  evaluation: {
+  evaluationResult: {
     profile?: {
       sscGPA: number;
       hscGPA: number;
@@ -43,18 +47,60 @@ interface EligibilityResultsDisplayProps {
     totalEvaluated?: number;
     eligibleCount?: number;
     ineligibleCount?: number;
-    pendingCount?: number;
     results?: ResultItem[];
-  };
+  } | null;
 }
 
-export function EligibilityResultsDisplay({ evaluation }: EligibilityResultsDisplayProps) {
-  const { profile, results = [], eligibleCount = 0, totalEvaluated = 0 } = evaluation;
+export function EligibilityResultsDisplay({
+  evaluationResult,
+}: EligibilityResultsDisplayProps) {
+  if (!evaluationResult || !evaluationResult.results) {
+    return null;
+  }
+
+  const { profile, totalEvaluated, eligibleCount = 0, results = [] } = evaluationResult;
+
+  // Helper to parse deadline and check expiration
+  const checkDeadlineStatus = (dateStr?: string | null) => {
+    if (!dateStr || dateStr === 'TBA') {
+      return { isExpired: false, daysRemaining: null, formattedDate: 'Deadline TBA' };
+    }
+
+    const parsed = new Date(dateStr);
+    if (isNaN(parsed.getTime())) {
+      return { isExpired: false, daysRemaining: null, formattedDate: dateStr };
+    }
+
+    const now = new Date();
+    const diffDays = Math.ceil((parsed.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const formattedDate = parsed.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+
+    return {
+      isExpired: diffDays < 0,
+      daysRemaining: diffDays,
+      formattedDate,
+    };
+  };
+
+  // Compute breakdown of open vs expired among eligible
+  const eligibleItems = results.filter((r) => r.isEligible || r.status === 'eligible' || r.status === 'eligible_pending');
+  const closedEligibleCount = eligibleItems.filter((r) => {
+    const rawDate =
+      r.testDate ||
+      (typeof r.department === 'object' && r.department !== null ? r.department.applicationDeadline : undefined) ||
+      r.deadline;
+    return checkDeadlineStatus(rawDate).isExpired;
+  }).length;
+  const openEligibleCount = eligibleItems.length - closedEligibleCount;
 
   return (
-    <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-bottom-3 duration-300">
-      {/* ── SUMMARY STATS BAR ── */}
-      <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+    <div className="space-y-6 pt-4 animate-in fade-in-50 duration-300">
+      {/* ── HEADER SUMMARY BAR ── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-3xl bg-white border border-slate-200/90 shadow-2xs">
         <div>
           <div className="flex items-center gap-2">
             <Award className="w-5 h-5 text-[#FF5500]" />
@@ -71,16 +117,28 @@ export function EligibilityResultsDisplay({ evaluation }: EligibilityResultsDisp
               • HSC:{' '}
               <span className="font-mono font-bold text-slate-900">
                 {typeof profile.hscGPA === 'number' ? profile.hscGPA.toFixed(2) : profile.hscGPA}
-              </span>
+              </span>{' '}
+              • Batch: <span className="font-mono font-bold text-slate-900">{profile.passingYear}</span>
             </p>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Total Qualified Badge */}
           <div className="px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center gap-1.5 shadow-2xs">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span>{eligibleCount} Eligible Units</span>
+            <span>{eligibleCount} Qualified Units</span>
           </div>
+
+          {/* Deadline Closed Badge (if any) */}
+          {closedEligibleCount > 0 && (
+            <div className="px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold flex items-center gap-1 shadow-2xs">
+              <Clock className="w-3.5 h-3.5 text-amber-600" />
+              <span>{closedEligibleCount} Session Closed</span>
+            </div>
+          )}
+
+          {/* Total Evaluated */}
           <div className="px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold font-mono">
             <span>{totalEvaluated || results.length} Evaluated</span>
           </div>
@@ -92,7 +150,7 @@ export function EligibilityResultsDisplay({ evaluation }: EligibilityResultsDisp
         {results.map((res, idx) => {
           const isEligible = res.isEligible || res.status === 'eligible' || res.status === 'eligible_pending';
 
-          // Safely extract University Name (handles both flat string and nested department object)
+          // Safely extract University Name
           const universityName: string =
             typeof res.university === 'string'
               ? res.university
@@ -100,7 +158,7 @@ export function EligibilityResultsDisplay({ evaluation }: EligibilityResultsDisp
               ? res.department.university
               : 'University Admission';
 
-          // Safely extract Department / Program Name (never renders object)
+          // Safely extract Department / Program Name
           const departmentName: string =
             typeof res.department === 'string'
               ? res.department
@@ -116,11 +174,20 @@ export function EligibilityResultsDisplay({ evaluation }: EligibilityResultsDisp
               ? res.department.seats
               : undefined;
 
-          const dateDisplay =
+          const rawDateStr =
             res.testDate ||
             (typeof res.department === 'object' && res.department !== null ? res.department.applicationDeadline : undefined) ||
             res.deadline ||
             'TBA';
+
+          // Calculate deadline status
+          const { isExpired, daysRemaining, formattedDate } = checkDeadlineStatus(rawDateStr);
+
+          // Check second-time eligibility policy
+          const allowSecondTime: boolean =
+            typeof res.department === 'object' && res.department !== null && typeof res.department.allowSecondTime === 'boolean'
+              ? res.department.allowSecondTime
+              : Boolean(res.allowSecondTime);
 
           // Safely extract requirements messages
           const satisfiedNote =
@@ -145,11 +212,14 @@ export function EligibilityResultsDisplay({ evaluation }: EligibilityResultsDisp
             <div
               key={res.id || idx}
               className={`p-5 rounded-3xl border transition-all ${
-                isEligible
-                  ? 'bg-white border-emerald-200/90 shadow-2xs hover:border-emerald-300'
-                  : 'bg-slate-50/80 border-slate-200 opacity-80'
+                !isEligible
+                  ? 'bg-slate-50/80 border-slate-200 opacity-85'
+                  : isExpired
+                  ? 'bg-white border-amber-200/90 shadow-2xs hover:border-amber-300'
+                  : 'bg-white border-emerald-200/90 shadow-2xs hover:border-emerald-300'
               } flex flex-col justify-between space-y-3.5`}
             >
+              {/* Card Header: University + Status Badge */}
               <div className="flex items-start justify-between gap-2">
                 <div className="space-y-0.5">
                   <h4 className="font-bold text-sm text-slate-900 leading-snug">
@@ -160,25 +230,50 @@ export function EligibilityResultsDisplay({ evaluation }: EligibilityResultsDisp
                   </p>
                 </div>
 
-                <span
-                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${
-                    isEligible
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 shadow-2xs'
-                      : 'bg-rose-50 text-rose-700 border border-rose-200'
-                  }`}
-                >
-                  {isEligible ? 'Eligible' : 'Ineligible'}
-                </span>
+                {/* Status Badge */}
+                {!isEligible ? (
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold shrink-0 bg-rose-50 text-rose-700 border border-rose-200 shadow-2xs">
+                    Ineligible
+                  </span>
+                ) : isExpired ? (
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold shrink-0 bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1 shadow-2xs">
+                    <Clock className="w-3 h-3 text-amber-600" />
+                    <span>Qualified • Closed</span>
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold shrink-0 bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 shadow-2xs">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Eligible</span>
+                  </span>
+                )}
               </div>
 
-              {/* Requirement Notes */}
-              <div className="space-y-1 text-xs">
+              {/* Requirement Notes & Context */}
+              <div className="space-y-1.5 text-xs">
+                {isEligible && isExpired && (
+                  <div className="flex items-start gap-2 text-amber-800 bg-amber-50/80 p-2.5 rounded-2xl border border-amber-200/70 leading-relaxed text-[11px]">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span>
+                        You meet all academic GPA and group requirements for this unit, but the application submission window closed on{' '}
+                        <strong className="font-semibold text-slate-900">{formattedDate}</strong>.
+                      </span>
+                      {allowSecondTime && (
+                        <p className="mt-1 font-semibold text-emerald-700">
+                          ✓ This unit allows 2nd-time candidates, so you can apply in the upcoming session!
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {satisfiedNote && (
                   <div className="flex items-start gap-1.5 text-emerald-700">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                     <span>{satisfiedNote}</span>
                   </div>
                 )}
+
                 {unsatisfiedNote && (
                   <div className="flex items-start gap-1.5 text-rose-600">
                     <XCircle className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
@@ -187,25 +282,63 @@ export function EligibilityResultsDisplay({ evaluation }: EligibilityResultsDisp
                 )}
               </div>
 
-              {/* Seats, Exam date & Actions */}
+              {/* Seats, Deadlines & Actions */}
               <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2 text-xs">
                 <div className="text-[11px] text-slate-500 flex items-center gap-2">
                   <span>
-                    Deadline/Date: <strong className="text-[#FF5500] font-mono">{dateDisplay}</strong>
+                    Deadline:{' '}
+                    {isExpired ? (
+                      <strong className="text-rose-600 font-mono font-semibold">
+                        Closed ({formattedDate})
+                      </strong>
+                    ) : (
+                      <strong className="text-[#FF5500] font-mono">
+                        {formattedDate}
+                        {daysRemaining !== null && daysRemaining <= 7 && (
+                          <span className="text-rose-600 font-bold text-[10px] ml-1 animate-pulse">
+                            ({daysRemaining}d left!)
+                          </span>
+                        )}
+                      </strong>
+                    )}
                   </span>
                   {seats && (
                     <span className="hidden sm:inline-block text-slate-400">
-                      • {seats} Seats
+                      • {seats.toLocaleString()} Seats
                     </span>
                   )}
                 </div>
 
-                <Link href="/prepare">
-                  <button className="px-3.5 py-1.5 bg-gradient-to-r from-[#FF5500] to-[#FF6B00] hover:from-[#E64D00] hover:to-[#FF5500] text-white text-xs font-bold rounded-full shadow-2xs hover:shadow transition flex items-center gap-1 cursor-pointer">
-                    <BookOpen className="w-3 h-3" />
-                    <span>Prepare</span>
-                  </button>
-                </Link>
+                {/* Contextual Action Button */}
+                {!isEligible ? (
+                  <Link href="/eligibility">
+                    <button className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-full shadow-2xs transition flex items-center gap-1 cursor-pointer">
+                      <span>Explore</span>
+                    </button>
+                  </Link>
+                ) : isExpired ? (
+                  allowSecondTime ? (
+                    <Link href="/prepare">
+                      <button className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-full shadow-2xs transition flex items-center gap-1 cursor-pointer">
+                        <GraduationCap className="w-3.5 h-3.5 text-[#FF5500]" />
+                        <span>Next Session (2nd Time)</span>
+                      </button>
+                    </Link>
+                  ) : (
+                    <Link href="/guides">
+                      <button className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-full shadow-2xs transition flex items-center gap-1 cursor-pointer">
+                        <span>Circular Details</span>
+                      </button>
+                    </Link>
+                  )
+                ) : (
+                  <Link href="/prepare">
+                    <button className="px-3.5 py-1.5 bg-gradient-to-r from-[#FF5500] to-[#FF6B00] hover:from-[#E64D00] hover:to-[#FF5500] text-white text-xs font-bold rounded-full shadow-2xs hover:shadow transition flex items-center gap-1 cursor-pointer">
+                      <BookOpen className="w-3 h-3" />
+                      <span>Prepare Now</span>
+                    </button>
+                  </Link>
+                )}
               </div>
             </div>
           );
