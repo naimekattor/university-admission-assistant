@@ -41,8 +41,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="bg-[#FAF8F5] text-slate-900">
-      <body className="antialiased min-h-screen flex flex-col bg-[#FAF8F5] text-slate-900">
+    <html lang="en" className="bg-[#FAF8F5] text-slate-900 overflow-x-hidden">
+      <body className="antialiased min-h-screen flex flex-col bg-[#FAF8F5] text-slate-900 overflow-x-hidden">
         <ToastProvider>
           <Navbar />
           <main className="flex-1">{children}</main>
