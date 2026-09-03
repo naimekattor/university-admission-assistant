@@ -1400,12 +1400,25 @@ export class HomepageService {
   }
 
   public async getFeaturedUniversities(selectedIds: string[]): Promise<any[]> {
-    const all = await this.getDynamicAdmissionOverview();
-    if (!selectedIds || selectedIds.length === 0) {
-      return all.slice(0, 6);
+    try {
+      const all = await this.getAllUniversities();
+      if (!selectedIds || selectedIds.length === 0) {
+        return all.slice(0, 8);
+      }
+      const filtered = all.filter((u) => {
+        const id = String(u.id).toLowerCase();
+        const shortName = String(u.shortName || '').toLowerCase();
+        const name = String(u.name || '').toLowerCase();
+        return selectedIds.some((s) => {
+          const target = String(s).toLowerCase();
+          return target === id || target === shortName || target === name;
+        });
+      });
+      return filtered.length > 0 ? filtered : all.slice(0, 8);
+    } catch (err: any) {
+      console.error('Error in getFeaturedUniversities:', err?.message);
+      return [];
     }
-    const filtered = all.filter((u) => selectedIds.includes(u.id));
-    return filtered.length > 0 ? filtered : all.slice(0, 6);
   }
 
   public async getPublishedGuides(limit = 4): Promise<any[]> {
