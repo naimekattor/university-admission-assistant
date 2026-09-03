@@ -1,5 +1,6 @@
-import { db, schema } from '../../db';
+import { db, schema, pool } from '../../db';
 import { eq, desc } from 'drizzle-orm';
+import { autoMigrateDatabase } from '../../db/migrate-schema';
 
 export interface CircularWithUniversity {
   id: string;
@@ -33,101 +34,107 @@ export interface CircularWithUniversity {
   updatedAt: string;
 }
 
+function mapCircularRow({ circular, university }: { circular: any; university: any }): CircularWithUniversity {
+  return {
+    id: circular.id,
+    universityId: circular.universityId,
+    universityName: university?.name || 'Unknown University',
+    universityShortName: university?.shortName || 'VAR',
+    universityLogo: university?.logo || '🏛️',
+    title: circular.title,
+    unit: circular.unit || 'A Unit',
+    unitName: circular.unitName || circular.title,
+    session: circular.session || '2025-2026',
+    year: circular.year || 2026,
+    group: circular.group || 'Science',
+    allowedGroups: (circular.allowedGroups as string[]) || ['Science'],
+    minSscGpa: circular.minSscGpa ?? 3.5,
+    minHscGpa: circular.minHscGpa ?? 3.5,
+    minCombinedGpa: circular.minCombinedGpa ?? 7.5,
+    allowSecondTime: Boolean(circular.allowSecondTime),
+    allowedPassingYears: (circular.allowedPassingYears as number[]) || [2025, 2026],
+    requiredSubjects: (circular.requiredSubjects as string[]) || [],
+    totalSeats: circular.totalSeats || 100,
+    applicationFee: circular.applicationFee || 1000,
+    status: circular.status || 'active',
+    applicationStartDate: circular.applicationStartDate ? new Date(circular.applicationStartDate).toISOString() : null,
+    applicationEndDate: circular.applicationEndDate ? new Date(circular.applicationEndDate).toISOString() : null,
+    examDate: circular.examDate ? new Date(circular.examDate).toISOString() : null,
+    resultDate: circular.resultDate ? new Date(circular.resultDate).toISOString() : null,
+    officialUrl: circular.officialUrl || null,
+    summary: circular.summary || null,
+    createdAt: circular.createdAt ? new Date(circular.createdAt).toISOString() : new Date().toISOString(),
+    updatedAt: circular.updatedAt ? new Date(circular.updatedAt).toISOString() : (circular.createdAt ? new Date(circular.createdAt).toISOString() : new Date().toISOString()),
+  };
+}
+
 export class AdmissionService {
   /**
    * Fetch all admission circulars joined with their university metadata.
    */
   public async getCirculars(): Promise<CircularWithUniversity[]> {
-    const rows = await db
-      .select({
-        circular: schema.admissionCirculars,
-        university: schema.universities,
-      })
-      .from(schema.admissionCirculars)
-      .leftJoin(schema.universities, eq(schema.admissionCirculars.universityId, schema.universities.id))
-      .orderBy(desc(schema.admissionCirculars.createdAt));
+    try {
+      const rows = await db
+        .select({
+          circular: schema.admissionCirculars,
+          university: schema.universities,
+        })
+        .from(schema.admissionCirculars)
+        .leftJoin(schema.universities, eq(schema.admissionCirculars.universityId, schema.universities.id))
+        .orderBy(desc(schema.admissionCirculars.createdAt));
 
-    return rows.map(({ circular, university }) => ({
-      id: circular.id,
-      universityId: circular.universityId,
-      universityName: university?.name || 'Unknown University',
-      universityShortName: university?.shortName || 'VAR',
-      universityLogo: university?.logo || '🏛️',
-      title: circular.title,
-      unit: circular.unit || 'A Unit',
-      unitName: circular.unitName || circular.title,
-      session: circular.session || '2025-2026',
-      year: circular.year || 2026,
-      group: circular.group || 'Science',
-      allowedGroups: (circular.allowedGroups as string[]) || ['Science'],
-      minSscGpa: circular.minSscGpa ?? 3.5,
-      minHscGpa: circular.minHscGpa ?? 3.5,
-      minCombinedGpa: circular.minCombinedGpa ?? 7.5,
-      allowSecondTime: Boolean(circular.allowSecondTime),
-      allowedPassingYears: (circular.allowedPassingYears as number[]) || [2025, 2026],
-      requiredSubjects: (circular.requiredSubjects as string[]) || [],
-      totalSeats: circular.totalSeats || 100,
-      applicationFee: circular.applicationFee || 1000,
-      status: circular.status || 'active',
-      applicationStartDate: circular.applicationStartDate ? circular.applicationStartDate.toISOString() : null,
-      applicationEndDate: circular.applicationEndDate ? circular.applicationEndDate.toISOString() : null,
-      examDate: circular.examDate ? circular.examDate.toISOString() : null,
-      resultDate: circular.resultDate ? circular.resultDate.toISOString() : null,
-      officialUrl: circular.officialUrl,
-      summary: circular.summary,
-      createdAt: circular.createdAt.toISOString(),
-      updatedAt: circular.updatedAt ? circular.updatedAt.toISOString() : circular.createdAt.toISOString(),
-    }));
+      return rows.map(mapCircularRow);
+    } catch (error: any) {
+      console.warn('[AdmissionService] getCirculars failed, running autoMigrateDatabase recovery:', error.message);
+      await autoMigrateDatabase(pool);
+
+      const rows = await db
+        .select({
+          circular: schema.admissionCirculars,
+          university: schema.universities,
+        })
+        .from(schema.admissionCirculars)
+        .leftJoin(schema.universities, eq(schema.admissionCirculars.universityId, schema.universities.id))
+        .orderBy(desc(schema.admissionCirculars.createdAt));
+
+      return rows.map(mapCircularRow);
+    }
   }
 
   /**
    * Fetch single circular by ID.
    */
   public async getCircularById(id: string): Promise<CircularWithUniversity | null> {
-    const rows = await db
-      .select({
-        circular: schema.admissionCirculars,
-        university: schema.universities,
-      })
-      .from(schema.admissionCirculars)
-      .leftJoin(schema.universities, eq(schema.admissionCirculars.universityId, schema.universities.id))
-      .where(eq(schema.admissionCirculars.id, id))
-      .limit(1);
+    try {
+      const rows = await db
+        .select({
+          circular: schema.admissionCirculars,
+          university: schema.universities,
+        })
+        .from(schema.admissionCirculars)
+        .leftJoin(schema.universities, eq(schema.admissionCirculars.universityId, schema.universities.id))
+        .where(eq(schema.admissionCirculars.id, id))
+        .limit(1);
 
-    if (rows.length === 0) return null;
+      if (rows.length === 0) return null;
+      return mapCircularRow(rows[0]);
+    } catch (error: any) {
+      console.warn('[AdmissionService] getCircularById failed, running autoMigrateDatabase recovery:', error.message);
+      await autoMigrateDatabase(pool);
 
-    const { circular, university } = rows[0];
-    return {
-      id: circular.id,
-      universityId: circular.universityId,
-      universityName: university?.name || 'Unknown University',
-      universityShortName: university?.shortName || 'VAR',
-      universityLogo: university?.logo || '🏛️',
-      title: circular.title,
-      unit: circular.unit || 'A Unit',
-      unitName: circular.unitName || circular.title,
-      session: circular.session || '2025-2026',
-      year: circular.year || 2026,
-      group: circular.group || 'Science',
-      allowedGroups: (circular.allowedGroups as string[]) || ['Science'],
-      minSscGpa: circular.minSscGpa ?? 3.5,
-      minHscGpa: circular.minHscGpa ?? 3.5,
-      minCombinedGpa: circular.minCombinedGpa ?? 7.5,
-      allowSecondTime: Boolean(circular.allowSecondTime),
-      allowedPassingYears: (circular.allowedPassingYears as number[]) || [2025, 2026],
-      requiredSubjects: (circular.requiredSubjects as string[]) || [],
-      totalSeats: circular.totalSeats || 100,
-      applicationFee: circular.applicationFee || 1000,
-      status: circular.status || 'active',
-      applicationStartDate: circular.applicationStartDate ? circular.applicationStartDate.toISOString() : null,
-      applicationEndDate: circular.applicationEndDate ? circular.applicationEndDate.toISOString() : null,
-      examDate: circular.examDate ? circular.examDate.toISOString() : null,
-      resultDate: circular.resultDate ? circular.resultDate.toISOString() : null,
-      officialUrl: circular.officialUrl,
-      summary: circular.summary,
-      createdAt: circular.createdAt.toISOString(),
-      updatedAt: circular.updatedAt ? circular.updatedAt.toISOString() : circular.createdAt.toISOString(),
-    };
+      const rows = await db
+        .select({
+          circular: schema.admissionCirculars,
+          university: schema.universities,
+        })
+        .from(schema.admissionCirculars)
+        .leftJoin(schema.universities, eq(schema.admissionCirculars.universityId, schema.universities.id))
+        .where(eq(schema.admissionCirculars.id, id))
+        .limit(1);
+
+      if (rows.length === 0) return null;
+      return mapCircularRow(rows[0]);
+    }
   }
 
   /**
