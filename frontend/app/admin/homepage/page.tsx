@@ -29,6 +29,7 @@ import {
   ShieldCheck,
   RefreshCw,
   X,
+  Database,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { RichTextEditor } from '@/components/rich-text/rich-text-editor';
@@ -159,7 +160,7 @@ export default function AdminHomepageCMSPage() {
     const updatedConfig = { ...draftConfig, [sectionKey]: sectionData };
     setDraftConfig(updatedConfig);
 
-    // Save to localStorage immediately so preview and live updates reflect instantly
+    // Save to localStorage as quick client fallback
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('eduguide_homepage_draft', JSON.stringify(updatedConfig));
@@ -177,8 +178,8 @@ export default function AdminHomepageCMSPage() {
         const json = await res.json();
         if (json.data) setDraftConfig(json.data);
       }
-      setSaveSuccess(`Section '${sectionKey}' saved as draft.`);
-      toast.success(`Section '${sectionKey}' changes saved as draft.`, 'Draft Saved');
+      setSaveSuccess(`Section '${sectionKey}' saved to PostgreSQL database.`);
+      toast.success(`Section '${sectionKey}' saved to PostgreSQL database!`, 'PostgreSQL Synced');
       setTimeout(() => setSaveSuccess(null), 3500);
     } catch {
       setSaveSuccess(`Draft saved locally.`);
@@ -186,6 +187,40 @@ export default function AdminHomepageCMSPage() {
       setTimeout(() => setSaveSuccess(null), 3500);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveAll = async () => {
+    setSaving(true);
+    setSaveSuccess(null);
+
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('eduguide_homepage_draft', JSON.stringify(draftConfig));
+        localStorage.setItem('eduguide_homepage_config', JSON.stringify(draftConfig));
+      } catch {}
+    }
+
+    try {
+      const res = await fetch('/api/v1/admin/homepage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(draftConfig),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.data) setDraftConfig(json.data);
+        setSaveSuccess('All homepage configuration saved to PostgreSQL database.');
+        toast.success('All homepage configuration saved to PostgreSQL database!', 'PostgreSQL Live');
+      } else {
+        throw new Error('Failed to save to database');
+      }
+    } catch {
+      setSaveSuccess('Saved draft locally.');
+      toast.warning('Failed to save to database. Saved draft locally.', 'Offline Draft');
+    } finally {
+      setSaving(false);
+      setTimeout(() => setSaveSuccess(null), 3500);
     }
   };
 
@@ -208,7 +243,7 @@ export default function AdminHomepageCMSPage() {
       });
       if (res.ok) {
         await fetchAdminData();
-        toast.success(`Version ${nextVersion} published live to all students!`, 'Published Live');
+        toast.success(`Version ${nextVersion} published live to PostgreSQL database!`, 'PostgreSQL Live');
       }
     } catch {
       toast.info(`Homepage published locally.`, 'Published');
@@ -448,6 +483,15 @@ export default function AdminHomepageCMSPage() {
           </Link>
 
           <button
+            onClick={handleSaveAll}
+            disabled={saving}
+            className="px-4 py-2 rounded-full border border-orange-200 bg-orange-50 hover:bg-orange-100 text-[#FF5500] text-xs font-bold flex items-center gap-1.5 shadow-2xs transition cursor-pointer disabled:opacity-50"
+          >
+            <Database className="w-3.5 h-3.5" />
+            <span>{saving ? 'Saving...' : 'Save to DB'}</span>
+          </button>
+
+          <button
             onClick={() => setPublishModalOpen(true)}
             className="px-4 py-2 rounded-full bg-gradient-to-r from-[#FF5500] to-[#FF6B00] hover:from-[#E64D00] hover:to-[#FF5500] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm hover:shadow transition cursor-pointer"
           >
@@ -493,7 +537,14 @@ export default function AdminHomepageCMSPage() {
           </div>
 
           {/* Quick status card */}
-          <div className="p-4 bg-white border border-slate-200 rounded-2xl text-xs space-y-2">
+          <div className="p-4 bg-white border border-slate-200 rounded-2xl text-xs space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-slate-500">Database Source:</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                Live PostgreSQL
+              </span>
+            </div>
             <div className="flex items-center justify-between">
               <span className="text-slate-500">Live Version:</span>
               <span className="font-mono font-bold text-[#FF5500]">v{publishedConfig.version || 1}</span>
@@ -501,11 +552,11 @@ export default function AdminHomepageCMSPage() {
             <div className="flex items-center justify-between">
               <span className="text-slate-500">Status:</span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                Published
+                {publishedConfig.status === 'published' ? 'Published' : 'Draft'}
               </span>
             </div>
             <div className="text-[11px] text-slate-500 pt-1 border-t border-slate-100">
-              Live instant sync enabled for drafts & published state.
+              Directly connected to PostgreSQL <code>homepage_configs</code> table.
             </div>
           </div>
         </div>

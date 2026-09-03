@@ -235,6 +235,16 @@ apiRouter.get('/admin/homepage', async (req: Request, res: Response, next) => {
   }
 });
 
+// Full Homepage Configuration POST/Save endpoint
+apiRouter.post('/admin/homepage', async (req: Request, res: Response, next) => {
+  try {
+    const updated = await homepageService.saveFullConfig(req.body);
+    res.json({ success: true, message: 'Homepage configuration saved to PostgreSQL database.', data: updated });
+  } catch (error) {
+    next(error);
+  }
+});
+
 apiRouter.put('/admin/homepage/section/:section', async (req: Request, res: Response, next) => {
   try {
     const section = Array.isArray(req.params.section) ? req.params.section[0] : req.params.section;

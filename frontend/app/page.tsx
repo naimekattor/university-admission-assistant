@@ -49,6 +49,12 @@ function HomepageInner() {
         setHomepageData(data);
         if (data.config) {
           setConfig(data.config);
+          if (typeof window !== 'undefined') {
+            try {
+              const cacheKey = isPreview ? 'eduguide_homepage_draft' : 'eduguide_homepage_published';
+              localStorage.setItem(cacheKey, JSON.stringify(data.config));
+            } catch {}
+          }
         }
       }
     } catch {

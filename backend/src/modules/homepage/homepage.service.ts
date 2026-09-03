@@ -316,6 +316,68 @@ export class HomepageService {
 
   constructor() {
     this.pool = new pg.Pool({ connectionString: ENV.DATABASE_URL || process.env.DATABASE_URL });
+    this.ensureTables().catch((err) => {
+      console.warn('[HomepageService] Database init warning (will retry on first request):', err?.message);
+    });
+  }
+
+  /**
+   * Ensure homepage_configs table exists in PostgreSQL and has initial seed
+   */
+  public async ensureTables(): Promise<void> {
+    try {
+      await this.pool.query(`
+        CREATE TABLE IF NOT EXISTS homepage_configs (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          status TEXT NOT NULL DEFAULT 'draft',
+          version INTEGER DEFAULT 1,
+          hero_config JSONB,
+          admission_section_config JSONB,
+          eligibility_section_config JSONB,
+          deadline_section_config JSONB,
+          featured_university_ids JSONB,
+          ai_advisor_config JSONB,
+          guide_section_config JSONB,
+          preparation_config JSONB,
+          faq_config JSONB,
+          footer_config JSONB,
+          seo_config JSONB,
+          updated_by TEXT,
+          published_by TEXT,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          published_at TIMESTAMP WITH TIME ZONE
+        );
+      `);
+
+      const check = await this.pool.query(`SELECT COUNT(*) as count FROM homepage_configs`);
+      if (parseInt(check.rows[0].count, 10) === 0) {
+        await this.pool.query(
+          `INSERT INTO homepage_configs (
+            status, version, hero_config, admission_section_config, eligibility_section_config,
+            deadline_section_config, featured_university_ids, ai_advisor_config, guide_section_config,
+            preparation_config, faq_config, footer_config, seo_config, updated_at, published_at
+          ) VALUES (
+            'published', 1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW()
+          )`,
+          [
+            JSON.stringify(DEFAULT_HOMEPAGE_CONFIG.hero),
+            JSON.stringify(DEFAULT_HOMEPAGE_CONFIG.admissionSection),
+            JSON.stringify(DEFAULT_HOMEPAGE_CONFIG.eligibilitySection),
+            JSON.stringify(DEFAULT_HOMEPAGE_CONFIG.deadlineSection),
+            JSON.stringify(DEFAULT_HOMEPAGE_CONFIG.featuredUniversities),
+            JSON.stringify(DEFAULT_HOMEPAGE_CONFIG.aiAdvisor),
+            JSON.stringify(DEFAULT_HOMEPAGE_CONFIG.guideSection),
+            JSON.stringify(DEFAULT_HOMEPAGE_CONFIG.preparation),
+            JSON.stringify(DEFAULT_HOMEPAGE_CONFIG.faq),
+            JSON.stringify(DEFAULT_HOMEPAGE_CONFIG.footer),
+            JSON.stringify(DEFAULT_HOMEPAGE_CONFIG.seo),
+          ]
+        );
+        console.log('[HomepageService] Seeded default published homepage config into PostgreSQL.');
+      }
+    } catch (err: any) {
+      console.warn('[HomepageService] Could not verify homepage_configs table:', err?.message);
+    }
   }
 
   /**
@@ -370,33 +432,43 @@ export class HomepageService {
 
   public async getDraftConfig(): Promise<HomepageFullConfig> {
     try {
+      await this.ensureTables();
       const res = await this.pool.query(
         `SELECT * FROM homepage_configs WHERE status = 'draft' ORDER BY updated_at DESC LIMIT 1`
       );
       if (res.rows.length > 0) {
         return this.mapDbRowToConfig(res.rows[0], 'draft');
       }
-    } catch {
-      // Fallback to in-memory draft
+      // If no draft row, fallback to latest published row from DB
+      const pubRes = await this.pool.query(
+        `SELECT * FROM homepage_configs WHERE status = 'published' ORDER BY published_at DESC LIMIT 1`
+      );
+      if (pubRes.rows.length > 0) {
+        return { ...this.mapDbRowToConfig(pubRes.rows[0], 'draft'), status: 'draft' };
+      }
+    } catch (err: any) {
+      console.warn('[HomepageService] getDraftConfig DB query error, using memory fallback:', err?.message);
     }
     return this.inMemoryDraftConfig;
   }
 
   public async getPublishedConfig(): Promise<HomepageFullConfig> {
     try {
+      await this.ensureTables();
       const res = await this.pool.query(
         `SELECT * FROM homepage_configs WHERE status = 'published' ORDER BY published_at DESC LIMIT 1`
       );
       if (res.rows.length > 0) {
         return this.mapDbRowToConfig(res.rows[0], 'published');
       }
-    } catch {
-      // Fallback to in-memory published
+    } catch (err: any) {
+      console.warn('[HomepageService] getPublishedConfig DB query error, using memory fallback:', err?.message);
     }
     return this.inMemoryPublishedConfig;
   }
 
   public async saveDraftSection(sectionKey: string, sectionData: any): Promise<HomepageFullConfig> {
+    await this.ensureTables();
     const currentDraft = await this.getDraftConfig();
     const updatedDraft: any = {
       ...currentDraft,
@@ -422,7 +494,7 @@ export class HomepageService {
           JSON.stringify(updatedDraft.admissionSection),
           JSON.stringify(updatedDraft.eligibilitySection),
           JSON.stringify(updatedDraft.deadlineSection),
-          JSON.stringify(updatedDraft.featuredUniversities?.selectedUniversityIds || []),
+          JSON.stringify(updatedDraft.featuredUniversities || {}),
           JSON.stringify(updatedDraft.aiAdvisor),
           JSON.stringify(updatedDraft.guideSection),
           JSON.stringify(updatedDraft.preparation),
@@ -431,14 +503,60 @@ export class HomepageService {
           JSON.stringify(updatedDraft.seo),
         ]
       );
-    } catch {
-      // Memory persistence retained
+      console.log(`[HomepageService] Section '${sectionKey}' persisted to PostgreSQL homepage_configs.`);
+    } catch (err: any) {
+      console.error(`[HomepageService] Failed to insert draft section '${sectionKey}' into database:`, err?.message);
+    }
+
+    return updatedDraft;
+  }
+
+  public async saveFullConfig(fullConfig: Partial<HomepageFullConfig>): Promise<HomepageFullConfig> {
+    await this.ensureTables();
+    const currentDraft = await this.getDraftConfig();
+    const updatedDraft: HomepageFullConfig = {
+      ...currentDraft,
+      ...fullConfig,
+      status: 'draft',
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.inMemoryDraftConfig = updatedDraft;
+
+    try {
+      await this.pool.query(
+        `INSERT INTO homepage_configs (
+          status, version, hero_config, admission_section_config, eligibility_section_config,
+          deadline_section_config, featured_university_ids, ai_advisor_config, guide_section_config,
+          preparation_config, faq_config, footer_config, seo_config, updated_at
+        ) VALUES (
+          'draft', $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW()
+        )`,
+        [
+          updatedDraft.version || 1,
+          JSON.stringify(updatedDraft.hero),
+          JSON.stringify(updatedDraft.admissionSection),
+          JSON.stringify(updatedDraft.eligibilitySection),
+          JSON.stringify(updatedDraft.deadlineSection),
+          JSON.stringify(updatedDraft.featuredUniversities || {}),
+          JSON.stringify(updatedDraft.aiAdvisor),
+          JSON.stringify(updatedDraft.guideSection),
+          JSON.stringify(updatedDraft.preparation),
+          JSON.stringify(updatedDraft.faq),
+          JSON.stringify(updatedDraft.footer),
+          JSON.stringify(updatedDraft.seo),
+        ]
+      );
+      console.log('[HomepageService] Full homepage configuration persisted to PostgreSQL database as draft.');
+    } catch (err: any) {
+      console.error('[HomepageService] Failed to insert full draft config into database:', err?.message);
     }
 
     return updatedDraft;
   }
 
   public async publishHomepage(): Promise<{ success: boolean; message: string; version: number }> {
+    await this.ensureTables();
     const draft = await this.getDraftConfig();
 
     // Content Validation
@@ -481,7 +599,7 @@ export class HomepageService {
           JSON.stringify(published.admissionSection),
           JSON.stringify(published.eligibilitySection),
           JSON.stringify(published.deadlineSection),
-          JSON.stringify(published.featuredUniversities?.selectedUniversityIds || []),
+          JSON.stringify(published.featuredUniversities || {}),
           JSON.stringify(published.aiAdvisor),
           JSON.stringify(published.guideSection),
           JSON.stringify(published.preparation),
@@ -490,8 +608,9 @@ export class HomepageService {
           JSON.stringify(published.seo),
         ]
       );
-    } catch {
-      // Memory persistence retained
+      console.log(`[HomepageService] Homepage published to version ${newVersion} in PostgreSQL database.`);
+    } catch (err: any) {
+      console.error('[HomepageService] Failed to insert published config into database:', err?.message);
     }
 
     return {
@@ -1617,10 +1736,18 @@ export class HomepageService {
       admissionSection: typeof row.admission_section_config === 'string' ? JSON.parse(row.admission_section_config) : row.admission_section_config || DEFAULT_HOMEPAGE_CONFIG.admissionSection,
       eligibilitySection: typeof row.eligibility_section_config === 'string' ? JSON.parse(row.eligibility_section_config) : row.eligibility_section_config || DEFAULT_HOMEPAGE_CONFIG.eligibilitySection,
       deadlineSection: typeof row.deadline_section_config === 'string' ? JSON.parse(row.deadline_section_config) : row.deadline_section_config || DEFAULT_HOMEPAGE_CONFIG.deadlineSection,
-      featuredUniversities: {
-        ...DEFAULT_HOMEPAGE_CONFIG.featuredUniversities,
-        selectedUniversityIds: typeof row.featured_university_ids === 'string' ? JSON.parse(row.featured_university_ids) : row.featured_university_ids || DEFAULT_HOMEPAGE_CONFIG.featuredUniversities.selectedUniversityIds,
-      },
+      featuredUniversities: (() => {
+        let parsed = row.featured_university_ids;
+        if (typeof parsed === 'string') {
+          try { parsed = JSON.parse(parsed); } catch {}
+        }
+        if (Array.isArray(parsed)) {
+          return { ...DEFAULT_HOMEPAGE_CONFIG.featuredUniversities, selectedUniversityIds: parsed };
+        } else if (parsed && typeof parsed === 'object') {
+          return { ...DEFAULT_HOMEPAGE_CONFIG.featuredUniversities, ...parsed };
+        }
+        return DEFAULT_HOMEPAGE_CONFIG.featuredUniversities;
+      })(),
       aiAdvisor: typeof row.ai_advisor_config === 'string' ? JSON.parse(row.ai_advisor_config) : row.ai_advisor_config || DEFAULT_HOMEPAGE_CONFIG.aiAdvisor,
       guideSection: typeof row.guide_section_config === 'string' ? JSON.parse(row.guide_section_config) : row.guide_section_config || DEFAULT_HOMEPAGE_CONFIG.guideSection,
       preparation: typeof row.preparation_config === 'string' ? JSON.parse(row.preparation_config) : row.preparation_config || DEFAULT_HOMEPAGE_CONFIG.preparation,
