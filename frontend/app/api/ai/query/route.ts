@@ -5,7 +5,8 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4000';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { roleType = 'advisor', userQuery, studentContext } = body;
+    const { roleType = 'advisor', userQuery, studentContext, sessionToken } = body;
+    const activeToken = sessionToken || req.headers.get('x-session-id') || '';
 
     if (!userQuery || typeof userQuery !== 'string') {
       return NextResponse.json(
@@ -18,9 +19,9 @@ export async function POST(req: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-session-id': req.headers.get('x-session-id') || '',
+        'x-session-id': activeToken,
       },
-      body: JSON.stringify({ roleType, userQuery, studentContext }),
+      body: JSON.stringify({ roleType, userQuery, studentContext, sessionToken: activeToken }),
     });
 
     if (!res.ok) {

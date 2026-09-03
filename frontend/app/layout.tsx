@@ -46,7 +46,7 @@ export default function RootLayout({
       <body className="antialiased min-h-screen flex flex-col bg-[#FAF8F5] text-slate-900 overflow-x-hidden">
         <ToastProvider>
           <Navbar />
-          <main className="flex-1">{children}</main>
+          <main className="flex-1 w-full max-w-full overflow-x-clip">{children}</main>
           <FloatingAiChat />
           {process.env.NODE_ENV === 'production' && <Analytics />}
         </ToastProvider>

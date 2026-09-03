@@ -7,6 +7,8 @@ import { examsService } from '../modules/exams/exams.service';
 import { studyPlanService } from '../modules/study-plans/study-plan.service';
 import { ragService } from '../modules/rag/rag.service';
 import { admissionService } from '../modules/admission/admission.service';
+import { db, sessions, chatMessages } from '../db';
+import { eq, asc } from 'drizzle-orm';
 
 export const apiRouter = Router();
 
@@ -15,16 +17,105 @@ apiRouter.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', service: 'EduGuide Backend API', timestamp: new Date().toISOString() });
 });
 
-// AI Advisor & Tutor Endpoint
+// AI Advisor & Tutor Endpoint with PostgreSQL Session & Chat Persistence
 apiRouter.post('/ai/query', async (req: Request, res: Response, next) => {
   try {
-    const { roleType = 'advisor', userQuery, studentContext } = req.body;
+    const { roleType = 'advisor', userQuery, studentContext, sessionToken: providedToken } = req.body;
+    const token = providedToken || (req.headers['x-session-id'] as string) || 'sess_default';
+
+    // 1. Find or create session record in PostgreSQL
+    let sessionRecord: any = null;
+    try {
+      sessionRecord = await db.query.sessions.findFirst({
+        where: eq(sessions.sessionToken, token),
+      });
+
+      if (!sessionRecord) {
+        const [newSess] = await db.insert(sessions).values({
+          sessionToken: token,
+          userAgent: (req.headers['user-agent'] as string) || 'web',
+          ipAddress: req.ip || '127.0.0.1',
+        }).returning();
+        sessionRecord = newSess;
+      } else {
+        await db.update(sessions).set({ lastActiveAt: new Date() }).where(eq(sessions.id, sessionRecord.id));
+      }
+
+      // 2. Persist student user query to PostgreSQL
+      if (sessionRecord && userQuery) {
+        await db.insert(chatMessages).values({
+          sessionId: sessionRecord.id,
+          role: 'user',
+          content: userQuery,
+        });
+      }
+    } catch (dbErr: any) {
+      console.warn('[ChatPersistence] Error saving user message:', dbErr.message);
+    }
+
+    // 3. Process AI query
     const result = await aiOrchestratorService.processQuery({
       roleType,
       userQuery,
       studentContext,
     });
-    res.json({ success: true, data: result });
+
+    // 4. Persist AI assistant response to PostgreSQL
+    try {
+      if (sessionRecord && result) {
+        await db.insert(chatMessages).values({
+          sessionId: sessionRecord.id,
+          role: 'assistant',
+          content: typeof result === 'string' ? result : JSON.stringify(result),
+        });
+      }
+    } catch (dbErr: any) {
+      console.warn('[ChatPersistence] Error saving assistant response:', dbErr.message);
+    }
+
+    res.json({ success: true, data: result, sessionToken: token });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Chat History Retrieval from PostgreSQL
+apiRouter.get('/ai/chat/history', async (req: Request, res: Response, next) => {
+  try {
+    const token = (req.query.sessionToken as string) || (req.headers['x-session-id'] as string);
+    if (!token) {
+      return res.json({ success: true, messages: [] });
+    }
+
+    const sessionRecord = await db.query.sessions.findFirst({
+      where: eq(sessions.sessionToken, token),
+    });
+
+    if (!sessionRecord) {
+      return res.json({ success: true, messages: [] });
+    }
+
+    const rows = await db.query.chatMessages.findMany({
+      where: eq(chatMessages.sessionId, sessionRecord.id),
+      orderBy: [asc(chatMessages.createdAt)],
+    });
+
+    const formatted = rows.map((r) => {
+      let content = r.content;
+      try {
+        if (typeof r.content === 'string' && (r.content.startsWith('{') || r.content.startsWith('['))) {
+          content = JSON.parse(r.content);
+        }
+      } catch {}
+      return {
+        id: r.id,
+        role: r.role as 'user' | 'assistant',
+        content,
+        createdAt: r.createdAt,
+      };
+    });
+
+    res.json({ success: true, messages: formatted });
   } catch (error) {
     next(error);
   }

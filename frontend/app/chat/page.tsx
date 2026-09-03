@@ -10,35 +10,38 @@ export default function DualAiChatPage() {
   const [inputQuery, setInputQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [sessionToken, setSessionToken] = useState<string>('');
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesContentRef = useRef<HTMLDivElement>(null);
   const isAutoScrollEnabledRef = useRef<boolean>(true);
 
-  const [messages, setMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; content: any }>>([
-    {
-      id: 'm-init',
-      role: 'assistant',
-      content: {
-        type: 'general_answer',
-        summary: 'Welcome to EduGuide AI Admission Advisor & Tutor!',
-        sections: [
-          {
-            heading: 'AI Admission Advisor',
-            content: 'Ask questions about university admission requirements, eligibility cutoffs, seat capacity, circular deadlines, and university comparisons.',
-          },
-          {
-            heading: 'AI Tutor',
-            content: 'Switch to the AI Tutor tab above to solve Physics, Chemistry, and Mathematics problems step-by-step or get concepts explained clearly.',
-          },
-        ],
-        recommendedNextActions: [
-          { label: 'Check My BUET Eligibility', action: 'check_eligibility' },
-          { label: 'Compare BUET vs DU CSE', action: 'compare_universities' },
-          { label: 'Start Today\'s Practice', action: 'start_practice' },
-        ],
-      },
+  const defaultInitMessage = {
+    id: 'm-init',
+    role: 'assistant' as const,
+    content: {
+      type: 'general_answer',
+      summary: 'Welcome to EduGuide AI Admission Advisor & Tutor!',
+      sections: [
+        {
+          heading: 'AI Admission Advisor',
+          content: 'Ask questions about university admission requirements, eligibility cutoffs, seat capacity, circular deadlines, and university comparisons.',
+        },
+        {
+          heading: 'AI Tutor',
+          content: 'Switch to the AI Tutor tab above to solve Physics, Chemistry, and Mathematics problems step-by-step or get concepts explained clearly.',
+        },
+      ],
+      recommendedNextActions: [
+        { label: 'Check My BUET Eligibility', action: 'check_eligibility' },
+        { label: 'Compare BUET vs DU CSE', action: 'compare_universities' },
+        { label: 'Start Today\'s Practice', action: 'start_practice' },
+      ],
     },
+  };
+
+  const [messages, setMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; content: any }>>([
+    defaultInitMessage,
   ]);
 
   const quickPromptsAdvisor = [
@@ -63,7 +66,32 @@ export default function DualAiChatPage() {
     }
   }, []);
 
-  // ── RESIZEOBSERVER: AUTOMATICALLY SCROLL AS CONTENT HEIGHT INCREASES ──
+  // ── 1. LOAD PERSISTED CHAT MESSAGES FROM POSTGRESQL DATABASE ──
+  useEffect(() => {
+    let token = typeof window !== 'undefined' ? localStorage.getItem('eduguide_chat_session_token') : null;
+    if (!token) {
+      token = 'sess_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('eduguide_chat_session_token', token);
+      }
+    }
+    setSessionToken(token);
+
+    // Fetch conversation from DB
+    fetch(`/api/ai/chat/history?sessionToken=${encodeURIComponent(token)}`)
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && Array.isArray(res.messages) && res.messages.length > 0) {
+          setMessages(res.messages);
+          setTimeout(() => scrollToBottom(false), 80);
+        }
+      })
+      .catch((err) => {
+        console.warn('[ChatHistory] Error loading saved messages:', err);
+      });
+  }, [scrollToBottom]);
+
+  // ── 2. RESIZEOBSERVER: AUTOMATICALLY SCROLL AS CONTENT HEIGHT INCREASES ──
   useEffect(() => {
     const target = messagesContentRef.current;
     if (!target) return;
@@ -89,7 +117,7 @@ export default function DualAiChatPage() {
     isAutoScrollEnabledRef.current = isAtBottom;
   };
 
-  // ── CHUNKING-WISE PROGRESSIVE STREAMING ENGINE ──
+  // ── 3. CHUNKING-WISE PROGRESSIVE STREAMING ENGINE ──
   const streamResponseInChunks = async (data: any) => {
     setIsLoading(false);
     setIsStreaming(true);
@@ -97,7 +125,7 @@ export default function DualAiChatPage() {
 
     const msgId = `a-${Date.now()}`;
 
-    // If not a structured general_answer or simple string, render immediately
+    // If string response
     if (typeof data === 'string') {
       const words = data.split(' ');
       let currentText = '';
@@ -116,8 +144,8 @@ export default function DualAiChatPage() {
       return;
     }
 
+    // If structured general_answer
     if (data.type === 'general_answer' && (data.summary || data.sections)) {
-      // Progressive chunking of structured response
       const emptyObj = {
         type: 'general_answer',
         summary: '',
@@ -162,7 +190,7 @@ export default function DualAiChatPage() {
             })
           );
           scrollToBottom(false);
-          await new Promise((r) => setTimeout(r, 40));
+          await new Promise((r) => setTimeout(r, 35));
 
           // Stream section content in 4-word chunks
           for (let wIdx = 0; wIdx < secWords.length; wIdx += 4) {
@@ -194,7 +222,7 @@ export default function DualAiChatPage() {
       return;
     }
 
-    // Default immediate render for other card types
+    // Default immediate render for comparison/eligibility cards
     setMessages((prev) => [...prev, { id: msgId, role: 'assistant', content: data }]);
     setIsStreaming(false);
     scrollToBottom(true);
@@ -211,6 +239,11 @@ export default function DualAiChatPage() {
     isAutoScrollEnabledRef.current = true;
     setTimeout(() => scrollToBottom(true), 50);
 
+    const tokenToUse =
+      sessionToken ||
+      (typeof window !== 'undefined' ? localStorage.getItem('eduguide_chat_session_token') : '') ||
+      'sess_default';
+
     try {
       const res = await fetch('/api/ai/query', {
         method: 'POST',
@@ -218,6 +251,7 @@ export default function DualAiChatPage() {
         body: JSON.stringify({
           roleType,
           userQuery: query,
+          sessionToken: tokenToUse,
           studentContext: { primaryGoal: 'BUET CSE', sscGpa: 5.0, hscGpa: 5.0, academicGroup: 'Science' },
         }),
       });
@@ -267,15 +301,17 @@ export default function DualAiChatPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)] bg-[#FFFDFB] relative overflow-hidden flex flex-col">
-      {/* ── AMBIENT GRADIENT MESH BACKGROUND ── */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[320px] bg-gradient-to-b from-orange-200/30 via-orange-100/10 to-transparent blur-3xl pointer-events-none -z-10" />
-      <div className="absolute top-1/3 -right-32 w-80 h-80 bg-amber-200/20 rounded-full blur-3xl pointer-events-none -z-10" />
+    <div className="h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] w-full max-w-full bg-[#FFFDFB] relative overflow-x-clip overflow-y-hidden flex flex-col">
+      {/* ── AMBIENT GRADIENT MESH (CLIPPED TO PREVENT HORIZONTAL SCROLL) ── */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] max-w-full h-[300px] bg-gradient-to-b from-orange-200/30 via-orange-100/10 to-transparent blur-3xl" />
+        <div className="absolute top-1/3 right-0 w-72 h-72 bg-amber-200/20 rounded-full blur-3xl" />
+      </div>
 
-      <div className="container mx-auto px-4 sm:px-6 max-w-5xl py-3 flex-1 flex flex-col min-h-0 h-full overflow-hidden">
+      <div className="container mx-auto px-3 sm:px-6 max-w-5xl py-2.5 sm:py-3 flex-1 flex flex-col min-h-0 h-full overflow-hidden w-full">
         
         {/* ── HEADER & ROLE SWITCHER TABS (SHRINK-0) ── */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2.5 shrink-0">
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-[#FF5500] text-[11px] font-bold uppercase tracking-wider font-mono mb-1 shadow-2xs">
               <Bot className="w-3.5 h-3.5 text-[#FF5500]" />
@@ -323,7 +359,7 @@ export default function DualAiChatPage() {
           <div
             ref={scrollContainerRef}
             onScroll={handleScroll}
-            className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 min-h-0"
+            className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 space-y-5 min-h-0"
           >
             <div ref={messagesContentRef} className="space-y-5">
               {messages.map((m) => (
@@ -370,7 +406,7 @@ export default function DualAiChatPage() {
           {/* ── STATIC INPUT AREA (ALWAYS PINNED FIRMLY AT BOTTOM) ── */}
           <div className="p-3.5 sm:p-4 border-t border-slate-100 bg-white space-y-2.5 shrink-0">
             {/* Quick Prompts Pills */}
-            <div className="flex flex-wrap gap-1.5 overflow-x-auto pb-1">
+            <div className="flex flex-wrap gap-1.5 overflow-x-auto pb-0.5">
               {(roleType === 'advisor' ? quickPromptsAdvisor : quickPromptsTutor).map((p, idx) => (
                 <button
                   key={idx}
