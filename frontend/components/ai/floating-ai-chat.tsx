@@ -13,10 +13,7 @@ import {
   Maximize2,
   RefreshCw,
   Target,
-  BookOpen,
   ArrowRight,
-  MessageSquare,
-  ChevronDown,
 } from 'lucide-react';
 
 interface ChatMessage {
@@ -29,7 +26,6 @@ interface ChatMessage {
 export function FloatingAiChat() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-  const [roleType, setRoleType] = useState<'advisor' | 'tutor'>('advisor');
   const [inputQuery, setInputQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
@@ -39,11 +35,11 @@ export function FloatingAiChat() {
     {
       id: 'msg-init',
       role: 'assistant',
-      text: 'Hi! I am your EduGuide AI Admission Advisor & Tutor. Ask me about 2026 university eligibility cutoffs, circular deadlines, or step-by-step problem solving!',
+      text: 'Hi! I am your EduGuide AI Admission Advisor. Ask me anything about 2026 university admission eligibility, cutoffs, circular deadlines, seat capacity, or university comparisons!',
       actions: [
         { label: 'Check BUET Eligibility', query: 'What is BUET CSE eligibility requirement for 2026?' },
         { label: 'Compare DU vs BUET', query: 'Compare DU Ka Unit vs BUET Ka Unit seats and cutoffs' },
-        { label: 'Solve Physics Problem', query: 'Explain Newton\'s Second Law with an impulse example' },
+        { label: 'Medical 2nd Time Rules', query: 'Does Medical allow second time admission in 2026?' },
       ],
     },
   ]);
@@ -72,7 +68,7 @@ export function FloatingAiChat() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          roleType,
+          roleType: 'advisor',
           userQuery: query,
           studentContext: {
             primaryGoal: 'BUET CSE',
@@ -90,9 +86,9 @@ export function FloatingAiChat() {
             typeof json.data === 'string'
               ? json.data
               : json.data.summary ||
-              json.data.questionText ||
-              json.data.title ||
-              'Here is what I found for your admission inquiry.';
+                json.data.questionText ||
+                json.data.title ||
+                'Here is what I found for your admission inquiry.';
 
           const actions = json.data.recommendedNextActions?.map((act: any) => ({
             label: act.label,
@@ -116,12 +112,9 @@ export function FloatingAiChat() {
       // Handled by fallback
     }
 
-    // Fallback answer
+    // Fallback response
     setTimeout(() => {
-      const fallbackText =
-        roleType === 'tutor'
-          ? `For "${query}":\n• Step 1: Identify given quantities.\n• Step 2: Apply core formulas (F = ma, J = ∫F dt).\n• Step 3: Solve for unknown variables with unit verification.`
-          : `Official 2026 Circular Status for "${query}":\n• BUET & Engineering clusters require SSC & HSC GPA 4.00+ with Math, Physics, Chemistry.\n• Medical DGHS permits 2nd-time applicants (Pass years: 2024, 2025, 2026).\n• Circulars for 2026-2027 are actively scheduled for release.`;
+      const fallbackText = `Official 2026 Admission Circular Status for "${query}":\n• BUET & Engineering clusters require SSC & HSC GPA 4.00+ with Math, Physics, Chemistry.\n• Medical DGHS permits 2nd-time applicants (Pass years: 2024, 2025, 2026).\n• Circulars for the 2026-2027 session are actively scheduled for release.`;
 
       setMessages((prev) => [
         ...prev,
@@ -130,7 +123,7 @@ export function FloatingAiChat() {
           role: 'assistant',
           text: fallbackText,
           actions: [
-            { label: 'Explore Full Eligibility', href: '/eligibility' },
+            { label: 'Check My Full Eligibility', href: '/eligibility' },
             { label: 'Open Dedicated Chat', href: '/chat' },
           ],
         },
@@ -148,28 +141,28 @@ export function FloatingAiChat() {
       {/* ── FLOATING CHAT WINDOW MODAL ── */}
       {isOpen && (
         <div className="mb-3 w-[92vw] sm:w-[420px] h-[560px] max-h-[82vh] bg-white/95 backdrop-blur-xl border border-orange-100/90 rounded-3xl shadow-2xl shadow-orange-500/15 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200">
-
+          
           {/* Header Bar */}
-          <div className="px-5 py-3.5 bg-white border-b border-orange-100 flex items-center justify-between shrink-0">
+          <div className="px-5 py-4 bg-white border-b border-orange-100 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
-              <div className="relative w-9 h-9 rounded-2xl bg-orange-50 border border-orange-200 overflow-hidden flex items-center justify-center shadow-2xs">
+              <div className="relative w-10 h-10 rounded-2xl bg-orange-50 border border-orange-200 overflow-hidden flex items-center justify-center shadow-2xs">
                 <Image
                   src="/images/ai-advisor-icon.svg"
                   alt="AI Advisor"
-                  width={36}
-                  height={36}
+                  width={40}
+                  height={40}
                   className="object-contain"
                 />
-                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+                <span className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h3 className="font-extrabold text-sm text-slate-900">EduGuide AI</h3>
+                  <h3 className="font-extrabold text-sm text-slate-900">EduGuide AI Advisor</h3>
                   <span className="px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-orange-50 text-[#FF5500] border border-orange-200 font-mono">
                     ONLINE
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500 font-medium">Admission Advisor & Tutor</p>
+                <p className="text-[11px] text-slate-500 font-medium">Official Admission & Circular Assistant</p>
               </div>
             </div>
 
@@ -192,33 +185,6 @@ export function FloatingAiChat() {
             </div>
           </div>
 
-          {/* Role Mode Toggle Strip */}
-          <div className="px-5 py-2 bg-slate-50/70 border-b border-slate-100 flex items-center justify-between gap-2 shrink-0">
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider font-mono">Mode:</span>
-            <div className="flex p-0.5 bg-slate-200/80 rounded-xl">
-              <button
-                onClick={() => setRoleType('advisor')}
-                className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${roleType === 'advisor'
-                    ? 'bg-gradient-to-r from-[#FF5500] to-[#E64D00] text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                  }`}
-              >
-                <Target className="w-3 h-3" />
-                <span>Advisor</span>
-              </button>
-              <button
-                onClick={() => setRoleType('tutor')}
-                className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${roleType === 'tutor'
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                  }`}
-              >
-                <BookOpen className="w-3 h-3" />
-                <span>Tutor</span>
-              </button>
-            </div>
-          </div>
-
           {/* Messages Scroll Area */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.map((m) => (
@@ -230,10 +196,11 @@ export function FloatingAiChat() {
                 )}
 
                 <div
-                  className={`max-w-[82%] text-xs leading-relaxed space-y-2.5 ${m.role === 'user'
+                  className={`max-w-[82%] text-xs leading-relaxed space-y-2.5 ${
+                    m.role === 'user'
                       ? 'bg-gradient-to-r from-[#FF5500] to-[#E64D00] text-white font-medium p-3.5 rounded-2xl rounded-tr-xs shadow-sm shadow-orange-500/20'
                       : 'bg-slate-50 border border-slate-200/80 text-slate-800 p-3.5 rounded-2xl rounded-tl-xs shadow-2xs'
-                    }`}
+                  }`}
                 >
                   <p className="whitespace-pre-line">{m.text}</p>
 
@@ -274,14 +241,14 @@ export function FloatingAiChat() {
             {isLoading && (
               <div className="flex items-center gap-2 text-xs text-[#FF5500] font-bold p-2.5 bg-orange-50/80 border border-orange-100 rounded-xl w-fit animate-pulse">
                 <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#FF5500]" />
-                <span>Thinking & retrieving data...</span>
+                <span>AI Advisor retrieving circulars & verifying eligibility...</span>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
           {/* Input Bar */}
-          <div className="p-3 bg-white border-t border-slate-100">
+          <div className="p-3.5 bg-white border-t border-slate-100">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -293,7 +260,7 @@ export function FloatingAiChat() {
                 type="text"
                 value={inputQuery}
                 onChange={(e) => setInputQuery(e.target.value)}
-                placeholder={roleType === 'advisor' ? 'Ask about eligibility, cutoffs, dates...' : 'Ask Physics/Chemistry/Math problem...'}
+                placeholder="Ask about BUET, DU, Medical eligibility, cutoffs, dates..."
                 className="flex-1 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#FF5500] focus:ring-4 focus:ring-[#FF5500]/10 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 outline-none transition font-medium"
               />
               <button
@@ -320,7 +287,7 @@ export function FloatingAiChat() {
         <button
           onClick={() => setIsOpen((prev) => !prev)}
           className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white border-2 border-orange-200 hover:border-[#FF5500] p-1.5 shadow-xl shadow-orange-500/25 hover:shadow-orange-500/40 hover:scale-105 active:scale-95 transition-all flex items-center justify-center cursor-pointer group"
-          aria-label="Open EduGuide AI Chat"
+          aria-label="Open EduGuide AI Advisor"
         >
           {/* Subtle Ambient Pulse Ring */}
           <span className="absolute inset-0 rounded-full bg-[#FF5500]/20 animate-ping pointer-events-none" />
