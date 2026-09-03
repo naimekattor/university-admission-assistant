@@ -12,38 +12,34 @@ import {
   User,
   Maximize2,
   RefreshCw,
-  Target,
   ArrowRight,
 } from 'lucide-react';
 import { MarkdownContent } from '@/components/ai/markdown-content';
-
-interface ChatMessage {
-  id: string;
-  role: 'assistant' | 'user';
-  text: string;
-  actions?: Array<{ label: string; href?: string; query?: string }>;
-}
+import { useAiChat } from '@/hooks/use-ai-chat';
 
 export function FloatingAiChat() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-  const [inputQuery, setInputQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'msg-init',
-      role: 'assistant',
-      text: 'Hi! I am your EduGuide AI Admission Advisor. Ask me anything about 2026 university admission eligibility, cutoffs, circular deadlines, seat capacity, or university comparisons!',
-      actions: [
-        { label: 'Check BUET Eligibility', query: 'What is BUET CSE eligibility requirement for 2026?' },
-        { label: 'Compare DU vs BUET', query: 'Compare DU Ka Unit vs BUET Ka Unit seats and cutoffs' },
-        { label: 'Medical 2nd Time Rules', query: 'Does Medical allow second time admission in 2026?' },
-      ],
+  const {
+    messages,
+    inputQuery,
+    setInputQuery,
+    isLoading,
+    isStreaming,
+    sendMessage,
+  } = useAiChat({
+    defaultRole: 'advisor',
+    syncWithDb: true,
+    onNewMessage: () => {
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
     },
-  ]);
+    onChunk: () => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    },
+  });
 
   // Don't render floating widget on the dedicated full-screen /chat page
   const isDedicatedChatPage = pathname === '/chat';
@@ -54,83 +50,9 @@ export function FloatingAiChat() {
     }
   }, [messages, isOpen]);
 
-  const handleSend = async (customQuery?: string) => {
-    const query = customQuery || inputQuery;
-    if (!query.trim() || isLoading) return;
-
+  const handleSendQuery = (text?: string) => {
     setHasInteracted(true);
-    const userMsg: ChatMessage = { id: `u-${Date.now()}`, role: 'user', text: query };
-    setMessages((prev) => [...prev, userMsg]);
-    setInputQuery('');
-    setIsLoading(true);
-
-    try {
-      const res = await fetch('/api/ai/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          roleType: 'advisor',
-          userQuery: query,
-          studentContext: {
-            primaryGoal: 'BUET CSE',
-            sscGpa: 5.0,
-            hscGpa: 5.0,
-            academicGroup: 'Science',
-          },
-        }),
-      });
-
-      if (res.ok) {
-        const json = await res.json();
-        if (json.data) {
-          const aiText =
-            typeof json.data === 'string'
-              ? json.data
-              : json.data.summary ||
-                json.data.questionText ||
-                json.data.title ||
-                'Here is what I found for your admission inquiry.';
-
-          const actions = json.data.recommendedNextActions?.map((act: any) => ({
-            label: act.label,
-            href: '/prepare',
-          }));
-
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: `a-${Date.now()}`,
-              role: 'assistant',
-              text: aiText,
-              actions,
-            },
-          ]);
-          setIsLoading(false);
-          return;
-        }
-      }
-    } catch {
-      // Handled by fallback
-    }
-
-    // Fallback response
-    setTimeout(() => {
-      const fallbackText = `Official 2026 Admission Circular Status for "${query}":\n• BUET & Engineering clusters require SSC & HSC GPA 4.00+ with Math, Physics, Chemistry.\n• Medical DGHS permits 2nd-time applicants (Pass years: 2024, 2025, 2026).\n• Circulars for the 2026-2027 session are actively scheduled for release.`;
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `a-${Date.now()}`,
-          role: 'assistant',
-          text: fallbackText,
-          actions: [
-            { label: 'Check My Full Eligibility', href: '/eligibility' },
-            { label: 'Open Dedicated Chat', href: '/chat' },
-          ],
-        },
-      ]);
-      setIsLoading(false);
-    }, 400);
+    sendMessage(text);
   };
 
   if (isDedicatedChatPage) {
@@ -144,7 +66,7 @@ export function FloatingAiChat() {
         <div className="mb-3 w-[92vw] sm:w-[420px] h-[560px] max-h-[82vh] bg-white/95 backdrop-blur-xl border border-orange-100/90 rounded-3xl shadow-2xl shadow-orange-500/15 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200">
           
           {/* Header Bar */}
-          <div className="px-5 py-4 bg-white border-b border-orange-100 flex items-center justify-between shrink-0">
+          <div className="px-5 py-3.5 bg-white border-b border-orange-100 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               <div className="relative w-10 h-10 rounded-2xl bg-orange-50 border border-orange-200 overflow-hidden flex items-center justify-center shadow-2xs">
                 <Image
@@ -188,56 +110,84 @@ export function FloatingAiChat() {
 
           {/* Messages Scroll Area */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.map((m) => (
-              <div key={m.id} className={`flex gap-2.5 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                {m.role === 'assistant' && (
-                  <div className="w-7 h-7 rounded-xl bg-orange-50 border border-orange-200 text-[#FF5500] flex items-center justify-center shrink-0 shadow-2xs font-bold text-xs mt-1">
-                    <Bot className="w-3.5 h-3.5" />
-                  </div>
-                )}
+            {messages.map((m) => {
+              // Extract text and optional action pills from string or structured object
+              const isObj = typeof m.content === 'object' && m.content !== null;
+              const textContent = isObj
+                ? m.content.summary || m.content.questionText || m.content.title || ''
+                : String(m.content || '');
 
-                <div
-                  className={`max-w-[82%] text-xs leading-relaxed space-y-2.5 ${
-                    m.role === 'user'
-                      ? 'bg-gradient-to-r from-[#FF5500] to-[#E64D00] text-white font-medium p-3.5 rounded-2xl rounded-tr-xs shadow-sm shadow-orange-500/20'
-                      : 'bg-slate-50 border border-slate-200/80 text-slate-800 p-3.5 rounded-2xl rounded-tl-xs shadow-2xs'
-                  }`}
-                >
-                  <MarkdownContent content={m.text} isUser={m.role === 'user'} />
+              const actions = isObj
+                ? m.content.actions || m.content.recommendedNextActions || []
+                : [];
 
-                  {/* Suggestion / Action Chips */}
-                  {m.actions && m.actions.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {m.actions.map((act, i) =>
-                        act.href ? (
-                          <Link key={i} href={act.href}>
-                            <button className="px-2.5 py-1 bg-white hover:bg-orange-50 border border-orange-200 text-[#FF5500] text-[10px] font-bold rounded-lg flex items-center gap-1 transition shadow-2xs cursor-pointer">
+              const sections = isObj && Array.isArray(m.content.sections) ? m.content.sections : [];
+
+              return (
+                <div key={m.id} className={`flex gap-2.5 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  {m.role === 'assistant' && (
+                    <div className="w-7 h-7 rounded-xl bg-orange-50 border border-orange-200 text-[#FF5500] flex items-center justify-center shrink-0 shadow-2xs font-bold text-xs mt-1">
+                      <Bot className="w-3.5 h-3.5" />
+                    </div>
+                  )}
+
+                  <div
+                    className={`max-w-[84%] text-xs leading-relaxed space-y-2 ${
+                      m.role === 'user'
+                        ? 'bg-gradient-to-r from-[#FF5500] to-[#E64D00] text-white font-medium p-3.5 rounded-2xl rounded-tr-xs shadow-sm shadow-orange-500/20'
+                        : 'bg-slate-50 border border-slate-200/80 text-slate-800 p-3.5 rounded-2xl rounded-tl-xs shadow-2xs'
+                    }`}
+                  >
+                    {textContent && (
+                      <MarkdownContent content={textContent} isUser={m.role === 'user'} />
+                    )}
+
+                    {/* Section details if general_answer */}
+                    {sections.length > 0 && (
+                      <div className="space-y-1.5 pt-1 border-t border-slate-200/70">
+                        {sections.map((sec: any, sIdx: number) => (
+                          <div key={sIdx} className="space-y-0.5">
+                            <h4 className="text-[11px] font-bold text-[#FF5500] uppercase font-mono">{sec.heading}</h4>
+                            <MarkdownContent content={sec.content} />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Action Chips */}
+                    {actions.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-1.5 border-t border-slate-200/70">
+                        {actions.map((act: any, i: number) =>
+                          act.href ? (
+                            <Link key={i} href={act.href}>
+                              <button className="px-2.5 py-1 bg-white hover:bg-orange-50 border border-orange-200 text-[#FF5500] text-[10px] font-bold rounded-lg flex items-center gap-1 transition shadow-2xs cursor-pointer">
+                                <span>{act.label}</span>
+                                <ArrowRight className="w-2.5 h-2.5" />
+                              </button>
+                            </Link>
+                          ) : (
+                            <button
+                              key={i}
+                              onClick={() => handleSendQuery(act.query || act.label)}
+                              className="px-2.5 py-1 bg-white hover:bg-orange-50 border border-slate-200 hover:border-orange-300 text-slate-700 hover:text-[#FF5500] text-[10px] font-bold rounded-lg flex items-center gap-1 transition shadow-2xs cursor-pointer"
+                            >
                               <span>{act.label}</span>
-                              <ArrowRight className="w-2.5 h-2.5" />
+                              <Sparkles className="w-2.5 h-2.5 text-[#FF5500]" />
                             </button>
-                          </Link>
-                        ) : (
-                          <button
-                            key={i}
-                            onClick={() => handleSend(act.query || act.label)}
-                            className="px-2.5 py-1 bg-white hover:bg-orange-50 border border-slate-200 hover:border-orange-300 text-slate-700 hover:text-[#FF5500] text-[10px] font-bold rounded-lg flex items-center gap-1 transition shadow-2xs cursor-pointer"
-                          >
-                            <span>{act.label}</span>
-                            <Sparkles className="w-2.5 h-2.5 text-[#FF5500]" />
-                          </button>
-                        )
-                      )}
+                          )
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {m.role === 'user' && (
+                    <div className="w-7 h-7 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-2xs font-bold text-xs mt-1">
+                      <User className="w-3.5 h-3.5" />
                     </div>
                   )}
                 </div>
-
-                {m.role === 'user' && (
-                  <div className="w-7 h-7 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-2xs font-bold text-xs mt-1">
-                    <User className="w-3.5 h-3.5" />
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
 
             {isLoading && (
               <div className="flex items-center gap-2 text-xs text-[#FF5500] font-bold p-2.5 bg-orange-50/80 border border-orange-100 rounded-xl w-fit animate-pulse">
@@ -249,11 +199,11 @@ export function FloatingAiChat() {
           </div>
 
           {/* Input Bar */}
-          <div className="p-3.5 bg-white border-t border-slate-100">
+          <div className="p-3 bg-white border-t border-slate-100">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                handleSend();
+                handleSendQuery();
               }}
               className="flex gap-2"
             >
@@ -262,11 +212,12 @@ export function FloatingAiChat() {
                 value={inputQuery}
                 onChange={(e) => setInputQuery(e.target.value)}
                 placeholder="Ask about BUET, DU, Medical eligibility, cutoffs, dates..."
+                disabled={isLoading || isStreaming}
                 className="flex-1 bg-slate-50 border border-slate-200 focus:bg-white focus:border-[#FF5500] focus:ring-4 focus:ring-[#FF5500]/10 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 outline-none transition font-medium"
               />
               <button
                 type="submit"
-                disabled={!inputQuery.trim() || isLoading}
+                disabled={!inputQuery.trim() || isLoading || isStreaming}
                 className="px-4 py-2.5 bg-gradient-to-r from-[#FF5500] to-[#E64D00] hover:from-[#E64D00] hover:to-[#D44000] disabled:opacity-40 text-white font-bold text-xs rounded-xl shadow-md shadow-orange-500/25 flex items-center justify-center transition cursor-pointer disabled:cursor-not-allowed"
               >
                 <Send className="w-3.5 h-3.5" />

@@ -1,48 +1,47 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Bot, Sparkles, User, RefreshCw, BookOpen, Target, ArrowRight } from 'lucide-react';
+import React, { useRef, useEffect, useCallback } from 'react';
+import { Send, Bot, Sparkles, User, RefreshCw, BookOpen, Target } from 'lucide-react';
 import { StructuredAiMessageRenderer } from '@/components/ai/structured-ai-message-renderer';
 import { MarkdownContent } from '@/components/ai/markdown-content';
+import { useAiChat } from '@/hooks/use-ai-chat';
 
 export default function DualAiChatPage() {
-  const [roleType, setRoleType] = useState<'advisor' | 'tutor'>('advisor');
-  const [inputQuery, setInputQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [sessionToken, setSessionToken] = useState<string>('');
-
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesContentRef = useRef<HTMLDivElement>(null);
   const isAutoScrollEnabledRef = useRef<boolean>(true);
 
-  const defaultInitMessage = {
-    id: 'm-init',
-    role: 'assistant' as const,
-    content: {
-      type: 'general_answer',
-      summary: 'Welcome to EduGuide AI Admission Advisor & Tutor!',
-      sections: [
-        {
-          heading: 'AI Admission Advisor',
-          content: 'Ask questions about university admission requirements, eligibility cutoffs, seat capacity, circular deadlines, and university comparisons.',
-        },
-        {
-          heading: 'AI Tutor',
-          content: 'Switch to the AI Tutor tab above to solve Physics, Chemistry, and Mathematics problems step-by-step or get concepts explained clearly.',
-        },
-      ],
-      recommendedNextActions: [
-        { label: 'Check My BUET Eligibility', action: 'check_eligibility' },
-        { label: 'Compare BUET vs DU CSE', action: 'compare_universities' },
-        { label: 'Start Today\'s Practice', action: 'start_practice' },
-      ],
-    },
-  };
+  const scrollToBottom = useCallback((smooth = true) => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: smooth ? 'smooth' : 'auto',
+      });
+    }
+  }, []);
 
-  const [messages, setMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; content: any }>>([
-    defaultInitMessage,
-  ]);
+  const {
+    messages,
+    inputQuery,
+    setInputQuery,
+    isLoading,
+    isStreaming,
+    roleType,
+    setRoleType,
+    sendMessage,
+  } = useAiChat({
+    defaultRole: 'advisor',
+    syncWithDb: true,
+    onNewMessage: () => {
+      isAutoScrollEnabledRef.current = true;
+      setTimeout(() => scrollToBottom(true), 40);
+    },
+    onChunk: () => {
+      if (isAutoScrollEnabledRef.current) {
+        scrollToBottom(false);
+      }
+    },
+  });
 
   const quickPromptsAdvisor = [
     'What is the BUET CSE eligibility requirement for 2026?',
@@ -56,42 +55,7 @@ export default function DualAiChatPage() {
     'What is the formula for projectile maximum height and range?',
   ];
 
-  // Smooth auto-scroll function
-  const scrollToBottom = useCallback((smooth = true) => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTo({
-        top: scrollContainerRef.current.scrollHeight,
-        behavior: smooth ? 'smooth' : 'auto',
-      });
-    }
-  }, []);
-
-  // ── 1. LOAD PERSISTED CHAT MESSAGES FROM POSTGRESQL DATABASE ──
-  useEffect(() => {
-    let token = typeof window !== 'undefined' ? localStorage.getItem('eduguide_chat_session_token') : null;
-    if (!token) {
-      token = 'sess_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('eduguide_chat_session_token', token);
-      }
-    }
-    setSessionToken(token);
-
-    // Fetch conversation from DB
-    fetch(`/api/ai/chat/history?sessionToken=${encodeURIComponent(token)}`)
-      .then((r) => r.json())
-      .then((res) => {
-        if (res.success && Array.isArray(res.messages) && res.messages.length > 0) {
-          setMessages(res.messages);
-          setTimeout(() => scrollToBottom(false), 80);
-        }
-      })
-      .catch((err) => {
-        console.warn('[ChatHistory] Error loading saved messages:', err);
-      });
-  }, [scrollToBottom]);
-
-  // ── 2. RESIZEOBSERVER: AUTOMATICALLY SCROLL AS CONTENT HEIGHT INCREASES ──
+  // ── RESIZEOBSERVER: AUTO-SCROLL AS CONTENT HEIGHT INCREASES ──
   useEffect(() => {
     const target = messagesContentRef.current;
     if (!target) return;
@@ -115,189 +79,6 @@ export default function DualAiChatPage() {
     const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
     const isAtBottom = scrollHeight - scrollTop - clientHeight < 80;
     isAutoScrollEnabledRef.current = isAtBottom;
-  };
-
-  // ── 3. CHUNKING-WISE PROGRESSIVE STREAMING ENGINE ──
-  const streamResponseInChunks = async (data: any) => {
-    setIsLoading(false);
-    setIsStreaming(true);
-    isAutoScrollEnabledRef.current = true;
-
-    const msgId = `a-${Date.now()}`;
-
-    // If string response
-    if (typeof data === 'string') {
-      const words = data.split(' ');
-      let currentText = '';
-      setMessages((prev) => [...prev, { id: msgId, role: 'assistant', content: '' }]);
-
-      for (let i = 0; i < words.length; i += 3) {
-        currentText += (i > 0 ? ' ' : '') + words.slice(i, i + 3).join(' ');
-        setMessages((prev) =>
-          prev.map((m) => (m.id === msgId ? { ...m, content: currentText } : m))
-        );
-        scrollToBottom(false);
-        await new Promise((r) => setTimeout(r, 25));
-      }
-      setIsStreaming(false);
-      scrollToBottom(true);
-      return;
-    }
-
-    // If structured general_answer
-    if (data.type === 'general_answer' && (data.summary || data.sections)) {
-      const emptyObj = {
-        type: 'general_answer',
-        summary: '',
-        sections: [],
-        recommendedNextActions: [],
-      };
-
-      setMessages((prev) => [...prev, { id: msgId, role: 'assistant', content: emptyObj }]);
-
-      // 1. Stream summary chunk by chunk
-      if (data.summary) {
-        const words = data.summary.split(' ');
-        let curSummary = '';
-        for (let i = 0; i < words.length; i += 3) {
-          curSummary += (i > 0 ? ' ' : '') + words.slice(i, i + 3).join(' ');
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === msgId
-                ? { ...m, content: { ...m.content, summary: curSummary } }
-                : m
-            )
-          );
-          scrollToBottom(false);
-          await new Promise((r) => setTimeout(r, 25));
-        }
-      }
-
-      // 2. Stream sections chunk by chunk
-      if (data.sections && Array.isArray(data.sections)) {
-        for (let sIdx = 0; sIdx < data.sections.length; sIdx++) {
-          const sec = data.sections[sIdx];
-          const secWords = sec.content ? sec.content.split(' ') : [];
-          let curSecContent = '';
-
-          // Add section header first
-          setMessages((prev) =>
-            prev.map((m) => {
-              if (m.id !== msgId) return m;
-              const sectionsCopy = [...(m.content.sections || [])];
-              sectionsCopy[sIdx] = { heading: sec.heading, content: '' };
-              return { ...m, content: { ...m.content, sections: sectionsCopy } };
-            })
-          );
-          scrollToBottom(false);
-          await new Promise((r) => setTimeout(r, 35));
-
-          // Stream section content in 4-word chunks
-          for (let wIdx = 0; wIdx < secWords.length; wIdx += 4) {
-            curSecContent += (wIdx > 0 ? ' ' : '') + secWords.slice(wIdx, wIdx + 4).join(' ');
-            setMessages((prev) =>
-              prev.map((m) => {
-                if (m.id !== msgId) return m;
-                const sectionsCopy = [...(m.content.sections || [])];
-                sectionsCopy[sIdx] = { heading: sec.heading, content: curSecContent };
-                return { ...m, content: { ...m.content, sections: sectionsCopy } };
-              })
-            );
-            scrollToBottom(false);
-            await new Promise((r) => setTimeout(r, 25));
-          }
-        }
-      }
-
-      // 3. Finalize with recommended actions
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === msgId
-            ? { ...m, content: { ...data } }
-            : m
-        )
-      );
-      setIsStreaming(false);
-      scrollToBottom(true);
-      return;
-    }
-
-    // Default immediate render for comparison/eligibility cards
-    setMessages((prev) => [...prev, { id: msgId, role: 'assistant', content: data }]);
-    setIsStreaming(false);
-    scrollToBottom(true);
-  };
-
-  const handleSend = async (textToSend?: string) => {
-    const query = textToSend || inputQuery;
-    if (!query.trim() || isLoading || isStreaming) return;
-
-    const userMsg = { id: `u-${Date.now()}`, role: 'user' as const, content: query };
-    setMessages((prev) => [...prev, userMsg]);
-    setInputQuery('');
-    setIsLoading(true);
-    isAutoScrollEnabledRef.current = true;
-    setTimeout(() => scrollToBottom(true), 50);
-
-    const tokenToUse =
-      sessionToken ||
-      (typeof window !== 'undefined' ? localStorage.getItem('eduguide_chat_session_token') : '') ||
-      'sess_default';
-
-    try {
-      const res = await fetch('/api/ai/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          roleType,
-          userQuery: query,
-          sessionToken: tokenToUse,
-          studentContext: { primaryGoal: 'BUET CSE', sscGpa: 5.0, hscGpa: 5.0, academicGroup: 'Science' },
-        }),
-      });
-
-      if (res.ok) {
-        const json = await res.json();
-        if (json.data) {
-          await streamResponseInChunks(json.data);
-          return;
-        }
-      }
-    } catch {
-      // Fallback
-    }
-
-    // Default fallback
-    const fallbackResponse =
-      roleType === 'tutor'
-        ? {
-            type: 'general_answer',
-            summary: `প্রশ্নের সমাধান নিচে ধাপে ধাপে তৈরি করা হয়েছে:`,
-            sections: [
-              {
-                heading: 'সমাধানের ধাপ',
-                content: `1. প্রদত্ত সমীকরণ ও তথ্যাদি সাজিয়ে নেওয়া যাক।\n\n2. সূত্র প্রয়োগ:\n\\[ \\frac{5700}{n-5} - \\frac{5700}{n} = 3 \\]\n\n3. সমীকরণ সমাধান করে পাই **100 জন যাত্রী**।`,
-              },
-              {
-                heading: 'চূড়ান্ত উত্তর',
-                content: 'বাসে মোট **100 জন যাত্রী** গিয়েছিলেন।',
-              },
-            ],
-            recommendedNextActions: [{ label: 'Practice Similar MCQs', action: 'practice_mcqs' }],
-          }
-        : {
-            type: 'general_answer',
-            summary: `Official Admission Circular Summary for "${query}":`,
-            sections: [
-              {
-                heading: 'Eligibility Criteria',
-                content: `• Minimum combined GPA: **8.00 - 9.00** with minimum GPA 4.0 in Physics, Chemistry, and Math.\n• Second-time application is permitted for Medical & GST.`,
-              },
-            ],
-            recommendedNextActions: [{ label: 'Full Eligibility Checker', action: 'check_eligibility' }],
-          };
-
-    await streamResponseInChunks(fallbackResponse);
   };
 
   return (
@@ -410,7 +191,7 @@ export default function DualAiChatPage() {
               {(roleType === 'advisor' ? quickPromptsAdvisor : quickPromptsTutor).map((p, idx) => (
                 <button
                   key={idx}
-                  onClick={() => handleSend(p)}
+                  onClick={() => sendMessage(p)}
                   disabled={isLoading || isStreaming}
                   className="text-[11px] bg-slate-50 hover:bg-orange-50 border border-slate-200/80 hover:border-orange-300 text-slate-700 hover:text-[#FF5500] font-semibold px-3 py-1.5 rounded-full transition shadow-2xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                 >
@@ -423,7 +204,7 @@ export default function DualAiChatPage() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                handleSend();
+                sendMessage();
               }}
               className="flex gap-2"
             >
