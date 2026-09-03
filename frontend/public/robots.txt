@@ -1,0 +1,13 @@
+# ==========================================
+# EduGuide Robots.txt
+# ==========================================
+
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /_next/
+Disallow: /private/
+
+# Host & Sitemap
+Sitemap: https://eduguide.app/sitemap.xml
