@@ -2328,14 +2328,14 @@ export default function AdminHomepageCMSPage() {
       {/* ── GUIDE ARTICLE MODAL ── */}
       {guideModalOpen && editingGuide && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-2xl w-full p-6 space-y-5">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-3xl w-full max-h-[92vh] overflow-y-auto p-6 sm:p-7 space-y-5">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="space-y-0.5">
                 <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
                   <BookOpen className="w-4 h-4 text-[#FF5500]" />
                   <span>{editingGuide.id?.startsWith('guide-new-') ? 'Post New Guide Article' : 'Edit Guide Article'}</span>
                 </h3>
-                <p className="text-xs text-slate-500">Saves directly into PostgreSQL <code>articles</code> database table.</p>
+                <p className="text-xs text-slate-500">Saves directly into PostgreSQL <code>articles</code> database table with Quill rich text formatting.</p>
               </div>
               <button
                 onClick={() => setGuideModalOpen(false)}
@@ -2422,14 +2422,16 @@ export default function AdminHomepageCMSPage() {
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-900">Article Content (Detailed notes)</label>
-                <textarea
-                  rows={4}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-900">Article Content (Quill Rich Text Editor) *</label>
+                  <span className="text-[11px] text-slate-400 font-medium">Headings, lists, bold, colors & blockquotes supported</span>
+                </div>
+                <RichTextEditor
                   value={editingGuide.content || ''}
-                  onChange={(e) => setEditingGuide({ ...editingGuide, content: e.target.value })}
-                  placeholder="Comprehensive subject analysis and preparation strategy..."
-                  className="w-full p-2.5 rounded-lg border border-slate-200 text-xs font-mono focus:outline-none focus:border-[#FF5500]"
+                  onChange={(html) => setEditingGuide({ ...editingGuide, content: html })}
+                  placeholder="Write comprehensive subject analysis, formulas, bullet points, and study strategies..."
+                  minHeight="240px"
                 />
               </div>
 

@@ -182,9 +182,16 @@ export default function GuideArticlePage() {
 
             {/* Content Card */}
             <div className="p-6 sm:p-10 rounded-3xl bg-white border border-slate-200/90 shadow-sm space-y-6">
-              <div className="prose prose-slate max-w-none text-slate-800 text-sm sm:text-base leading-relaxed whitespace-pre-line space-y-4">
-                {article.content || article.summary}
-              </div>
+              {/<[a-z][\s\S]*>/i.test(article.content || '') ? (
+                <div
+                  className="guide-article-prose"
+                  dangerouslySetInnerHTML={{ __html: article.content }}
+                />
+              ) : (
+                <div className="guide-article-prose whitespace-pre-line space-y-4">
+                  {article.content || article.summary}
+                </div>
+              )}
             </div>
 
             {/* Bottom Conversion CTA */}
