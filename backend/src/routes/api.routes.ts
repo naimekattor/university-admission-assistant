@@ -171,15 +171,6 @@ apiRouter.get('/deadlines', async (req: Request, res: Response, next) => {
   }
 });
 
-// Public Universities Overview Endpoint
-apiRouter.get('/universities', async (req: Request, res: Response, next) => {
-  try {
-    const universities = await homepageService.getAllUniversities();
-    res.json({ success: true, data: universities });
-  } catch (error) {
-    next(error);
-  }
-});
 
 // Create University Endpoint
 apiRouter.post('/universities', async (req: Request, res: Response, next) => {
@@ -359,7 +350,7 @@ apiRouter.delete('/admin/homepage/guides/:id', async (req: Request, res: Respons
 // ==========================================
 apiRouter.get('/universities', async (req: Request, res: Response, next) => {
   try {
-    const data = await homepageService.getDynamicAdmissionOverview();
+    const data = await homepageService.getAllUniversities();
     res.json({ success: true, data });
   } catch (error) {
     next(error);

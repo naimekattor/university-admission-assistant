@@ -145,9 +145,9 @@ export default function AdminHomepageCMSPage() {
       // Fallback pre-populated state
     }
 
-    // 3. Ensure live PostgreSQL database universities are loaded
+    // 3. Ensure all live PostgreSQL database universities are loaded for Featured section
     try {
-      const uniRes = await fetch('/api/v1/admissions?limit=0');
+      const uniRes = await fetch('/api/v1/universities');
       if (uniRes.ok) {
         const uniData = await uniRes.json();
         if (uniData.data && Array.isArray(uniData.data) && uniData.data.length > 0) {

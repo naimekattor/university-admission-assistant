@@ -413,7 +413,7 @@ export class HomepageService {
     const draft = await this.getDraftConfig();
     const published = await this.getPublishedConfig();
     const warnings = await this.scanContentQualityWarnings();
-    const allUniversities = await this.getDynamicAdmissionOverview();
+    const allUniversities = await this.getAllUniversities();
     const allGuides = await this.getAllGuides();
     const allFaqs = await this.getAllFaqs();
     const allDeadlines = await this.getUpcomingDeadlines(20);
@@ -1638,7 +1638,38 @@ export class HomepageService {
   }
 
   public async getAllUniversities(): Promise<any[]> {
-    return this.getDynamicAdmissionOverview();
+    try {
+      const res = await this.pool.query(`
+        SELECT 
+          u.id::text AS id,
+          u.name,
+          COALESCE(u.short_name, u.name) AS "shortName",
+          COALESCE(u.logo, '🏛️') AS logo,
+          COALESCE(u.location, 'Bangladesh') AS location,
+          COALESCE(u.website, '#') AS website,
+          u.description,
+          u.founded_year AS "foundedYear",
+          u.admission_type AS "admissionType",
+          COALESCE(u.metadata->>'group', u.admission_type, 'Science & Engineering') AS "group",
+          COALESCE(u.metadata->>'campus_area', '85 Acres') AS "campusArea",
+          COALESCE(u.metadata->>'student_count', '10,000+') AS "studentCount",
+          COALESCE(u.metadata->>'faculty_count', '600+') AS "facultyCount",
+          COALESCE(u.metadata->>'halls_count', '8 Halls') AS "hallsCount",
+          COALESCE(u.metadata->>'culture', '') AS "culture",
+          COALESCE(u.metadata->'gallery', '[]'::jsonb) AS "gallery",
+          COALESCE(u.metadata->'facilities', '[]'::jsonb) AS "facilities",
+          (SELECT COUNT(*)::int FROM programs WHERE university_id = u.id) AS "programsCount",
+          COUNT(DISTINCT c.id)::int AS "circularsCount"
+        FROM universities u
+        LEFT JOIN admission_circulars c ON u.id = c.university_id
+        GROUP BY u.id, u.name, u.short_name, u.logo, u.location, u.website, u.admission_type, u.metadata, u.description, u.founded_year
+        ORDER BY u.name ASC;
+      `);
+      return res.rows;
+    } catch (err: any) {
+      console.error('Failed to query all universities:', err.message);
+      return [];
+    }
   }
 
   public async createUniversity(data: {
