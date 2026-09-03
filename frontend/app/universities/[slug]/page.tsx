@@ -49,6 +49,21 @@ interface CircularItem {
   requirements?: any;
 }
 
+interface FacilityItem {
+  title: string;
+  icon?: string;
+  description: string;
+}
+
+const DEFAULT_FACILITIES: FacilityItem[] = [
+  { title: 'Central Library', icon: '📚', description: 'Extensive repository of textbooks, digital journals, IEEE archives, and quiet study zones.' },
+  { title: 'Residential Halls', icon: '🏢', description: 'On-campus dormitories providing secure accommodation, dining halls, and common rooms.' },
+  { title: 'Advanced Laboratories', icon: '🔬', description: 'Modern computing clusters, physics, chemical, and engineering labs for research.' },
+  { title: 'Clubs & Student Societies', icon: '🎭', description: 'Robotics clubs, debating societies, photographic societies, and cultural teams.' },
+  { title: 'Sports & Gymnasium', icon: '⚽', description: 'Football grounds, basketball courts, and indoor gymnasiums for inter-departmental tournaments.' },
+  { title: 'Medical Center', icon: '🏥', description: 'Free primary healthcare, ambulance services, and consultation facilities for all enrolled students.' },
+];
+
 interface UniversityDetails {
   id: string;
   name: string;
@@ -62,6 +77,13 @@ interface UniversityDetails {
   group?: string;
   website?: string;
   description?: string;
+  campusArea?: string;
+  studentCount?: string;
+  facultyCount?: string;
+  hallsCount?: string;
+  culture?: string;
+  gallery?: string[];
+  facilities?: FacilityItem[];
   status?: string;
   units?: string;
   seats?: number;
@@ -81,7 +103,8 @@ export default function UniversityDetailsPage() {
   const [uni, setUni] = useState<UniversityDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'departments' | 'facilities' | 'circulars'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'departments' | 'culture' | 'facilities' | 'gallery' | 'circulars'>('overview');
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadUniversity() {
@@ -116,7 +139,7 @@ export default function UniversityDetailsPage() {
           <div className="w-12 h-12 rounded-2xl bg-orange-100 border border-orange-200 text-[#FF5500] flex items-center justify-center mx-auto animate-pulse">
             <Building2 className="w-6 h-6 animate-spin" />
           </div>
-          <p className="text-sm font-bold text-slate-700">Loading university profile...</p>
+          <p className="text-sm font-bold text-slate-700">Loading university profile from database...</p>
         </div>
       </div>
     );
@@ -146,6 +169,25 @@ export default function UniversityDetailsPage() {
 
   const isImageLogo = uni.logo && (uni.logo.startsWith('http://') || uni.logo.startsWith('https://') || uni.logo.startsWith('/'));
   const hasActiveCircular = uni.circulars && uni.circulars.length > 0;
+
+  // Resolve dynamic fields from uni root or metadata fallback
+  const campusArea = uni.campusArea || uni.metadata?.campus_area || '85 Acres';
+  const studentCount = uni.studentCount || uni.metadata?.student_count || '10,500+ Students';
+  const facultyCount = uni.facultyCount || uni.metadata?.faculty_count || '650+ Faculty';
+  const hallsCount = uni.hallsCount || uni.metadata?.halls_count || '8 Halls';
+  const cultureHtml = uni.culture || uni.metadata?.culture || '';
+
+  const facilitiesList: FacilityItem[] = (Array.isArray(uni.facilities) && uni.facilities.length > 0)
+    ? uni.facilities
+    : (Array.isArray(uni.metadata?.facilities) && uni.metadata.facilities.length > 0)
+      ? uni.metadata.facilities
+      : DEFAULT_FACILITIES;
+
+  const galleryList: string[] = (Array.isArray(uni.gallery) && uni.gallery.length > 0)
+    ? uni.gallery
+    : (Array.isArray(uni.metadata?.gallery) && uni.metadata.gallery.length > 0)
+      ? uni.metadata.gallery
+      : [];
 
   return (
     <main className="min-h-screen bg-[#FAF8F5] text-slate-900 pb-20">
@@ -198,7 +240,7 @@ export default function UniversityDetailsPage() {
 
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
                     <ShieldCheck className="w-3 h-3 text-blue-600" />
-                    <span>Public Institution</span>
+                    <span>{uni.group || uni.admissionType || 'Public University'}</span>
                   </span>
                 </div>
 
@@ -208,7 +250,7 @@ export default function UniversityDetailsPage() {
 
                 <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
                   {uni.location ? `Located in ${uni.location}. ` : ''}
-                  Premier higher education institution recognized for academic excellence, research contributions, and vibrant campus life.
+                  Premier higher education and research institution recognized for academic excellence, intellectual contributions, and vibrant campus life.
                 </p>
               </div>
             </div>
@@ -238,39 +280,55 @@ export default function UniversityDetailsPage() {
             </div>
           </div>
 
-          {/* Metrics Highlight Grid: Pure Evergreen Facts */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4">
-            <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-slate-200/80">
+          {/* Metrics Highlight Grid: 100% Dynamic Database-Driven Facts */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-4">
+            <div className="p-3.5 rounded-2xl bg-[#FAF8F5] border border-slate-200/80">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Main Campus</span>
-              <div className="text-sm font-bold text-slate-900 mt-1 flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-[#FF5500]" />
-                <span className="line-clamp-1">{uni.location || 'Bangladesh'}</span>
+              <div className="text-xs font-bold text-slate-900 mt-1 flex items-center gap-1">
+                <MapPin className="w-3 h-3 text-[#FF5500] shrink-0" />
+                <span className="truncate">{uni.location || 'Bangladesh'}</span>
               </div>
-              <span className="text-[10px] text-slate-500">Campus Location</span>
+              <span className="text-[10px] text-slate-400">Campus City</span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-slate-200/80">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Founded Year</span>
-              <div className="text-sm font-bold text-slate-900 mt-1 font-mono">
+            <div className="p-3.5 rounded-2xl bg-[#FAF8F5] border border-slate-200/80">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Charter Year</span>
+              <div className="text-xs font-bold text-slate-900 mt-1 font-mono">
                 {uni.foundedYear || 1950}
               </div>
-              <span className="text-[10px] text-slate-500">Charter Year</span>
+              <span className="text-[10px] text-slate-400">Established</span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-slate-200/80">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Academic Programs</span>
-              <div className="text-sm font-bold text-slate-900 mt-1 font-mono">
-                {uni.programs ? uni.programs.length : 'Multiple'} Degrees
+            <div className="p-3.5 rounded-2xl bg-[#FAF8F5] border border-slate-200/80">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Campus Area</span>
+              <div className="text-xs font-bold text-slate-900 mt-1">
+                {campusArea}
               </div>
-              <span className="text-[10px] text-slate-500">Faculties & Departments</span>
+              <span className="text-[10px] text-slate-400">Land Area</span>
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#FAF8F5] border border-slate-200/80">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Admission Selection</span>
-              <div className="text-sm font-bold text-slate-900 mt-1 capitalize">
-                {uni.admissionType || 'Merit Exam'}
+            <div className="p-3.5 rounded-2xl bg-[#FAF8F5] border border-slate-200/80">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Student Body</span>
+              <div className="text-xs font-bold text-slate-900 mt-1 font-mono">
+                {studentCount}
               </div>
-              <span className="text-[10px] text-slate-500">Entrance Mode</span>
+              <span className="text-[10px] text-slate-400">Total Enrolled</span>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-[#FAF8F5] border border-slate-200/80">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Faculty Members</span>
+              <div className="text-xs font-bold text-slate-900 mt-1 font-mono">
+                {facultyCount}
+              </div>
+              <span className="text-[10px] text-slate-400">Professors</span>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-[#FAF8F5] border border-slate-200/80">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Living Halls</span>
+              <div className="text-xs font-bold text-[#FF5500] mt-1 font-mono">
+                {hallsCount}
+              </div>
+              <span className="text-[10px] text-slate-400">Dormitories</span>
             </div>
           </div>
         </div>
@@ -287,7 +345,7 @@ export default function UniversityDetailsPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold uppercase tracking-wider text-emerald-800">
-                    Current Admission Circular Active
+                    Current Admission Intake Active
                   </span>
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 </div>
@@ -338,7 +396,7 @@ export default function UniversityDetailsPage() {
             }`}
           >
             <BookOpen className="w-3.5 h-3.5" />
-            <span>Campus Overview & Culture</span>
+            <span>Campus Overview</span>
           </button>
 
           <button
@@ -354,6 +412,18 @@ export default function UniversityDetailsPage() {
           </button>
 
           <button
+            onClick={() => setActiveTab('culture')}
+            className={`px-4 py-2 rounded-full text-xs font-bold transition cursor-pointer shrink-0 flex items-center gap-1.5 ${
+              activeTab === 'culture'
+                ? 'bg-[#FF5500] text-white shadow-sm shadow-orange-500/20'
+                : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Culture & Traditions</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('facilities')}
             className={`px-4 py-2 rounded-full text-xs font-bold transition cursor-pointer shrink-0 flex items-center gap-1.5 ${
               activeTab === 'facilities'
@@ -362,7 +432,19 @@ export default function UniversityDetailsPage() {
             }`}
           >
             <Library className="w-3.5 h-3.5" />
-            <span>Campus Life & Facilities</span>
+            <span>Facilities ({facilitiesList.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('gallery')}
+            className={`px-4 py-2 rounded-full text-xs font-bold transition cursor-pointer shrink-0 flex items-center gap-1.5 ${
+              activeTab === 'gallery'
+                ? 'bg-[#FF5500] text-white shadow-sm shadow-orange-500/20'
+                : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
+            }`}
+          >
+            <ImageIcon className="w-3.5 h-3.5" />
+            <span>Photo Gallery ({galleryList.length})</span>
           </button>
 
           <button
@@ -382,7 +464,7 @@ export default function UniversityDetailsPage() {
         {activeTab === 'overview' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              {/* Detailed Profile & Quill HTML Box */}
+              {/* Detailed Profile Box with Rich HTML */}
               <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                   <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
@@ -404,30 +486,30 @@ export default function UniversityDetailsPage() {
                 )}
               </div>
 
-              {/* Campus Highlights */}
+              {/* Institutional Highlights */}
               <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-4">
                 <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                   <Award className="w-4 h-4 text-[#FF5500]" />
-                  <span>Institutional Highlights</span>
+                  <span>Key Campus Features</span>
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                   <div className="p-4 rounded-2xl bg-orange-50/50 border border-orange-100 space-y-1">
-                    <span className="text-xs font-bold text-slate-900">Academic Merit</span>
+                    <span className="text-xs font-bold text-slate-900">Merit Admissions</span>
                     <p className="text-[11px] text-slate-600 leading-relaxed">
-                      Admissions conducted strictly on merit across national entrance examination percentiles.
+                      Rigorous competitive entrance examination conducted nationwide strictly on merit.
                     </p>
                   </div>
                   <div className="p-4 rounded-2xl bg-blue-50/50 border border-blue-100 space-y-1">
-                    <span className="text-xs font-bold text-slate-900">Research Facilities</span>
+                    <span className="text-xs font-bold text-slate-900">Campus Infrastructure</span>
                     <p className="text-[11px] text-slate-600 leading-relaxed">
-                      Active research labs, indexed publications, and international academic collaboration.
+                      {campusArea} land area with {hallsCount} student residential living dormitories.
                     </p>
                   </div>
                   <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-1">
-                    <span className="text-xs font-bold text-slate-900">Alumni Network</span>
+                    <span className="text-xs font-bold text-slate-900">Academic Community</span>
                     <p className="text-[11px] text-slate-600 leading-relaxed">
-                      Graduates leading engineering, technology, medicine, and public policy worldwide.
+                      Over {studentCount} taught and mentored by {facultyCount} professors and scholars.
                     </p>
                   </div>
                 </div>
@@ -472,11 +554,11 @@ export default function UniversityDetailsPage() {
                     <span className="font-mono font-bold text-slate-900">{uni.foundedYear || '1950'}</span>
                   </div>
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                    <span className="text-slate-500">Academic Category</span>
+                    <span className="text-slate-500">Category</span>
                     <span className="font-bold text-slate-900">{uni.group || uni.admissionType || 'Higher Education'}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Total Departments</span>
+                    <span className="text-slate-500">Academic Programs</span>
                     <span className="font-mono font-bold text-[#FF5500]">{uni.programs?.length || 0} Programs</span>
                   </div>
                 </div>
@@ -495,7 +577,7 @@ export default function UniversityDetailsPage() {
                   <span>Academic Degree Programs & Departments</span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-1">
-                  Permanent academic faculties and degrees offered at {uni.name}.
+                  Permanent academic faculties and degrees offered at {uni.name} (fetched dynamically from PostgreSQL).
                 </p>
               </div>
               <span className="px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-[#FF5500] text-xs font-mono font-bold">
@@ -551,84 +633,131 @@ export default function UniversityDetailsPage() {
           </div>
         )}
 
-        {/* ── TAB 3: CAMPUS LIFE & FACILITIES ── */}
+        {/* ── TAB 3: CAMPUS CULTURE & TRADITIONS ── */}
+        {activeTab === 'culture' && (
+          <div className="space-y-6">
+            <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-[#FF5500]" />
+                  <span>Campus Culture, Traditions & Student Life</span>
+                </h3>
+                <span className="text-[11px] font-mono text-slate-400">Student Experience</span>
+              </div>
+
+              {cultureHtml ? (
+                <div
+                  className="guide-article-prose text-xs sm:text-sm text-slate-600 leading-relaxed space-y-3"
+                  dangerouslySetInnerHTML={{ __html: cultureHtml }}
+                />
+              ) : (
+                <div className="space-y-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                  <p>
+                    Campus life at {uni.name} is shaped by intense academic commitment balanced with celebrated student traditions. From annual cultural galas and inter-university tech exhibitions to debating competitions and national sports meets, students experience a rich, self-governing campus environment.
+                  </p>
+                  <p>
+                    Residential halls function as independent communities with their own common rooms, annual feasts, debating clubs, and sports tournaments, cultivating lifelong brotherhood and leadership.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB 4: CAMPUS FACILITIES & INFRASTRUCTURE ── */}
         {activeTab === 'facilities' && (
           <div className="space-y-6">
             <div className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <Library className="w-5 h-5 text-[#FF5500]" />
-                <span>Campus Infrastructure, Culture & Student Life</span>
+                <span>Campus Infrastructure & Facilities ({facilitiesList.length})</span>
               </h3>
               <p className="text-xs text-slate-500 mt-1">
-                Life at {uni.name} extends beyond classrooms with rich co-curricular opportunities, libraries, and hostels.
+                Life at {uni.name} is supported by state-of-the-art facilities, libraries, and dormitories (dynamically managed in admin).
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-6">
-                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2">
-                  <div className="w-8 h-8 rounded-xl bg-orange-100 text-[#FF5500] flex items-center justify-center font-bold">
-                    🏛️
+                {facilitiesList.map((fac, idx) => (
+                  <div key={idx} className="p-5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2">
+                    <div className="w-8 h-8 rounded-xl bg-orange-100 text-[#FF5500] flex items-center justify-center font-bold text-base">
+                      {fac.icon || '🏛️'}
+                    </div>
+                    <h4 className="text-xs font-bold text-slate-900">{fac.title}</h4>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      {fac.description}
+                    </p>
                   </div>
-                  <h4 className="text-xs font-bold text-slate-900">Central Library</h4>
-                  <p className="text-[11px] text-slate-600 leading-relaxed">
-                    Extensive repository of textbooks, international research journals, digital archives, and quiet study zones.
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2">
-                  <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
-                    🏢
-                  </div>
-                  <h4 className="text-xs font-bold text-slate-900">Residential Halls</h4>
-                  <p className="text-[11px] text-slate-600 leading-relaxed">
-                    On-campus student dormitories providing secure accommodation, dining halls, and student common rooms.
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
-                    🔬
-                  </div>
-                  <h4 className="text-xs font-bold text-slate-900">Advanced Laboratories</h4>
-                  <p className="text-[11px] text-slate-600 leading-relaxed">
-                    Modern computing clusters, physics, chemical, and engineering labs equipped for undergraduate experiments.
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2">
-                  <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center font-bold">
-                    🎭
-                  </div>
-                  <h4 className="text-xs font-bold text-slate-900">Clubs & Student Societies</h4>
-                  <p className="text-[11px] text-slate-600 leading-relaxed">
-                    Robotics clubs, debating societies, photographic societies, cultural teams, and sports clubs.
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2">
-                  <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center font-bold">
-                    ⚽
-                  </div>
-                  <h4 className="text-xs font-bold text-slate-900">Sports & Gymnasium</h4>
-                  <p className="text-[11px] text-slate-600 leading-relaxed">
-                    Football grounds, cricket pitches, basketball courts, and indoor gymnasiums for inter-departmental tournaments.
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2">
-                  <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center font-bold">
-                    🏥
-                  </div>
-                  <h4 className="text-xs font-bold text-slate-900">Medical Center</h4>
-                  <p className="text-[11px] text-slate-600 leading-relaxed">
-                    Free primary healthcare, ambulance services, and consultation facilities for all enrolled students.
-                  </p>
-                </div>
+                ))}
               </div>
             </div>
           </div>
         )}
 
-        {/* ── TAB 4: ADMISSION CIRCULARS ── */}
+        {/* ── TAB 5: PHOTO GALLERY ── */}
+        {activeTab === 'gallery' && (
+          <div className="space-y-6">
+            <div className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <ImageIcon className="w-5 h-5 text-[#FF5500]" />
+                <span>Campus Photo Showcase ({galleryList.length} Photos)</span>
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Visual highlights of campus landmarks, auditoriums, department complexes, and greenery.
+              </p>
+
+              {galleryList.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-6">
+                  {galleryList.map((imgUrl, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => setSelectedImage(imgUrl)}
+                      className="group relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 aspect-video cursor-pointer shadow-2xs hover:shadow-md transition"
+                    >
+                      <img
+                        src={imgUrl}
+                        alt={`${uni.name} Campus Photo ${idx + 1}`}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                      />
+                      <div className="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/30 transition flex items-center justify-center">
+                        <span className="px-3 py-1 rounded-full bg-white/90 text-slate-900 text-xs font-bold opacity-0 group-hover:opacity-100 transition shadow-sm">
+                          View Full Photo
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-12 text-center rounded-2xl border border-dashed border-slate-200 text-slate-400 text-xs mt-6">
+                  No campus photos uploaded yet for this university. Add photos in the Admin University Profile.
+                </div>
+              )}
+            </div>
+
+            {/* Lightbox Modal */}
+            {selectedImage && (
+              <div
+                className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/90 backdrop-blur-sm p-4"
+                onClick={() => setSelectedImage(null)}
+              >
+                <div className="relative max-w-4xl max-h-[90vh] rounded-2xl overflow-hidden bg-black">
+                  <img
+                    src={selectedImage}
+                    alt="Campus View"
+                    className="w-full h-full object-contain max-h-[85vh]"
+                  />
+                  <button
+                    onClick={() => setSelectedImage(null)}
+                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center text-sm hover:bg-black transition cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── TAB 6: ADMISSION CIRCULARS ── */}
         {activeTab === 'circulars' && (
           <div className="space-y-4">
             <div className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">

@@ -828,7 +828,15 @@ export class HomepageService {
             'SSC 4.00, HSC 4.00'
           ) AS "minGpa",
           COUNT(DISTINCT c.id)::int AS "circularsCount",
-          (SELECT COUNT(*)::int FROM programs WHERE university_id = u.id) AS "programsCount"
+          (SELECT COUNT(*)::int FROM programs WHERE university_id = u.id) AS "programsCount",
+          u.metadata,
+          COALESCE(u.metadata->>'campus_area', '85 Acres') AS "campusArea",
+          COALESCE(u.metadata->>'student_count', '10,000+') AS "studentCount",
+          COALESCE(u.metadata->>'faculty_count', '600+') AS "facultyCount",
+          COALESCE(u.metadata->>'halls_count', '8 Halls') AS "hallsCount",
+          COALESCE(u.metadata->>'culture', '') AS "culture",
+          COALESCE(u.metadata->'gallery', '[]'::jsonb) AS "gallery",
+          COALESCE(u.metadata->'facilities', '[]'::jsonb) AS "facilities"
         FROM universities u
         LEFT JOIN admission_circulars c ON u.id = c.university_id
         GROUP BY u.id, u.name, u.short_name, u.logo, u.location, u.website, u.admission_type, u.metadata, u.description, u.founded_year
@@ -1553,25 +1561,29 @@ export class HomepageService {
     seats?: number;
     status?: string;
     overview?: string;
+    campusArea?: string;
+    studentCount?: string;
+    facultyCount?: string;
+    hallsCount?: string;
+    culture?: string;
+    gallery?: any[];
     programList?: string[];
     admissionProcess?: string[];
     fees?: any;
-    facilities?: string[];
+    facilities?: any;
   }): Promise<any> {
     try {
-      const meta = data.metadata || {
-        application_window: data.applicationWindow || 'Jan 15, 2026 – Feb 15, 2026',
-        test_date: data.testDate || 'To be announced',
-        min_gpa: data.minGpa || 'Combined GPA 8.00 (Min 3.50 each)',
-        group: data.group || 'All Groups',
-        units: data.units || 'Ka, Kha, Ga',
-        seats: data.seats || 1200,
-        status: data.status || 'Applications Open',
-        overview: data.overview || data.description || '',
-        program_list: data.programList || [],
-        admission_process: data.admissionProcess || [],
-        fees: data.fees || {},
-        facilities: data.facilities || [],
+      const meta = {
+        ...(data.metadata || {}),
+        group: data.group || 'Science & Engineering',
+        campus_area: data.campusArea || '85 Acres',
+        student_count: data.studentCount || '10,000+',
+        faculty_count: data.facultyCount || '600+',
+        halls_count: data.hallsCount || '8 Halls',
+        culture: data.culture || '',
+        gallery: Array.isArray(data.gallery) ? data.gallery : [],
+        facilities: Array.isArray(data.facilities) ? data.facilities : [],
+        overview: data.description || '',
       };
 
       const res = await this.pool.query(
@@ -1603,24 +1615,6 @@ export class HomepageService {
       );
 
       const uni = res.rows[0];
-      if (uni?.id) {
-        // Upsert circular
-        await this.pool.query(
-          `INSERT INTO admission_circulars (university_id, title, unit, year, official_url, summary, requirements)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)
-           ON CONFLICT DO NOTHING`,
-          [
-            uni.id,
-            `${data.shortName} Admission Circular 2026`,
-            data.units || 'All Units',
-            2026,
-            data.website || '#',
-            data.description || '',
-            JSON.stringify(meta),
-          ]
-        );
-      }
-
       return { success: true, data: uni };
     } catch (err: any) {
       console.error('Error inserting university into PostgreSQL:', err.message);
@@ -1630,19 +1624,24 @@ export class HomepageService {
 
   public async updateUniversity(id: string, data: any): Promise<any> {
     try {
-      const meta = data.metadata || {
-        application_window: data.applicationWindow,
-        test_date: data.testDate,
-        min_gpa: data.minGpa,
-        group: data.group,
-        units: data.units,
-        seats: data.seats,
-        status: data.status,
-        overview: data.overview || data.description,
-        program_list: data.programList,
-        admission_process: data.admissionProcess,
-        fees: data.fees,
-        facilities: data.facilities,
+      const existingRes = await this.pool.query(
+        `SELECT metadata FROM universities WHERE id = $1::uuid OR short_name = $1 LIMIT 1`,
+        [id]
+      );
+      const existingMeta = existingRes.rows[0]?.metadata || {};
+
+      const meta = {
+        ...existingMeta,
+        ...(data.metadata || {}),
+        group: data.group ?? existingMeta.group ?? 'Science & Engineering',
+        campus_area: data.campusArea ?? existingMeta.campus_area ?? '85 Acres',
+        student_count: data.studentCount ?? existingMeta.student_count ?? '10,000+',
+        faculty_count: data.facultyCount ?? existingMeta.faculty_count ?? '600+',
+        halls_count: data.hallsCount ?? existingMeta.halls_count ?? '8 Halls',
+        culture: data.culture ?? existingMeta.culture ?? '',
+        gallery: Array.isArray(data.gallery) ? data.gallery : (existingMeta.gallery || []),
+        facilities: Array.isArray(data.facilities) ? data.facilities : (existingMeta.facilities || []),
+        overview: data.description ?? existingMeta.overview ?? '',
       };
 
       const res = await this.pool.query(
@@ -1698,6 +1697,13 @@ export class HomepageService {
            COALESCE(u.admission_type, 'merit') AS "admissionType",
            COALESCE(u.cutoff_marks, 0) AS "cutoffMarks",
            COALESCE(u.metadata->>'group', 'All Groups') AS "group",
+           COALESCE(u.metadata->>'campus_area', '85 Acres') AS "campusArea",
+           COALESCE(u.metadata->>'student_count', '10,000+') AS "studentCount",
+           COALESCE(u.metadata->>'faculty_count', '600+') AS "facultyCount",
+           COALESCE(u.metadata->>'halls_count', '8 Halls') AS "hallsCount",
+           COALESCE(u.metadata->>'culture', '') AS "culture",
+           COALESCE(u.metadata->'gallery', '[]'::jsonb) AS "gallery",
+           COALESCE(u.metadata->'facilities', '[]'::jsonb) AS "facilities",
            COALESCE(u.metadata->>'application_window', 'Jan 15, 2026 – Feb 15, 2026') AS "applicationWindow",
            COALESCE(u.metadata->>'test_date', 'To be announced') AS "testDate",
            COALESCE(u.metadata->>'min_gpa', 'SSC 4.00, HSC 4.00') AS "minGpa",
