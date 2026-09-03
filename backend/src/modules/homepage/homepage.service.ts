@@ -776,23 +776,64 @@ export class HomepageService {
           u.short_name AS "shortName",
           COALESCE(u.logo, '🏛️') AS logo,
           COALESCE(u.location, 'Bangladesh') AS location,
-          COALESCE(c.official_url, u.website, '#') AS "circularUrl",
-          COALESCE(u.metadata->>'group', u.admission_type, 'All Groups') AS "group",
-          COALESCE(u.metadata->>'application_window', 'Jan 15, 2026 – Feb 15, 2026') AS "applicationWindow",
-          COALESCE(u.metadata->>'test_date', 'To be announced') AS "testDate",
-          COALESCE(u.metadata->>'min_gpa', 'SSC 4.00, HSC 4.00') AS "minGpa",
-          COALESCE(u.metadata->>'units', c.unit, 'All Units') AS "units",
-          COALESCE((u.metadata->>'seats')::int, 1200) AS seats,
-          COALESCE(u.metadata->>'status', 'Applications Open') AS status
+          COALESCE(u.website, '#') AS website,
+          COALESCE(MAX(c.official_url), u.website, '#') AS "circularUrl",
+          COALESCE(u.metadata->>'group', u.admission_type, 'Science & Engineering') AS "group",
+          u.description,
+          u.founded_year AS "foundedYear",
+          u.admission_type AS "admissionType",
+          -- Live aggregated units from admission_circulars:
+          COALESCE(
+            NULLIF(STRING_AGG(DISTINCT c.unit, ', '), ''),
+            u.metadata->>'units',
+            'General Unit'
+          ) AS units,
+          -- Live aggregated seats: sum of programs, or sum of circular total_seats, or fallback:
+          COALESCE(
+            NULLIF((SELECT SUM(seats)::int FROM programs WHERE university_id = u.id), 0),
+            NULLIF(SUM(DISTINCT c.total_seats)::int, 0),
+            (u.metadata->>'seats')::int,
+            1200
+          ) AS seats,
+          -- Live status from latest circular:
+          COALESCE(
+            MAX(c.status),
+            u.metadata->>'status',
+            'Applications Open'
+          ) AS status,
+          -- Live test date from circular:
+          COALESCE(
+            TO_CHAR(MIN(c.exam_date), 'Mon DD, YYYY'),
+            u.metadata->>'test_date',
+            'To be announced'
+          ) AS "testDate",
+          -- Live application window:
+          COALESCE(
+            CASE 
+              WHEN MIN(c.application_start_date) IS NOT NULL AND MAX(c.application_end_date) IS NOT NULL 
+              THEN TO_CHAR(MIN(c.application_start_date), 'Mon DD, YYYY') || ' – ' || TO_CHAR(MAX(c.application_end_date), 'Mon DD, YYYY')
+              ELSE NULL
+            END,
+            u.metadata->>'application_window',
+            'Jan 15, 2026 – Feb 15, 2026'
+          ) AS "applicationWindow",
+          -- Live min GPA from circular:
+          COALESCE(
+            CASE 
+              WHEN MIN(c.min_combined_gpa) IS NOT NULL
+              THEN 'Combined GPA ' || MIN(c.min_combined_gpa)::text || ' (SSC ' || MIN(c.min_ssc_gpa)::text || ', HSC ' || MIN(c.min_hsc_gpa)::text || ')'
+              ELSE NULL
+            END,
+            u.metadata->>'min_gpa',
+            'SSC 4.00, HSC 4.00'
+          ) AS "minGpa",
+          COUNT(DISTINCT c.id)::int AS "circularsCount",
+          (SELECT COUNT(*)::int FROM programs WHERE university_id = u.id) AS "programsCount"
         FROM universities u
         LEFT JOIN admission_circulars c ON u.id = c.university_id
-        GROUP BY u.id, u.name, u.short_name, u.logo, u.location, u.website, u.admission_type, u.metadata, c.official_url, c.unit
+        GROUP BY u.id, u.name, u.short_name, u.logo, u.location, u.website, u.admission_type, u.metadata, u.description, u.founded_year
         ORDER BY 
-          CASE 
-            WHEN COALESCE(u.metadata->>'status', 'Applications Open') = 'Applications Open' THEN 1
-            WHEN COALESCE(u.metadata->>'status', 'Applications Open') = 'Opening Soon' THEN 2
-            ELSE 3
-          END,
+          COUNT(DISTINCT c.id) DESC,
           u.name ASC;
       `;
       const res = await this.pool.query(query);

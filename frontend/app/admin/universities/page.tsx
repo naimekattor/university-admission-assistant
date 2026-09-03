@@ -20,6 +20,7 @@ import {
   AlertTriangle,
   Loader2,
   BookOpen,
+  Sparkles,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/custom-toast';
 import { RichTextEditor } from '@/components/rich-text/rich-text-editor';
@@ -44,6 +45,8 @@ interface UniversityItem {
   status?: string;
   website?: string;
   description?: string;
+  circularsCount?: number;
+  programsCount?: number;
 }
 
 export default function AdminUniversitiesPage() {
@@ -119,12 +122,6 @@ export default function AdminUniversitiesPage() {
     setShortName('');
     setLocation('Dhaka');
     setGroup('Science');
-    setUnits('Ka, Kha, Ga');
-    setMinGpa('Combined GPA 8.00 (Min 3.50 each)');
-    setSeats(1200);
-    setApplicationWindow('Jan 15, 2026 – Feb 15, 2026');
-    setTestDate('Mar 15, 2026');
-    setStatus('Applications Open');
     setWebsite('https://');
     setLogo('🏛️');
     setFoundedYear(1950);
@@ -139,12 +136,6 @@ export default function AdminUniversitiesPage() {
     setShortName(u.shortName || '');
     setLocation(u.location || 'Bangladesh');
     setGroup(u.group || u.admissionType || 'Science');
-    setUnits(u.units || 'All Units');
-    setMinGpa(u.minGpa || 'Combined GPA 8.00 (Min 3.50 each)');
-    setSeats(u.seats || 1200);
-    setApplicationWindow(u.applicationWindow || 'Jan 15, 2026 – Feb 15, 2026');
-    setTestDate(u.testDate || 'To be announced');
-    setStatus(u.status || 'Applications Open');
     setWebsite(u.website || '');
     setLogo(u.logo || '🏛️');
     setFoundedYear(u.foundedYear || 1950);
@@ -161,12 +152,6 @@ export default function AdminUniversitiesPage() {
         location,
         group,
         admissionType: group.toLowerCase(),
-        units,
-        minGpa,
-        seats: Number(seats),
-        applicationWindow,
-        testDate,
-        status,
         website,
         logo,
         foundedYear: Number(foundedYear),
@@ -342,11 +327,31 @@ export default function AdminUniversitiesPage() {
                         </td>
                         <td className="py-3.5 px-4 text-slate-600">{u.location}</td>
                         <td className="py-3.5 px-4">
-                          <span className="font-mono text-slate-800 font-semibold">{u.units}</span>
-                          <span className="block text-[10px] text-slate-500 capitalize">{u.group || u.admissionType}</span>
+                          <span className="font-mono text-slate-800 font-semibold">{u.units || 'All Units'}</span>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-[10px] text-slate-500 capitalize">{u.group || u.admissionType}</span>
+                            {u.circularsCount !== undefined && u.circularsCount > 0 && (
+                              <Link
+                                href={`/admin/circulars?search=${encodeURIComponent(u.shortName || u.name)}`}
+                                className="text-[10px] font-bold text-[#FF5500] hover:underline"
+                              >
+                                • {u.circularsCount} Unit{u.circularsCount > 1 ? 's' : ''} →
+                              </Link>
+                            )}
+                          </div>
                         </td>
-                        <td className="py-3.5 px-4 font-mono font-bold text-slate-900">
-                          {u.seats ? Number(u.seats).toLocaleString() : '1,200'}
+                        <td className="py-3.5 px-4">
+                          <span className="font-mono font-bold text-slate-900">
+                            {u.seats ? Number(u.seats).toLocaleString() : '—'}
+                          </span>
+                          {u.programsCount !== undefined && u.programsCount > 0 && (
+                            <Link
+                              href={`/admin/programs?search=${encodeURIComponent(u.shortName || u.name)}`}
+                              className="block text-[10px] font-medium text-slate-500 hover:text-slate-900 mt-0.5"
+                            >
+                              {u.programsCount} Program{u.programsCount > 1 ? 's' : ''} →
+                            </Link>
+                          )}
                         </td>
                         <td className="py-3.5 px-4">
                           <span
@@ -418,6 +423,22 @@ export default function AdminUniversitiesPage() {
             </div>
 
             <form onSubmit={handleSaveUniversity} className="space-y-4">
+              {/* Guidance Callout */}
+              <div className="p-3.5 rounded-2xl bg-orange-50/70 border border-orange-200/80 flex items-start gap-2.5 text-xs text-slate-700">
+                <Sparkles className="w-4 h-4 text-[#FF5500] shrink-0 mt-0.5" />
+                <div className="leading-relaxed">
+                  <strong className="text-slate-900 font-bold">Unified Architecture:</strong> Units, GPA cutoffs, allocated seats, and deadlines are automatically derived from your{' '}
+                  <Link href="/admin/circulars" className="text-[#FF5500] font-semibold underline hover:text-[#E04B00]">
+                    Circulars
+                  </Link>{' '}
+                  and{' '}
+                  <Link href="/admin/programs" className="text-[#FF5500] font-semibold underline hover:text-[#E04B00]">
+                    Programs
+                  </Link>
+                  . Input university institutional profile here once.
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2 space-y-1">
                   <label className="text-xs font-bold text-slate-900">University Full Name *</label>
@@ -451,7 +472,7 @@ export default function AdminUniversitiesPage() {
                     type="text"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    placeholder="e.g. Dhaka"
+                    placeholder="e.g. Palashi, Dhaka"
                     className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
                   />
                 </div>
@@ -472,80 +493,19 @@ export default function AdminUniversitiesPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-900">Admission Status</label>
-                  <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                    className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
-                  >
-                    <option value="Applications Open">Applications Open</option>
-                    <option value="Opening Soon">Opening Soon</option>
-                    <option value="Deadline Passed">Deadline Passed</option>
-                    <option value="Scheduled">Scheduled</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-900">Units Breakdown</label>
-                  <input
-                    type="text"
-                    value={units}
-                    onChange={(e) => setUnits(e.target.value)}
-                    placeholder="e.g. Ka (Engg), Kha (Arch)"
-                    className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-900">Total Seats Capacity</label>
+                  <label className="text-xs font-bold text-slate-900">Founded Year</label>
                   <input
                     type="number"
-                    value={seats}
-                    onChange={(e) => setSeats(Number(e.target.value))}
+                    value={foundedYear}
+                    onChange={(e) => setFoundedYear(Number(e.target.value))}
+                    placeholder="1962"
                     className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-mono font-medium focus:outline-none focus:border-[#FF5500]"
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-900">Minimum GPA & Subject Criteria</label>
-                <input
-                  type="text"
-                  value={minGpa}
-                  onChange={(e) => setMinGpa(e.target.value)}
-                  placeholder="e.g. SSC 4.00, HSC 4.00 (Combined 8.00)"
-                  className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-900">Application Window</label>
-                  <input
-                    type="text"
-                    value={applicationWindow}
-                    onChange={(e) => setApplicationWindow(e.target.value)}
-                    placeholder="e.g. Jan 15, 2026 – Feb 05, 2026"
-                    className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-900">Admission Test Date</label>
-                  <input
-                    type="text"
-                    value={testDate}
-                    onChange={(e) => setTestDate(e.target.value)}
-                    placeholder="e.g. Feb 28, 2026"
-                    className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-900">Official Portal / Circular URL</label>
+                <label className="text-xs font-bold text-slate-900">Official Portal / Website URL</label>
                 <input
                   type="text"
                   value={website}
