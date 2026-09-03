@@ -22,6 +22,7 @@ import {
   ExternalLink,
   ChevronRight,
 } from 'lucide-react';
+import { StudentSidebar } from '@/components/dashboard/student-sidebar';
 
 interface DailyTask {
   id: string;
@@ -94,10 +95,22 @@ export default function StudentDashboardPage() {
       <div className="absolute top-1/4 -right-40 w-96 h-96 bg-amber-200/20 rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="absolute bottom-10 -left-40 w-96 h-96 bg-orange-100/30 rounded-full blur-3xl pointer-events-none -z-10" />
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 max-w-7xl space-y-8">
-        
-        {/* ── 1. WELCOME & MOTIVATIONAL HERO BANNER ── */}
-        <div className="bg-white/95 backdrop-blur-xl border border-orange-100/80 rounded-3xl p-6 sm:p-8 shadow-xl shadow-orange-500/5 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 max-w-7xl">
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+          {/* ── STICKY MODERN STUDENT SIDEBAR ── */}
+          <div className="hidden lg:block sticky top-24 shrink-0">
+            <StudentSidebar
+              studentName={studentName}
+              targetGoal={`${targetUniversity} — CSE`}
+              daysRemaining={daysRemaining}
+              syllabusProgress={68}
+            />
+          </div>
+
+          {/* ── MAIN DASHBOARD CONTENT AREA ── */}
+          <div className="flex-1 min-w-0 space-y-8 w-full">
+            {/* ── 1. WELCOME & MOTIVATIONAL HERO BANNER ── */}
+            <div className="bg-white/95 backdrop-blur-xl border border-orange-100/80 rounded-3xl p-6 sm:p-8 shadow-xl shadow-orange-500/5 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-[#FF5500] text-xs font-bold uppercase tracking-wider font-mono shadow-2xs">
@@ -571,6 +584,8 @@ export default function StudentDashboardPage() {
 
         </div>
 
+          </div>
+        </div>
       </div>
     </main>
   );
