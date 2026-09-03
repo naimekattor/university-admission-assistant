@@ -1,7 +1,9 @@
 import express, { Express } from 'express';
 import cors from 'cors';
+import path from 'path';
 import { ENV } from './config';
 import { apiRouter } from './routes/api.routes';
+import { uploadRouter } from './routes/upload.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { extractSession } from './middleware/auth.middleware';
 
@@ -10,13 +12,17 @@ export function createApp(): Express {
 
   // Basic security and parsing middleware
   app.use(cors({ origin: ENV.CORS_ORIGIN, credentials: true }));
-  app.use(express.json({ limit: '10mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+  app.use(express.json({ limit: '25mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
   // Session extraction
   app.use(extractSession);
 
-  // Mount API router
+  // Serve persistent uploaded static assets
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+  // Mount Upload Router and API Router
+  app.use('/api', uploadRouter);
   app.use('/api', apiRouter);
 
   // Global Error Handler

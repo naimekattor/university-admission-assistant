@@ -65,10 +65,19 @@ export function UnifiedImageUploader({
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await fetch('/api/admin/upload-image', {
+      // Send primarily to dedicated Express backend via /api/v1/upload
+      let res = await fetch('/api/v1/upload', {
         method: 'POST',
         body: formData,
       });
+
+      if (!res.ok) {
+        // Fallback to internal route if backend unreachable
+        res = await fetch('/api/admin/upload-image', {
+          method: 'POST',
+          body: formData,
+        });
+      }
 
       const json = await res.json();
 

@@ -39,6 +39,10 @@ const nextConfig = {
         source: '/api/rag/:path*',
         destination: `${BACKEND_URL}/api/rag/:path*`,
       },
+      {
+        source: '/uploads/:path*',
+        destination: `${BACKEND_URL}/uploads/:path*`,
+      },
     ];
   },
 };
