@@ -107,7 +107,10 @@ export const universities = pgTable('universities', {
 export const programs = pgTable('programs', {
   id: uuid('id').primaryKey().defaultRandom(),
   universityId: uuid('university_id').references(() => universities.id).notNull(),
+  circularId: uuid('circular_id').references(() => admissionCirculars.id),
   name: text('name').notNull(),
+  shortCode: text('short_code'),
+  degree: text('degree').default('Bachelor'),
   description: text('description'),
   duration: text('duration'),
   seats: integer('seats'),
@@ -132,7 +135,20 @@ export const admissionCirculars = pgTable('admission_circulars', {
   universityId: uuid('university_id').references(() => universities.id).notNull(),
   title: text('title').notNull(),
   unit: text('unit'),
-  year: integer('year').notNull(),
+  unitName: text('unit_name'),
+  session: text('session').default('2025-2026'),
+  year: integer('year').notNull().default(2026),
+  group: text('group').default('Science'), // 'Science' | 'Commerce' | 'Humanities' | 'Combined'
+  allowedGroups: jsonb('allowed_groups').default(['Science']),
+  minSscGpa: doublePrecision('min_ssc_gpa').default(3.5),
+  minHscGpa: doublePrecision('min_hsc_gpa').default(3.5),
+  minCombinedGpa: doublePrecision('min_combined_gpa').default(7.5),
+  allowSecondTime: boolean('allow_second_time').default(false),
+  allowedPassingYears: jsonb('allowed_passing_years').default([2025, 2026]),
+  requiredSubjects: jsonb('required_subjects'),
+  totalSeats: integer('total_seats').default(100),
+  applicationFee: integer('application_fee').default(1000),
+  status: text('status').notNull().default('active'), // 'active' | 'upcoming' | 'closed' | 'draft'
   applicationStartDate: timestamp('application_start_date'),
   applicationEndDate: timestamp('application_end_date'),
   examDate: timestamp('exam_date'),
@@ -141,6 +157,7 @@ export const admissionCirculars = pgTable('admission_circulars', {
   summary: text('summary'),
   requirements: jsonb('requirements'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
 // ==========================================
@@ -549,10 +566,22 @@ export const universitiesRelations = relations(universities, ({ many }) => ({
   circulars: many(admissionCirculars),
 }));
 
+export const admissionCircularsRelations = relations(admissionCirculars, ({ one, many }) => ({
+  university: one(universities, {
+    fields: [admissionCirculars.universityId],
+    references: [universities.id],
+  }),
+  programs: many(programs),
+}));
+
 export const programsRelations = relations(programs, ({ one, many }) => ({
   university: one(universities, {
     fields: [programs.universityId],
     references: [universities.id],
+  }),
+  circular: one(admissionCirculars, {
+    fields: [programs.circularId],
+    references: [admissionCirculars.id],
   }),
   eligibilityCriteria: many(eligibilityCriteria),
 }));
@@ -628,13 +657,6 @@ export const questionOptionsRelations = relations(questionOptions, ({ one }) => 
   question: one(questions, {
     fields: [questionOptions.questionId],
     references: [questions.id],
-  }),
-}));
-
-export const admissionCircularsRelations = relations(admissionCirculars, ({ one }) => ({
-  university: one(universities, {
-    fields: [admissionCirculars.universityId],
-    references: [universities.id],
   }),
 }));
 

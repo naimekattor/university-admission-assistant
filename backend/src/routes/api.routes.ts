@@ -6,6 +6,7 @@ import { practiceService } from '../modules/practice/practice.service';
 import { examsService } from '../modules/exams/exams.service';
 import { studyPlanService } from '../modules/study-plans/study-plan.service';
 import { ragService } from '../modules/rag/rag.service';
+import { admissionService } from '../modules/admission/admission.service';
 
 export const apiRouter = Router();
 
@@ -29,15 +30,15 @@ apiRouter.post('/ai/query', async (req: Request, res: Response, next) => {
   }
 });
 
-// Deterministic Eligibility Check Endpoint
-apiRouter.post('/eligibility/check', (req: Request, res: Response, next) => {
+// Deterministic Eligibility Check Endpoint (Evaluates with Live PostgreSQL Circular Rules)
+apiRouter.post('/eligibility/check', async (req: Request, res: Response, next) => {
   try {
     const { sscGPA, hscGPA, group, passingYear } = req.body;
-    const result = eligibilityService.evaluateSummary({
+    const result = await eligibilityService.evaluateSummary({
       sscGPA: Number(sscGPA || 5.0),
       hscGPA: Number(hscGPA || 5.0),
       group: group || 'Science',
-      passingYear: Number(passingYear || 2024),
+      passingYear: Number(passingYear || 2026),
     });
     res.json({ success: true, data: result });
   } catch (error) {
@@ -520,4 +521,72 @@ apiRouter.post('/admin/content/article', (req: Request, res: Response) => {
     message: 'Article guide published to knowledge base & SEO feed!',
     articleId: `art-${Date.now()}`,
   });
+});
+
+// ==========================================
+// UNIFIED ADMISSION INTELLIGENCE ENDPOINTS
+// ==========================================
+
+// Get all circulars with joined universities
+apiRouter.get('/admin/circulars', async (req: Request, res: Response, next) => {
+  try {
+    const data = await admissionService.getCirculars();
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get circular by ID
+apiRouter.get('/admin/circulars/:id', async (req: Request, res: Response, next) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const data = await admissionService.getCircularById(id);
+    if (!data) return res.status(404).json({ success: false, message: 'Circular not found' });
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Create new circular
+apiRouter.post('/admin/circulars', async (req: Request, res: Response, next) => {
+  try {
+    const created = await admissionService.createCircular(req.body);
+    res.status(201).json({ success: true, message: 'Circular created successfully', data: created });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Update circular
+apiRouter.put('/admin/circulars/:id', async (req: Request, res: Response, next) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const updated = await admissionService.updateCircular(id, req.body);
+    res.json({ success: true, message: 'Circular updated successfully', data: updated });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Delete circular
+apiRouter.delete('/admin/circulars/:id', async (req: Request, res: Response, next) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    await admissionService.deleteCircular(id);
+    res.json({ success: true, message: 'Circular deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Universities dropdown helper for unit/circular creators
+apiRouter.get('/admin/universities/dropdown', async (req: Request, res: Response, next) => {
+  try {
+    const data = await admissionService.getUniversitiesDropdown();
+    res.json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
 });
