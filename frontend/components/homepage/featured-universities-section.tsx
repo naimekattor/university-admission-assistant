@@ -79,15 +79,32 @@ export function FeaturedUniversitiesSection({ config, universities = [] }: Featu
 
         {/* ── UNIVERSITIES GRID ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-          {displayedUniversities.map((uni) => (
+          {displayedUniversities.map((uni) => {
+            const isImageLogo = uni.logo && (uni.logo.startsWith('http') || uni.logo.startsWith('/'));
+            return (
             <div
               key={uni.id}
               className="p-5 rounded-2xl border border-slate-200 bg-white hover:border-orange-300 hover:shadow-xs transition-all flex flex-col justify-between space-y-3.5"
             >
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-lg">
-                    {uni.logo || '🏛️'}
+                  <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center p-1 overflow-hidden shrink-0">
+                    {isImageLogo ? (
+                      <img
+                        src={uni.logo}
+                        alt={uni.shortName || uni.name}
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          if (e.currentTarget.nextElementSibling) {
+                            (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'block';
+                          }
+                        }}
+                      />
+                    ) : null}
+                    <span className={`${isImageLogo ? 'hidden' : 'block'} text-lg`}>
+                      {uni.logo || '🏛️'}
+                    </span>
                   </div>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
                     {uni.status || 'Upcoming'}
@@ -126,7 +143,8 @@ export function FeaturedUniversitiesSection({ config, universities = [] }: Featu
                 </button>
               </Link>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

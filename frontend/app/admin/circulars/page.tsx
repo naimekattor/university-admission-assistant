@@ -552,9 +552,24 @@ export default function AdminCircularsPage() {
                       {/* University & Unit */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-start gap-2.5">
-                          <span className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-base shrink-0 shadow-2xs border border-slate-200/60">
-                            {c.universityLogo || '🏛️'}
-                          </span>
+                          <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-base shrink-0 shadow-2xs border border-slate-200/60 overflow-hidden p-0.5">
+                            {c.universityLogo && (c.universityLogo.startsWith('http') || c.universityLogo.startsWith('/')) ? (
+                              <img
+                                src={c.universityLogo}
+                                alt=""
+                                className="w-full h-full object-contain"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  if (e.currentTarget.nextElementSibling) {
+                                    (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'block';
+                                  }
+                                }}
+                              />
+                            ) : null}
+                            <span className={`${c.universityLogo && (c.universityLogo.startsWith('http') || c.universityLogo.startsWith('/')) ? 'hidden' : 'block'}`}>
+                              {c.universityLogo || '🏛️'}
+                            </span>
+                          </div>
                           <div>
                             <div className="flex items-center gap-1.5">
                               <span className="font-bold text-slate-900 text-xs">{c.universityShortName}</span>

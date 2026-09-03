@@ -167,12 +167,21 @@ export default function RecommendationsPage() {
                 <div className="bg-card border border-border rounded-lg p-6">
                   <h3 className="font-semibold text-foreground mb-3">Featured Universities</h3>
                   <ul className="space-y-2 text-sm text-muted-foreground">
-                    {universities.slice(0, 5).map((uni) => (
-                      <li key={uni.id} className="flex items-center gap-2">
-                        <span>{uni.logo}</span>
-                        <span>{uni.name}</span>
-                      </li>
-                    ))}
+                    {universities.slice(0, 5).map((uni) => {
+                      const isImage = uni.logo && (uni.logo.startsWith('http') || uni.logo.startsWith('/'));
+                      return (
+                        <li key={uni.id} className="flex items-center gap-2">
+                          <span className="w-5 h-5 rounded flex items-center justify-center overflow-hidden shrink-0">
+                            {isImage ? (
+                              <img src={uni.logo} alt="" className="w-full h-full object-contain" />
+                            ) : (
+                              <span>{uni.logo || '🏛️'}</span>
+                            )}
+                          </span>
+                          <span>{uni.name}</span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               </div>
@@ -207,7 +216,24 @@ export default function RecommendationsPage() {
                       <div className="flex items-start justify-between mb-4">
                         <div>
                           <div className="flex items-center gap-3 mb-2">
-                            <span className="text-4xl">{uni.logo}</span>
+                            <span className="w-12 h-12 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center overflow-hidden shrink-0">
+                              {uni.logo && (uni.logo.startsWith('http') || uni.logo.startsWith('/')) ? (
+                                <img
+                                  src={uni.logo}
+                                  alt={uni.name}
+                                  className="w-full h-full object-contain p-1"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    if (e.currentTarget.nextElementSibling) {
+                                      (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'block';
+                                    }
+                                  }}
+                                />
+                              ) : null}
+                              <span className={`${uni.logo && (uni.logo.startsWith('http') || uni.logo.startsWith('/')) ? 'hidden' : 'block'} text-3xl`}>
+                                {uni.logo || '🏛️'}
+                              </span>
+                            </span>
                             <div>
                               <h3 className="text-xl font-semibold text-foreground">
                                 {uni.name}

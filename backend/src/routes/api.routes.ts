@@ -9,13 +9,30 @@ import { ragService } from '../modules/rag/rag.service';
 import { admissionService } from '../modules/admission/admission.service';
 import { db, sessions, chatMessages } from '../db';
 import { eq, asc } from 'drizzle-orm';
+import { pingKeepAlive, getKeepAliveTargetUrl } from '../services/cron.service';
 
 export const apiRouter = Router();
 
-// Health Check
-apiRouter.get('/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok', service: 'EduGuide Backend API', timestamp: new Date().toISOString() });
+// Health & Ping Check
+apiRouter.get(['/health', '/ping'], (req: Request, res: Response) => {
+  res.json({
+    status: 'ok',
+    service: 'EduGuide Backend API',
+    uptimeSeconds: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
+  });
 });
+
+// Manual / External Keep-Alive Trigger Endpoint
+apiRouter.get('/cron/keep-alive', async (req: Request, res: Response) => {
+  const result = await pingKeepAlive();
+  res.json({
+    message: 'Render keep-alive ping triggered',
+    targetUrl: getKeepAliveTargetUrl(),
+    result,
+  });
+});
+
 
 // AI Advisor & Tutor Endpoint with PostgreSQL Session & Chat Persistence
 apiRouter.post('/ai/query', async (req: Request, res: Response, next) => {

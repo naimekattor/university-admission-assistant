@@ -29,4 +29,13 @@ export const ENV = {
 
   // JWT Secret
   JWT_SECRET: process.env.JWT_SECRET || 'eduguide_secret_jwt_key_2026',
+
+  // Render & Keep-Alive Cron Configuration
+  // Render.com automatically supplies RENDER_EXTERNAL_URL (e.g., https://your-service.onrender.com)
+  RENDER_EXTERNAL_URL: process.env.RENDER_EXTERNAL_URL || '',
+  BACKEND_URL: process.env.BACKEND_URL || process.env.RENDER_EXTERNAL_URL || '',
+  KEEP_ALIVE_URL: process.env.KEEP_ALIVE_URL || process.env.BACKEND_URL || process.env.RENDER_EXTERNAL_URL || '',
+  KEEP_ALIVE_ENABLED: process.env.KEEP_ALIVE_ENABLED !== 'false',
+  KEEP_ALIVE_INTERVAL: process.env.KEEP_ALIVE_INTERVAL || '*/14 * * * *', // Every 14 mins (Render sleeps at 15 mins)
 };
+

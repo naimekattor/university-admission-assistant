@@ -343,9 +343,24 @@ export default function AdminEligibilityPage() {
                       {/* University & Unit */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-start gap-2.5">
-                          <span className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-base shrink-0 shadow-2xs border border-slate-200/60">
-                            {r.universityLogo || '🏛️'}
-                          </span>
+                          <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-base shrink-0 shadow-2xs border border-slate-200/60 overflow-hidden p-0.5">
+                            {r.universityLogo && (r.universityLogo.startsWith('http') || r.universityLogo.startsWith('/')) ? (
+                              <img
+                                src={r.universityLogo}
+                                alt=""
+                                className="w-full h-full object-contain"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  if (e.currentTarget.nextElementSibling) {
+                                    (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'block';
+                                  }
+                                }}
+                              />
+                            ) : null}
+                            <span className={`${r.universityLogo && (r.universityLogo.startsWith('http') || r.universityLogo.startsWith('/')) ? 'hidden' : 'block'}`}>
+                              {r.universityLogo || '🏛️'}
+                            </span>
+                          </div>
                           <div>
                             <span className="font-bold text-slate-900 text-xs">{r.universityShortName}</span>
                             <p className="text-[11px] font-semibold text-[#FF5500] leading-tight mt-0.5">

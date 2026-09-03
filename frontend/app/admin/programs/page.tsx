@@ -459,7 +459,24 @@ export default function AdminProgramsPage() {
                       {/* University • Unit */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-sm">{p.universityLogo || '🏛️'}</span>
+                          <span className="w-5 h-5 rounded flex items-center justify-center overflow-hidden shrink-0">
+                            {p.universityLogo && (p.universityLogo.startsWith('http') || p.universityLogo.startsWith('/')) ? (
+                              <img
+                                src={p.universityLogo}
+                                alt=""
+                                className="w-full h-full object-contain"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  if (e.currentTarget.nextElementSibling) {
+                                    (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'inline';
+                                  }
+                                }}
+                              />
+                            ) : null}
+                            <span className={`${p.universityLogo && (p.universityLogo.startsWith('http') || p.universityLogo.startsWith('/')) ? 'hidden' : 'inline'} text-sm`}>
+                              {p.universityLogo || '🏛️'}
+                            </span>
+                          </span>
                           <span className="font-bold text-slate-800">{p.universityShortName}</span>
                           <span className="text-slate-300">•</span>
                           <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-slate-100 text-slate-600">

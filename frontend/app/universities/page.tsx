@@ -277,6 +277,7 @@ export default function UniversitiesPage() {
               const targetSlug = (uni.slug || uni.shortName || uni.id).toLowerCase().trim().replace(/[^a-z0-9]/g, '-');
               const isOpen = uni.status === 'Applications Open';
               const isOpeningSoon = uni.status === 'Opening Soon';
+              const isImageLogo = uni.logo && (uni.logo.startsWith('http://') || uni.logo.startsWith('https://') || uni.logo.startsWith('/'));
 
               return (
                 <div
@@ -287,8 +288,23 @@ export default function UniversitiesPage() {
                   <div className="space-y-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-200/60 flex items-center justify-center text-2xl shadow-xs group-hover:scale-105 transition shrink-0">
-                          {uni.logo || '🏛️'}
+                        <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-200/60 flex items-center justify-center p-1.5 shadow-xs group-hover:scale-105 transition shrink-0 overflow-hidden">
+                          {isImageLogo ? (
+                            <img
+                              src={uni.logo}
+                              alt={uni.shortName || uni.name}
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                if (e.currentTarget.nextElementSibling) {
+                                  (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'block';
+                                }
+                              }}
+                            />
+                          ) : null}
+                          <span className={`${isImageLogo ? 'hidden' : 'block'} text-2xl`}>
+                            {uni.logo || '🏛️'}
+                          </span>
                         </div>
                         <div>
                           <div className="flex items-center gap-1.5">

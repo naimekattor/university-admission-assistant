@@ -21,6 +21,16 @@ export function createApp(): Express {
   // Serve persistent uploaded static assets
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
+  // Render.com Health & Ping checks (Top-level & API level)
+  app.get(['/health', '/ping'], (req, res) => {
+    res.status(200).json({
+      status: 'ok',
+      service: 'EduGuide Backend API',
+      uptimeSeconds: Math.floor(process.uptime()),
+      timestamp: new Date().toISOString(),
+    });
+  });
+
   // Mount Upload Router and API Router
   app.use('/api', uploadRouter);
   app.use('/api', apiRouter);
