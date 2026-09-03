@@ -87,14 +87,21 @@ export interface ExampleQuestion {
   text: string;
   category: string;
   order: number;
+  answer?: string;
   enabled: boolean;
 }
 
 export interface AiAdvisorConfig {
+  eyebrowBadge?: string;
   title: string;
   description: string;
   ctaText: string;
+  ctaUrl?: string;
   exampleQuestions: ExampleQuestion[];
+  simulatedAnswer?: string;
+  imageUrl?: string;
+  imageAlt?: string;
+  gradientTheme?: 'warm-glow' | 'smooth-sunset' | 'executive-dark' | 'solar-amber';
   enabled: boolean;
 }
 
@@ -259,16 +266,59 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageFullConfig = {
     enabled: true,
   },
   aiAdvisor: {
-    title: 'Ask Anything About University Admission',
+    eyebrowBadge: 'AI ADMISSION INTELLIGENCE',
+    title: 'Ask anything about university admission.',
     description:
-      'Confused about GPA criteria, second-time rules, unit conversions, or circular requirements? Ask EduGuide.',
+      'Confused about eligibility, units, deadlines or admission requirements? Ask EduGuide.',
     ctaText: 'Ask Admission Advisor',
+    ctaUrl: '/chat',
+    imageUrl: '/images/ai-advisor-avatar.svg',
+    imageAlt: 'EduGuide AI Admission Intelligence Assistant',
+    gradientTheme: 'warm-glow',
     exampleQuestions: [
-      { id: 'q1', text: 'Which universities are accepting applications right now?', category: 'Deadlines', order: 1, enabled: true },
-      { id: 'q2', text: 'What is the BUET admission minimum GPA requirement?', category: 'Eligibility', order: 2, enabled: true },
-      { id: 'q3', text: 'Which units can I apply to with SSC GPA 4.8 and HSC GPA 5.0?', category: 'Eligibility', order: 3, enabled: true },
-      { id: 'q4', text: 'What are the main differences between BUET and DU Ka Unit exams?', category: 'Comparison', order: 4, enabled: true },
+      {
+        id: 'q1',
+        text: 'Which universities are accepting applications right now?',
+        category: 'Deadlines',
+        order: 1,
+        answer: 'Currently, BUET, KUET, RUET, CUET, and DU Ka Unit have active circular deadlines for the 2026 session. Medical (MBBS) applications are also open with test scheduled for late November.',
+        enabled: true,
+      },
+      {
+        id: 'q2',
+        text: 'What is the BUET admission minimum GPA requirement?',
+        category: 'Eligibility',
+        order: 2,
+        answer: 'For BUET Undergraduate Admission 2026, candidates from the Science Group must satisfy: Minimum 4.00 out of 5.00 in SSC, 4.00 in HSC across PHY, CHE, MATH, ENG, and combined points >= 270. Second-time is strictly disallowed.',
+        enabled: true,
+      },
+      {
+        id: 'q3',
+        text: 'Which units can I apply to with SSC GPA 4.8 and HSC GPA 5.0?',
+        category: 'Eligibility',
+        order: 3,
+        answer: 'With a combined GPA of 9.80, you qualify for 95%+ of public university units including DU Ka & Kha, GST Cluster Science & General, and Engineering Universities (subject to Physics & Math grade prerequisites).',
+        enabled: true,
+      },
+      {
+        id: 'q4',
+        text: 'What are the main differences between BUET and DU Ka Unit exams?',
+        category: 'Comparison',
+        order: 4,
+        answer: 'BUET has a preliminary MCQ screening followed by a written-only final test with zero calculators allowed. DU Ka Unit combines both 60 MCQ and 40 Written marks in a unified 90-minute sitting without calculators.',
+        enabled: true,
+      },
+      {
+        id: 'q5',
+        text: 'When will the Medical admission test admit card be published?',
+        category: 'Admit Card',
+        order: 5,
+        answer: 'Medical (MBBS) admit cards will be downloadable from DGHS official portal approximately 10 days before the admission exam date.',
+        enabled: true,
+      },
     ],
+    simulatedAnswer:
+      'For BUET Undergraduate Admission 2026, candidates from the Science Group must satisfy:\n• SSC GPA: Minimum 4.00 out of 5.00.\n• HSC GPA: Minimum 4.00 in PHY, CHE, MATH, ENG.\n• Combined Grades: Total points in PHY + CHE + MATH must equal or exceed 270 points.\n• Second-time Policy: Strictly disallowed.',
     enabled: true,
   },
   guideSection: {

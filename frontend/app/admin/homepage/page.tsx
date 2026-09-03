@@ -34,7 +34,9 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { RichTextEditor } from '@/components/rich-text/rich-text-editor';
+import { UnifiedImageUploader } from '@/components/ui/unified-image-uploader';
 import { PreparationCtaSection } from '@/components/homepage/preparation-cta-section';
+import { AiAdvisorPreviewSection } from '@/components/homepage/ai-advisor-preview-section';
 import { PublishModal } from '@/components/admin/homepage/publish-modal';
 import { useToast } from '@/components/ui/custom-toast';
 import {
@@ -1379,40 +1381,93 @@ export default function AdminHomepageCMSPage() {
           {activeTab === 'advisor' && (
             <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-6">
               <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-                <div>
-                  <h3 className="font-bold text-lg text-slate-900">AI Advisor Interactive Preview Editor</h3>
-                  <p className="text-xs text-slate-500">Configure suggested questions chips and admission prompt examples.</p>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-lg text-slate-900">AI Advisor Interactive Preview Editor</h3>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span>Live PostgreSQL Section</span>
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Full control over headline, suggested question chips, verified answers, avatar illustration, and smooth theme gradients.
+                  </p>
                 </div>
                 <button
                   onClick={() => handleSaveSection('aiAdvisor', draftConfig.aiAdvisor)}
                   disabled={saving}
-                  className="px-4 py-2 rounded-full bg-[#FF5500] hover:bg-[#E64D00] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+                  className="px-5 py-2.5 rounded-full bg-[#FF5500] hover:bg-[#E64D00] text-white text-xs font-bold flex items-center gap-2 shadow-sm transition cursor-pointer"
                 >
                   <Save className="w-3.5 h-3.5" />
-                  <span>{saving ? 'Saving...' : 'Save AI Draft'}</span>
+                  <span>{saving ? 'Saving to DB...' : 'Save AI Draft to DB'}</span>
                 </button>
               </div>
 
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-900">Section Title</label>
-                  <input
-                    type="text"
-                    value={draftConfig.aiAdvisor?.title || ''}
-                    onChange={(e) =>
-                      setDraftConfig({
-                        ...draftConfig,
-                        aiAdvisor: { ...draftConfig.aiAdvisor, title: e.target.value },
-                      })
-                    }
-                    className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
-                  />
+              <div className="space-y-6">
+                {/* 1. Visibility Toggle */}
+                <div className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-200 bg-slate-50/70">
+                  <div>
+                    <div className="text-xs font-bold text-slate-900">Enable AI Advisor Section</div>
+                    <div className="text-[11px] text-slate-500">Display interactive admission tutor preview on homepage</div>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={draftConfig.aiAdvisor?.enabled !== false}
+                      onChange={(e) =>
+                        setDraftConfig({
+                          ...draftConfig,
+                          aiAdvisor: { ...draftConfig.aiAdvisor, enabled: e.target.checked },
+                        })
+                      }
+                      className="w-4 h-4 text-[#FF5500] rounded cursor-pointer"
+                    />
+                    <span className="text-xs font-semibold text-slate-700">
+                      {draftConfig.aiAdvisor?.enabled !== false ? 'Enabled' : 'Hidden'}
+                    </span>
+                  </label>
                 </div>
 
+                {/* 2. Eyebrow Badge & Title */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-900">Eyebrow / Badge Text</label>
+                    <input
+                      type="text"
+                      value={draftConfig.aiAdvisor?.eyebrowBadge || 'AI ADMISSION INTELLIGENCE'}
+                      onChange={(e) =>
+                        setDraftConfig({
+                          ...draftConfig,
+                          aiAdvisor: { ...draftConfig.aiAdvisor, eyebrowBadge: e.target.value },
+                        })
+                      }
+                      placeholder="AI ADMISSION INTELLIGENCE"
+                      className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-bold uppercase tracking-wider font-mono focus:outline-none focus:border-[#FF5500]"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-xs font-bold text-slate-900">Section Title *</label>
+                    <input
+                      type="text"
+                      value={draftConfig.aiAdvisor?.title || ''}
+                      onChange={(e) =>
+                        setDraftConfig({
+                          ...draftConfig,
+                          aiAdvisor: { ...draftConfig.aiAdvisor, title: e.target.value },
+                        })
+                      }
+                      placeholder="Ask anything about university admission."
+                      className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-bold focus:outline-none focus:border-[#FF5500]"
+                    />
+                  </div>
+                </div>
+
+                {/* 3. Description */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-900">Description</label>
-                  <input
-                    type="text"
+                  <label className="text-xs font-bold text-slate-900">Description Subtitle *</label>
+                  <textarea
+                    rows={2}
                     value={draftConfig.aiAdvisor?.description || ''}
                     onChange={(e) =>
                       setDraftConfig({
@@ -1420,8 +1475,377 @@ export default function AdminHomepageCMSPage() {
                         aiAdvisor: { ...draftConfig.aiAdvisor, description: e.target.value },
                       })
                     }
-                    className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                    placeholder="Confused about eligibility, units, deadlines or admission requirements? Ask EduGuide."
+                    className="w-full p-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
                   />
+                </div>
+
+                {/* 4. Smooth Gradient Background Theme */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#FF5500]" />
+                    <span>Modern Smooth Gradient Theme</span>
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {[
+                      {
+                        id: 'warm-glow',
+                        label: 'Warm Glow',
+                        sub: 'Subtle Cream & Amber (Default)',
+                        preview: 'from-orange-50/60 via-white to-amber-50/40',
+                      },
+                      {
+                        id: 'smooth-sunset',
+                        label: 'Smooth Sunset',
+                        sub: 'Rich Orange Radiant Glow',
+                        preview: 'from-[#FFF5EE] via-[#FFEBD9] to-[#FFF0E6]',
+                      },
+                      {
+                        id: 'executive-dark',
+                        label: 'Executive Obsidian',
+                        sub: 'High-Tech Dark Flame',
+                        preview: 'from-[#18110D] via-[#24150B] to-[#120C08]',
+                      },
+                      {
+                        id: 'solar-amber',
+                        label: 'Solar Amber',
+                        sub: 'Warm Campus Sunlight',
+                        preview: 'from-[#FFFDF9] via-[#FFF6ED] to-[#FEF3C7]',
+                      },
+                    ].map((t) => {
+                      const isSelected =
+                        (draftConfig.aiAdvisor?.gradientTheme || 'warm-glow') === t.id;
+                      return (
+                        <div
+                          key={t.id}
+                          onClick={() =>
+                            setDraftConfig({
+                              ...draftConfig,
+                              aiAdvisor: { ...draftConfig.aiAdvisor, gradientTheme: t.id as any },
+                            })
+                          }
+                          className={`p-3 rounded-2xl border cursor-pointer transition ${
+                            isSelected
+                              ? 'border-[#FF5500] ring-2 ring-orange-500/20 bg-orange-50/20'
+                              : 'border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className={`h-8 rounded-xl bg-gradient-to-r ${t.preview} mb-2 border border-slate-200 shadow-xs`} />
+                          <div className="text-xs font-bold text-slate-900">{t.label}</div>
+                          <div className="text-[10px] text-slate-500">{t.sub}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 5. Unified Image Upload (Cloudinary + ImgBB + Local) */}
+                <div className="p-4 rounded-2xl border border-slate-200 bg-white space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                        <ImageIcon className="w-3.5 h-3.5 text-[#FF5500]" />
+                        <span>AI Advisor Illustration / Avatar Image</span>
+                      </h4>
+                      <p className="text-[11px] text-slate-500">
+                        Upload to Cloudinary (with ImgBB &amp; local server fallback) or select a preset vector illustration.
+                      </p>
+                    </div>
+
+                    {/* Presets */}
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDraftConfig({
+                            ...draftConfig,
+                            aiAdvisor: {
+                              ...draftConfig.aiAdvisor,
+                              imageUrl: '/images/ai-advisor-avatar.svg',
+                            },
+                          })
+                        }
+                        className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-orange-50 text-[#FF5500] border border-orange-200 hover:bg-orange-100 transition cursor-pointer"
+                      >
+                        Default AI Mascot SVG
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDraftConfig({
+                            ...draftConfig,
+                            aiAdvisor: {
+                              ...draftConfig.aiAdvisor,
+                              imageUrl: '/images/study-platform-mockup.svg',
+                            },
+                          })
+                        }
+                        className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition cursor-pointer"
+                      >
+                        Study Deck Preview
+                      </button>
+                    </div>
+                  </div>
+
+                  <UnifiedImageUploader
+                    value={draftConfig.aiAdvisor?.imageUrl || ''}
+                    onChange={(url) =>
+                      setDraftConfig({
+                        ...draftConfig,
+                        aiAdvisor: { ...draftConfig.aiAdvisor, imageUrl: url },
+                      })
+                    }
+                    label="Upload Image Asset (Cloudinary / ImgBB / Local)"
+                    hint="Choose file to automatically upload to Cloudinary (with ImgBB and local fallback), or enter an image link."
+                    aspectRatio="square"
+                  />
+                </div>
+
+                {/* 6. Question Chips & Answers Manager */}
+                <div className="space-y-3 p-4 rounded-2xl border border-slate-200 bg-slate-50/50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                        <MessageSquare className="w-3.5 h-3.5 text-[#FF5500]" />
+                        <span>Interactive Question Chips &amp; Answers ({draftConfig.aiAdvisor?.exampleQuestions?.length || 0})</span>
+                      </h4>
+                      <p className="text-[11px] text-slate-500">
+                        When students click a question pill on the homepage, the chat preview dynamically displays the custom verified answer.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const defaults = [
+                            {
+                              id: 'q1',
+                              text: 'Which universities are accepting applications right now?',
+                              category: 'Deadlines',
+                              order: 1,
+                              answer: 'Currently, BUET, KUET, RUET, CUET, and DU Ka Unit have active circular deadlines for the 2026 session. Medical (MBBS) applications are also open with test scheduled for late November.',
+                              enabled: true,
+                            },
+                            {
+                              id: 'q2',
+                              text: 'What is the BUET admission minimum GPA requirement?',
+                              category: 'Eligibility',
+                              order: 2,
+                              answer: 'For BUET Undergraduate Admission 2026, candidates from the Science Group must satisfy: Minimum 4.00 out of 5.00 in SSC, 4.00 in HSC across PHY, CHE, MATH, ENG, and combined points >= 270. Second-time is strictly disallowed.',
+                              enabled: true,
+                            },
+                            {
+                              id: 'q3',
+                              text: 'Which units can I apply to with SSC GPA 4.8 and HSC GPA 5.0?',
+                              category: 'Eligibility',
+                              order: 3,
+                              answer: 'With a combined GPA of 9.80, you qualify for 95%+ of public university units including DU Ka & Kha, GST Cluster Science & General, and Engineering Universities (subject to Physics & Math grade prerequisites).',
+                              enabled: true,
+                            },
+                            {
+                              id: 'q4',
+                              text: 'What are the main differences between BUET and DU Ka Unit exams?',
+                              category: 'Comparison',
+                              order: 4,
+                              answer: 'BUET has a preliminary MCQ screening followed by a written-only final test with zero calculators allowed. DU Ka Unit combines both 60 MCQ and 40 Written marks in a unified 90-minute sitting without calculators.',
+                              enabled: true,
+                            },
+                            {
+                              id: 'q5',
+                              text: 'When will the Medical admission test admit card be published?',
+                              category: 'Admit Card',
+                              order: 5,
+                              answer: 'Medical (MBBS) admit cards will be downloadable from DGHS official portal approximately 10 days before the admission exam date.',
+                              enabled: true,
+                            },
+                          ];
+                          setDraftConfig({
+                            ...draftConfig,
+                            aiAdvisor: { ...draftConfig.aiAdvisor, exampleQuestions: defaults },
+                          });
+                        }}
+                        className="text-[11px] text-slate-500 hover:text-slate-800 underline cursor-pointer"
+                      >
+                        Reset Defaults
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const current = draftConfig.aiAdvisor?.exampleQuestions || [];
+                          const newQ = {
+                            id: `q-${Date.now()}`,
+                            text: 'What is the syllabus weightage for admission exams?',
+                            category: 'Syllabus',
+                            order: current.length + 1,
+                            answer: 'Questions are formulated from standard NCTB HSC textbooks with special emphasis on analytical problem-solving and fundamental concepts.',
+                            enabled: true,
+                          };
+                          setDraftConfig({
+                            ...draftConfig,
+                            aiAdvisor: {
+                              ...draftConfig.aiAdvisor,
+                              exampleQuestions: [...current, newQ],
+                            },
+                          });
+                        }}
+                        className="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-2xs transition cursor-pointer flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3 text-[#FF5500]" />
+                        <span>Add Question Chip</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {(draftConfig.aiAdvisor?.exampleQuestions || []).map((q, idx) => (
+                      <div
+                        key={q.id || idx}
+                        className="p-3.5 rounded-2xl bg-white border border-slate-200 space-y-2.5 shadow-2xs"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 flex-1">
+                            <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold flex items-center justify-center font-mono shrink-0">
+                              {idx + 1}
+                            </span>
+                            <input
+                              type="text"
+                              value={q.text}
+                              onChange={(e) => {
+                                const updated = [...(draftConfig.aiAdvisor?.exampleQuestions || [])];
+                                updated[idx] = { ...updated[idx], text: e.target.value };
+                                setDraftConfig({
+                                  ...draftConfig,
+                                  aiAdvisor: { ...draftConfig.aiAdvisor, exampleQuestions: updated },
+                                });
+                              }}
+                              placeholder="Question text shown in pill..."
+                              className="flex-1 h-9 px-3 text-xs font-bold text-slate-900 border border-slate-200 rounded-lg focus:outline-none focus:border-[#FF5500]"
+                            />
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={q.category || 'General'}
+                              onChange={(e) => {
+                                const updated = [...(draftConfig.aiAdvisor?.exampleQuestions || [])];
+                                updated[idx] = { ...updated[idx], category: e.target.value };
+                                setDraftConfig({
+                                  ...draftConfig,
+                                  aiAdvisor: { ...draftConfig.aiAdvisor, exampleQuestions: updated },
+                                });
+                              }}
+                              placeholder="Category"
+                              className="w-24 h-9 px-2 text-[11px] font-mono border border-slate-200 rounded-lg text-slate-600 focus:outline-none"
+                            />
+
+                            <label className="flex items-center gap-1 text-[11px] text-slate-600 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={q.enabled !== false}
+                                onChange={(e) => {
+                                  const updated = [...(draftConfig.aiAdvisor?.exampleQuestions || [])];
+                                  updated[idx] = { ...updated[idx], enabled: e.target.checked };
+                                  setDraftConfig({
+                                    ...draftConfig,
+                                    aiAdvisor: { ...draftConfig.aiAdvisor, exampleQuestions: updated },
+                                  });
+                                }}
+                                className="w-4 h-4 text-[#FF5500] rounded"
+                              />
+                              <span>Visible</span>
+                            </label>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = (draftConfig.aiAdvisor?.exampleQuestions || []).filter(
+                                  (_, qIdx) => qIdx !== idx
+                                );
+                                setDraftConfig({
+                                  ...draftConfig,
+                                  aiAdvisor: { ...draftConfig.aiAdvisor, exampleQuestions: updated },
+                                });
+                              }}
+                              className="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition cursor-pointer"
+                              title="Delete question"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Answer textarea */}
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                            Verified Circular Answer (Shown on Homepage):
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={q.answer || ''}
+                            onChange={(e) => {
+                              const updated = [...(draftConfig.aiAdvisor?.exampleQuestions || [])];
+                              updated[idx] = { ...updated[idx], answer: e.target.value };
+                              setDraftConfig({
+                                ...draftConfig,
+                                aiAdvisor: { ...draftConfig.aiAdvisor, exampleQuestions: updated },
+                              });
+                            }}
+                            placeholder="Official verified response answering this admission question..."
+                            className="w-full p-2.5 rounded-xl border border-slate-200 text-xs text-slate-700 font-medium focus:outline-none focus:border-[#FF5500] bg-slate-50/50"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 7. Action CTA Button */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-900">CTA Button Text</label>
+                    <input
+                      type="text"
+                      value={draftConfig.aiAdvisor?.ctaText || 'Ask Admission Advisor'}
+                      onChange={(e) =>
+                        setDraftConfig({
+                          ...draftConfig,
+                          aiAdvisor: { ...draftConfig.aiAdvisor, ctaText: e.target.value },
+                        })
+                      }
+                      className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-bold focus:outline-none focus:border-[#FF5500]"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-900">CTA Button URL</label>
+                    <input
+                      type="text"
+                      value={draftConfig.aiAdvisor?.ctaUrl || '/chat'}
+                      onChange={(e) =>
+                        setDraftConfig({
+                          ...draftConfig,
+                          aiAdvisor: { ...draftConfig.aiAdvisor, ctaUrl: e.target.value },
+                        })
+                      }
+                      className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-mono focus:outline-none focus:border-[#FF5500]"
+                    />
+                  </div>
+                </div>
+
+                {/* 8. Live In-Admin Preview Box */}
+                <div className="space-y-2 pt-2">
+                  <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <Eye className="w-3.5 h-3.5 text-[#FF5500]" />
+                    <span>Live In-Admin AI Advisor Preview</span>
+                  </span>
+
+                  <div className="rounded-3xl border border-slate-200 overflow-hidden shadow-md">
+                    <AiAdvisorPreviewSection config={draftConfig.aiAdvisor} />
+                  </div>
                 </div>
               </div>
             </div>
