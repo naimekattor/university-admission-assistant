@@ -27,10 +27,13 @@ const handleImageUpload = async (req: Request, res: Response, next: NextFunction
       return;
     }
 
+    const folder = (req.body?.folder || req.query?.folder || 'general') as string;
+
     const result = await uploadService.uploadImage(
       file.buffer,
       file.originalname,
-      file.mimetype
+      file.mimetype,
+      folder
     );
 
     res.status(200).json(result);

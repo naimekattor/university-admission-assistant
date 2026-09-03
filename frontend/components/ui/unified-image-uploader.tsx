@@ -22,6 +22,7 @@ interface UnifiedImageUploaderProps {
   placeholder?: string;
   aspectRatio?: 'square' | 'video' | 'wide' | 'auto';
   compact?: boolean;
+  folder?: string;
   className?: string;
 }
 
@@ -33,11 +34,13 @@ export function UnifiedImageUploader({
   placeholder = 'https://... or click browse',
   aspectRatio = 'video',
   compact = false,
+  folder = 'general',
   className = '',
 }: UnifiedImageUploaderProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [provider, setProvider] = useState<'cloudinary' | 'imgbb' | 'local' | null>(null);
+  const [uploadedFolder, setUploadedFolder] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [mode, setMode] = useState<'upload' | 'url'>('upload');
 
@@ -46,14 +49,14 @@ export function UnifiedImageUploader({
   const handleUploadFile = async (file: File) => {
     if (!file) return;
 
-    // Validate size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      setUploadError('File size exceeds 10MB limit.');
+    // Validate size (max 20MB)
+    if (file.size > 20 * 1024 * 1024) {
+      setUploadError('File size exceeds 20MB limit.');
       return;
     }
 
     // Validate type
-    if (!file.type.startsWith('image/')) {
+    if (!file.type.startsWith('image/') && !file.name.endsWith('.svg')) {
       setUploadError('Please select a valid image file (PNG, JPG, WebP, SVG).');
       return;
     }
@@ -64,6 +67,7 @@ export function UnifiedImageUploader({
     try {
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('folder', folder);
 
       // Send primarily to dedicated Express backend via /api/v1/upload
       let res = await fetch('/api/v1/upload', {
@@ -84,6 +88,7 @@ export function UnifiedImageUploader({
       if (res.ok && json.success && json.url) {
         onChange(json.url);
         setProvider(json.provider || 'local');
+        setUploadedFolder(json.folder || folder);
       } else {
         throw new Error(json.message || 'Failed to upload image');
       }
@@ -261,6 +266,14 @@ export function UnifiedImageUploader({
               ) : (
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-50 text-[#FF5500]">
                   External Asset
+                </span>
+              )}
+
+              {/* Folder badge */}
+              {(uploadedFolder || folder) && (
+                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-slate-100 text-slate-600">
+                  <span>📁</span>
+                  <span>{uploadedFolder || folder}</span>
                 </span>
               )}
             </div>

@@ -1592,6 +1592,7 @@ export default function AdminHomepageCMSPage() {
                         aiAdvisor: { ...draftConfig.aiAdvisor, imageUrl: url },
                       })
                     }
+                    folder="homepage/advisor"
                     label="Upload Image Asset (Cloudinary / ImgBB / Local)"
                     hint="Choose file to automatically upload to Cloudinary (with ImgBB and local fallback), or enter an image link."
                     aspectRatio="square"
@@ -2413,6 +2414,7 @@ export default function AdminHomepageCMSPage() {
                         preparation: { ...draftConfig.preparation, imageUrl: url },
                       })
                     }
+                    folder="homepage/preparation"
                     label="Upload Image Asset (Cloudinary / ImgBB / Local)"
                     hint="Choose file to automatically upload to Cloudinary (with ImgBB and local fallback), or enter an image link."
                     aspectRatio="video"
