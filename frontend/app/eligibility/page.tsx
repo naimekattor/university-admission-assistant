@@ -40,8 +40,9 @@ export default function EligibilityPage() {
   const [sscGPA, setSscGPA] = useState<number | ''>('');
   const [hscGPA, setHscGPA] = useState<number | ''>('');
   const [group, setGroup] = useState<AcademicGroup>('Science');
-  const [passingYear, setPassingYear] = useState<number>(2024);
+  const [passingYear, setPassingYear] = useState<number>(2026);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   // Summary State
   const [summary, setSummary] = useState<EligibilitySummaryEvaluation | null>(null);
@@ -52,7 +53,7 @@ export default function EligibilityPage() {
   const [activeTab, setActiveTab] = useState<'all' | 'eligible' | 'ineligible'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const handleCheck = () => {
+  const handleCheck = async () => {
     const sscVal = typeof sscGPA === 'number' ? sscGPA : parseFloat(sscGPA as string);
     const hscVal = typeof hscGPA === 'number' ? hscGPA : parseFloat(hscGPA as string);
 
@@ -67,25 +68,54 @@ export default function EligibilityPage() {
     }
 
     setValidationError(null);
+    setLoading(true);
 
-    const student: StudentProfile = {
-      sscGPA: Number(sscVal.toFixed(2)),
-      hscGPA: Number(hscVal.toFixed(2)),
-      group,
-      passingYear: Number(passingYear) || 2024,
-    };
+    try {
+      // Connect directly to live backend PostgreSQL eligibility check API
+      const res = await fetch('/api/v1/eligibility/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sscGPA: Number(sscVal.toFixed(2)),
+          hscGPA: Number(hscVal.toFixed(2)),
+          group,
+          passingYear: Number(passingYear) || 2026,
+        }),
+      });
 
-    const evaluation = evaluateEligibilitySummary(student);
-    setSummary(evaluation);
-    setSubmitted(true);
-    setIsEditingProfile(false);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          setSummary(json.data);
+          setSubmitted(true);
+          setIsEditingProfile(false);
+          return;
+        }
+      }
+      throw new Error('Live check evaluation returned error');
+    } catch (err: any) {
+      console.warn('Fallback to client engine:', err?.message);
+      const student: StudentProfile = {
+        sscGPA: Number(sscVal.toFixed(2)),
+        hscGPA: Number(hscVal.toFixed(2)),
+        group,
+        passingYear: Number(passingYear) || 2026,
+      };
+
+      const evaluation = evaluateEligibilitySummary(student);
+      setSummary(evaluation);
+      setSubmitted(true);
+      setIsEditingProfile(false);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const resetAll = () => {
     setSscGPA('');
     setHscGPA('');
     setGroup('Science');
-    setPassingYear(2024);
+    setPassingYear(2026);
     setSummary(null);
     setSubmitted(false);
     setIsEditingProfile(false);
@@ -245,9 +275,9 @@ export default function EligibilityPage() {
                     onChange={(e) => setPassingYear(parseInt(e.target.value))}
                     className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white focus:bg-white text-slate-900 font-semibold text-sm focus:outline-none focus:border-[#FF5500] focus:ring-4 focus:ring-[#FF5500]/10 transition shadow-2xs cursor-pointer"
                   >
-                    <option value={2024}>2024 (1st Time Applicant)</option>
-                    <option value={2023}>2023 (2nd Time Applicant)</option>
-                    <option value={2022}>2022</option>
+                    <option value={2026}>2026 (1st Time / Current Session 2026-2027)</option>
+                    <option value={2025}>2025 (1st Time / 2nd Time Eligible Units)</option>
+                    <option value={2024}>2024 (2nd Time Applicant — Medical & Clusters)</option>
                   </select>
                   <p className="text-[11px] text-slate-500">Used to evaluate 2nd-time admission restrictions</p>
                 </div>
@@ -257,11 +287,21 @@ export default function EligibilityPage() {
               <div className="pt-2 flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={handleCheck}
-                  className="flex-1 h-13 px-8 rounded-2xl bg-gradient-to-r from-[#FF5500] to-[#E64D00] hover:from-[#E64D00] hover:to-[#D44000] text-white font-extrabold text-sm sm:text-base shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  disabled={loading}
+                  className="flex-1 h-13 px-8 rounded-2xl bg-gradient-to-r from-[#FF5500] to-[#E64D00] hover:from-[#E64D00] hover:to-[#D44000] text-white font-extrabold text-sm sm:text-base shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                 >
-                  <Sparkles className="w-4 h-4" />
-                  <span>{submitted ? 'Recalculate Eligibility' : 'Check Eligibility Summary'}</span>
-                  <ArrowRight className="w-4 h-4" />
+                  {loading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      <span>Evaluating Live Circular Rules...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      <span>{submitted ? 'Recalculate Eligibility' : 'Check Eligibility Summary'}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
                 </button>
                 {submitted && (
                   <button
@@ -322,7 +362,7 @@ export default function EligibilityPage() {
                       Group: {summary.profile.group}
                     </span>
                     <span className="px-3 py-1 bg-slate-50 text-slate-700 text-xs font-bold rounded-full border border-slate-200">
-                      Year: {summary.profile.passingYear} {summary.profile.passingYear === 2024 ? '(1st Time)' : '(2nd Time)'}
+                      Year: {summary.profile.passingYear} {summary.profile.passingYear >= 2026 ? '(1st Time)' : summary.profile.passingYear === 2025 ? '(1st/2nd Time)' : '(2nd Time)'}
                     </span>
                   </div>
                 </div>

@@ -16,7 +16,7 @@ export class EligibilityService {
   public async evaluateSummary(profile: StudentProfile): Promise<EligibilitySummaryEvaluation> {
     try {
       const liveCirculars = await admissionService.getCirculars();
-      const activeCirculars = liveCirculars.filter((c) => c.status === 'active');
+      const activeCirculars = liveCirculars.filter((c) => c.status !== 'closed');
 
       if (activeCirculars.length > 0) {
         const liveDepartments: UniversityDepartment[] = activeCirculars.map((c) => ({
@@ -33,7 +33,7 @@ export class EligibilityService {
           allowSecondTime: c.allowSecondTime,
           allowedPassingYears: c.allowedPassingYears,
           seats: c.totalSeats,
-          applicationDeadline: c.applicationEndDate ? new Date(c.applicationEndDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'TBA',
+          applicationDeadline: c.applicationEndDate ? new Date(c.applicationEndDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Circular Not Published',
           website: c.officialUrl || '',
           admissionFee: c.applicationFee,
           circularYear: c.year,
