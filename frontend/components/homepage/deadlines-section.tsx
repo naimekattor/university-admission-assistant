@@ -137,7 +137,9 @@ export function DeadlinesSection({ config, deadlines = [] }: DeadlinesSectionPro
 
                   <div className="text-right">
                     <div className="text-xs font-black text-[#FF5500]">
-                      {event.remainingDays} days left
+                      {typeof event.remainingDays === 'number' && event.remainingDays > 0
+                        ? `${event.remainingDays} days left`
+                        : 'Upcoming (2026-2027)'}
                     </div>
                   </div>
                 </div>

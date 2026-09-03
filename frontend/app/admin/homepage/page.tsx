@@ -1384,10 +1384,12 @@ export default function AdminHomepageCMSPage() {
                               </span>
                             </td>
                             <td className="py-3 px-3 font-mono text-slate-800 font-medium">
-                              {evt.dateDisplay || new Date(evt.eventDate).toLocaleDateString()}
+                              {evt.dateDisplay || (evt.eventDate ? new Date(evt.eventDate).toLocaleDateString() : 'To Be Announced (TBA)')}
                             </td>
                             <td className="py-3 px-3 font-mono font-bold text-[#FF5500]">
-                              {evt.remainingDays} days left
+                              {typeof evt.remainingDays === 'number' && evt.remainingDays > 0
+                                ? `${evt.remainingDays} days left`
+                                : 'Upcoming (2026-2027)'}
                             </td>
                             <td className="py-3 px-3">
                               <span
@@ -1395,11 +1397,11 @@ export default function AdminHomepageCMSPage() {
                                   evt.status === 'urgent'
                                     ? 'bg-rose-50 text-rose-600 border border-rose-200'
                                     : evt.status === 'upcoming'
-                                    ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                                    ? 'bg-amber-50 text-amber-700 border border-amber-200'
                                     : 'bg-slate-100 text-slate-600 border border-slate-200'
                                 }`}
                               >
-                                {evt.status || 'upcoming'}
+                                {evt.status === 'upcoming' ? 'Circular Not Published' : evt.status || 'upcoming'}
                               </span>
                             </td>
                             <td className="py-3 px-3 text-right">

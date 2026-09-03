@@ -799,13 +799,12 @@ export class HomepageService {
           COALESCE(
             MAX(c.status),
             u.metadata->>'status',
-            'Applications Open'
+            'Upcoming'
           ) AS status,
           -- Live test date from circular:
           COALESCE(
             TO_CHAR(MIN(c.exam_date), 'Mon DD, YYYY'),
-            u.metadata->>'test_date',
-            'To be announced'
+            'To Be Announced (TBA)'
           ) AS "testDate",
           -- Live application window:
           COALESCE(
@@ -814,8 +813,7 @@ export class HomepageService {
               THEN TO_CHAR(MIN(c.application_start_date), 'Mon DD, YYYY') || ' – ' || TO_CHAR(MAX(c.application_end_date), 'Mon DD, YYYY')
               ELSE NULL
             END,
-            u.metadata->>'application_window',
-            'Jan 15, 2026 – Feb 15, 2026'
+            'Circular Not Published'
           ) AS "applicationWindow",
           -- Live min GPA from circular:
           COALESCE(
@@ -1229,12 +1227,14 @@ export class HomepageService {
 
       for (const r of circRes.rows) {
         const uniLabel = r.universityShortName || r.universityName;
+        let hasSpecificEvents = false;
 
-        // 1. Upcoming Application Deadline
+        // 1. Upcoming Application Deadline (if published)
         if (r.applicationEndDate) {
           const endDate = new Date(r.applicationEndDate);
           const diffMs = endDate.getTime() - Date.now();
           if (diffMs > 0) {
+            hasSpecificEvents = true;
             const remainingDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
             const dynamicStatus = remainingDays <= 7 ? 'urgent' : remainingDays <= 30 ? 'upcoming' : 'scheduled';
             events.push({
@@ -1256,11 +1256,12 @@ export class HomepageService {
           }
         }
 
-        // 2. Upcoming Admission Test Exam
+        // 2. Upcoming Admission Test Exam (if published)
         if (r.examDate) {
           const examDate = new Date(r.examDate);
           const diffMs = examDate.getTime() - Date.now();
           if (diffMs > 0) {
+            hasSpecificEvents = true;
             const remainingDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
             const dynamicStatus = remainingDays <= 7 ? 'urgent' : remainingDays <= 30 ? 'upcoming' : 'scheduled';
             events.push({
@@ -1281,11 +1282,38 @@ export class HomepageService {
             });
           }
         }
+
+        // 3. Upcoming State: Dates not published yet by Academic Council
+        if (!hasSpecificEvents) {
+          events.push({
+            id: `${r.id}-upcoming`,
+            circularId: r.id,
+            university: uniLabel,
+            universityFullName: r.universityName,
+            universityLogo: r.universityLogo,
+            unit: r.unit || 'All Units',
+            eventType: 'circular_release',
+            eventTypeName: 'Circular Not Published',
+            title: `${uniLabel} ${r.unit} 2026-2027 Circular`,
+            eventDate: null,
+            dateDisplay: 'Circular Not Published',
+            remainingDays: 0,
+            status: 'upcoming',
+            sourceUrl: r.officialUrl || '#',
+          });
+        }
       }
 
-      // If we got events from circulars, sort by eventDate ascending (earliest deadline first)
+      // If we got events from circulars, sort them
       if (events.length > 0) {
-        events.sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime());
+        events.sort((a, b) => {
+          if (a.eventDate && b.eventDate) {
+            return new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime();
+          }
+          if (a.eventDate) return -1;
+          if (b.eventDate) return 1;
+          return a.university.localeCompare(b.university);
+        });
         return events.slice(0, limit);
       }
 
