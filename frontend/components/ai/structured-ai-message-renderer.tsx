@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { CheckCircle2, ArrowRight, BookOpen, Award, Sparkles, HelpCircle } from 'lucide-react';
 import type { StructuredAiResponse } from '@/lib/ai-types';
+import { MarkdownContent } from './markdown-content';
 
 interface Props {
   response: StructuredAiResponse | any;
@@ -11,7 +12,7 @@ interface Props {
 
 export function StructuredAiMessageRenderer({ response }: Props) {
   if (!response || typeof response !== 'object') {
-    return <div className="text-slate-700 text-sm leading-relaxed">{String(response)}</div>;
+    return <MarkdownContent content={String(response)} />;
   }
 
   const { type } = response;
@@ -23,7 +24,7 @@ export function StructuredAiMessageRenderer({ response }: Props) {
           <Sparkles className="w-4 h-4" />
           <h3>{response.title || 'University Comparison'}</h3>
         </div>
-        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">{response.summary}</p>
+        <MarkdownContent content={response.summary} />
 
         {response.comparisonTable && response.comparisonTable.length > 0 && (
           <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
@@ -57,7 +58,7 @@ export function StructuredAiMessageRenderer({ response }: Props) {
               {response.keyDifferences.map((diff: string, i: number) => (
                 <li key={i} className="flex items-start gap-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>{diff}</span>
+                  <MarkdownContent content={diff} />
                 </li>
               ))}
             </ul>
@@ -87,7 +88,7 @@ export function StructuredAiMessageRenderer({ response }: Props) {
           <Award className="w-4 h-4 text-emerald-600" />
           <h3>Admission Eligibility Analysis</h3>
         </div>
-        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">{response.summary}</p>
+        <MarkdownContent content={response.summary} />
 
         {response.eligibleUniversities && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -130,8 +131,9 @@ export function StructuredAiMessageRenderer({ response }: Props) {
           <HelpCircle className="w-4 h-4 text-[#FF5500]" />
           <h3>AI Tutor Step-by-step Explanation</h3>
         </div>
-        <div className="p-3.5 bg-orange-50/70 rounded-xl text-xs sm:text-sm font-semibold text-slate-900 border border-orange-200/80">
-          Question: {response.questionText}
+        <div className="p-3.5 bg-orange-50/70 rounded-xl border border-orange-200/80">
+          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider font-mono block mb-1">Question:</span>
+          <MarkdownContent content={response.questionText} />
         </div>
         <div className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg inline-block">
           Correct Answer: {response.correctAnswer}
@@ -140,9 +142,11 @@ export function StructuredAiMessageRenderer({ response }: Props) {
         {response.stepByStepSolution && (
           <div className="space-y-2">
             <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider font-mono">Solution Steps</h4>
-            <ol className="space-y-1.5 text-xs text-slate-600 list-decimal list-inside font-medium">
+            <ol className="space-y-2 text-xs text-slate-700 list-decimal list-inside font-medium">
               {response.stepByStepSolution.map((step: string, i: number) => (
-                <li key={i} className="leading-relaxed">{step}</li>
+                <li key={i} className="leading-relaxed">
+                  <MarkdownContent content={step} />
+                </li>
               ))}
             </ol>
           </div>
@@ -164,15 +168,15 @@ export function StructuredAiMessageRenderer({ response }: Props) {
   return (
     <div className="space-y-4 bg-white border border-orange-100/90 rounded-2xl p-5 text-slate-800 shadow-sm">
       {response.summary && (
-        <p className="text-xs sm:text-sm text-slate-800 font-semibold leading-relaxed border-b border-slate-100 pb-3">
-          {response.summary}
-        </p>
+        <div className="border-b border-slate-100 pb-3">
+          <MarkdownContent content={response.summary} />
+        </div>
       )}
 
       {response.sections && response.sections.map((sec: any, idx: number) => (
-        <div key={idx} className="space-y-1 pt-1">
+        <div key={idx} className="space-y-1.5 pt-2 border-t border-slate-100/80 first:border-t-0">
           <h4 className="text-xs font-bold text-[#FF5500] uppercase tracking-wider font-mono">{sec.heading}</h4>
-          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed whitespace-pre-line">{sec.content}</p>
+          <MarkdownContent content={sec.content} />
         </div>
       ))}
 

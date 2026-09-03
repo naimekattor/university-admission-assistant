@@ -15,6 +15,7 @@ import {
   Target,
   ArrowRight,
 } from 'lucide-react';
+import { MarkdownContent } from '@/components/ai/markdown-content';
 
 interface ChatMessage {
   id: string;
@@ -202,7 +203,7 @@ export function FloatingAiChat() {
                       : 'bg-slate-50 border border-slate-200/80 text-slate-800 p-3.5 rounded-2xl rounded-tl-xs shadow-2xs'
                   }`}
                 >
-                  <p className="whitespace-pre-line">{m.text}</p>
+                  <MarkdownContent content={m.text} className={m.role === 'user' ? 'text-white [&_p]:text-white [&_strong]:text-white' : ''} />
 
                   {/* Suggestion / Action Chips */}
                   {m.actions && m.actions.length > 0 && (
