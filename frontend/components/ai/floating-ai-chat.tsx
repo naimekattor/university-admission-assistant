@@ -90,9 +90,9 @@ export function FloatingAiChat() {
             typeof json.data === 'string'
               ? json.data
               : json.data.summary ||
-                json.data.questionText ||
-                json.data.title ||
-                'Here is what I found for your admission inquiry.';
+              json.data.questionText ||
+              json.data.title ||
+              'Here is what I found for your admission inquiry.';
 
           const actions = json.data.recommendedNextActions?.map((act: any) => ({
             label: act.label,
@@ -148,13 +148,13 @@ export function FloatingAiChat() {
       {/* ── FLOATING CHAT WINDOW MODAL ── */}
       {isOpen && (
         <div className="mb-3 w-[92vw] sm:w-[420px] h-[560px] max-h-[82vh] bg-white/95 backdrop-blur-xl border border-orange-100/90 rounded-3xl shadow-2xl shadow-orange-500/15 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200">
-          
+
           {/* Header Bar */}
           <div className="px-5 py-3.5 bg-white border-b border-orange-100 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               <div className="relative w-9 h-9 rounded-2xl bg-orange-50 border border-orange-200 overflow-hidden flex items-center justify-center shadow-2xs">
                 <Image
-                  src="/images/ai-advisor-avatar.svg"
+                  src="/images/ai-advisor-icon.svg"
                   alt="AI Advisor"
                   width={36}
                   height={36}
@@ -198,22 +198,20 @@ export function FloatingAiChat() {
             <div className="flex p-0.5 bg-slate-200/80 rounded-xl">
               <button
                 onClick={() => setRoleType('advisor')}
-                className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                  roleType === 'advisor'
+                className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${roleType === 'advisor'
                     ? 'bg-gradient-to-r from-[#FF5500] to-[#E64D00] text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
-                }`}
+                  }`}
               >
                 <Target className="w-3 h-3" />
                 <span>Advisor</span>
               </button>
               <button
                 onClick={() => setRoleType('tutor')}
-                className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                  roleType === 'tutor'
+                className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${roleType === 'tutor'
                     ? 'bg-slate-900 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
-                }`}
+                  }`}
               >
                 <BookOpen className="w-3 h-3" />
                 <span>Tutor</span>
@@ -232,11 +230,10 @@ export function FloatingAiChat() {
                 )}
 
                 <div
-                  className={`max-w-[82%] text-xs leading-relaxed space-y-2.5 ${
-                    m.role === 'user'
+                  className={`max-w-[82%] text-xs leading-relaxed space-y-2.5 ${m.role === 'user'
                       ? 'bg-gradient-to-r from-[#FF5500] to-[#E64D00] text-white font-medium p-3.5 rounded-2xl rounded-tr-xs shadow-sm shadow-orange-500/20'
                       : 'bg-slate-50 border border-slate-200/80 text-slate-800 p-3.5 rounded-2xl rounded-tl-xs shadow-2xs'
-                  }`}
+                    }`}
                 >
                   <p className="whitespace-pre-line">{m.text}</p>
 
@@ -328,10 +325,10 @@ export function FloatingAiChat() {
           {/* Subtle Ambient Pulse Ring */}
           <span className="absolute inset-0 rounded-full bg-[#FF5500]/20 animate-ping pointer-events-none" />
 
-          {/* AI Advisor Avatar from public/images/ai-advisor-avatar.svg */}
+          {/* AI Advisor Avatar from public/images/ai-advisor-icon.svg */}
           <div className="relative w-full h-full rounded-full overflow-hidden flex items-center justify-center">
             <Image
-              src="/images/ai-advisor-avatar.svg"
+              src="/images/ai-advisor-icon.svg"
               alt="EduGuide AI Advisor"
               width={56}
               height={56}
