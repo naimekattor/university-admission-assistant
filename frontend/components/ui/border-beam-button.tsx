@@ -39,10 +39,10 @@ export function BorderBeamButton({
 
   const variantClasses = {
     primary:
-      'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-green-500/50',
+      'bg-gradient-to-r from-[#FF5500] to-[#E64D00] hover:from-[#E64D00] hover:to-[#D44000] text-white shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40',
     secondary:
-      'bg-green-100 hover:bg-green-200 text-green-700 border-2 border-green-300',
-    outline: 'border-2 border-green-600 text-green-600 hover:bg-green-50',
+      'bg-orange-50 hover:bg-orange-100 text-[#FF5500] border-2 border-orange-200',
+    outline: 'border-2 border-[#FF5500] text-[#FF5500] hover:bg-orange-50',
   };
 
   const sizeClasses = {
