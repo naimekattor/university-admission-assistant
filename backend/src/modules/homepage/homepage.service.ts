@@ -1306,9 +1306,9 @@ export class HomepageService {
 
     try {
       const res = await this.pool.query(
-        `SELECT a.id, a.title, a.slug, a.summary, a.reading_time_minutes as "readingTimeMinutes",
+        `SELECT a.id::text, a.title, a.slug, a.summary, a.reading_time_minutes as "readingTimeMinutes",
                 a.featured_image as "featuredImage", a.created_at as "createdAt",
-                c.name as category
+                COALESCE(c.name, 'Admission Guide') as category
          FROM articles a
          LEFT JOIN article_categories c ON a.category_id = c.id
          WHERE a.is_published = true
@@ -1326,6 +1326,33 @@ export class HomepageService {
     }
 
     return defaultGuides.slice(0, limit);
+  }
+
+  public async getGuideBySlug(slug: string): Promise<any | null> {
+    try {
+      const res = await this.pool.query(
+        `SELECT a.id::text, a.title, a.slug, a.summary, a.content,
+                a.reading_time_minutes as "readingTimeMinutes",
+                a.featured_image as "featuredImage", a.created_at as "createdAt",
+                a.is_published as "isPublished",
+                COALESCE(c.name, 'Admission Guide') as category
+         FROM articles a
+         LEFT JOIN article_categories c ON a.category_id = c.id
+         WHERE (LOWER(a.slug) = LOWER($1) OR a.id::text = $1)
+         LIMIT 1`,
+        [slug]
+      );
+      if (res.rows.length > 0) {
+        const r = res.rows[0];
+        return {
+          ...r,
+          publishedDate: new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        };
+      }
+    } catch (err: any) {
+      console.warn('[HomepageService] getGuideBySlug DB query error:', err?.message);
+    }
+    return null;
   }
 
   public async ensureFaqsTable(): Promise<void> {

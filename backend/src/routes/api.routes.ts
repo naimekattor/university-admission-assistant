@@ -214,9 +214,22 @@ apiRouter.get('/faqs', async (req: Request, res: Response, next) => {
 // Public SEO Guides Endpoint
 apiRouter.get('/guides', async (req: Request, res: Response, next) => {
   try {
-    const limit = Number(req.query.limit || 10);
+    const limit = Number(req.query.limit || 50);
     const guides = await homepageService.getPublishedGuides(limit);
     res.json({ success: true, data: guides });
+  } catch (error) {
+    next(error);
+  }
+});
+
+apiRouter.get('/guides/:slug', async (req: Request, res: Response, next) => {
+  try {
+    const slug = Array.isArray(req.params.slug) ? req.params.slug[0] : req.params.slug;
+    const guide = await homepageService.getGuideBySlug(slug);
+    if (!guide) {
+      return res.status(404).json({ success: false, message: 'Guide article not found.' });
+    }
+    res.json({ success: true, data: guide });
   } catch (error) {
     next(error);
   }
