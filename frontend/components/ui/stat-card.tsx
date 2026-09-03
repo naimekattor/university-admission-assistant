@@ -24,42 +24,49 @@ export function StatCard({
   variant = 'default',
   className,
 }: StatCardProps) {
-  const iconColor = {
-    default: 'text-[var(--eg-text-muted)] bg-[var(--eg-surface-subtle)]',
-    primary: 'text-[var(--eg-primary)] bg-[var(--eg-primary-soft)]',
-    accent: 'text-[var(--eg-accent)] bg-[var(--eg-accent-soft)]',
-    success: 'text-[var(--eg-success)] bg-[var(--eg-success-soft)]',
-    warning: 'text-[var(--eg-warning)] bg-[var(--eg-warning-soft)]',
-    error: 'text-[var(--eg-error)] bg-[var(--eg-error-soft)]',
+  const iconStyle = {
+    default: 'text-slate-600 bg-slate-50 border-slate-200/80',
+    primary: 'text-[#FF5500] bg-orange-50 border-orange-200/60',
+    accent: 'text-amber-600 bg-amber-50 border-amber-200/60',
+    success: 'text-emerald-600 bg-emerald-50 border-emerald-200/60',
+    warning: 'text-amber-600 bg-amber-50 border-amber-200/60',
+    error: 'text-rose-600 bg-rose-50 border-rose-200/60',
   }[variant];
 
   return (
     <div
       className={cn(
-        'eg-card flex flex-col justify-between space-y-3 transition hover:border-[var(--eg-border-strong)]',
+        'p-5 rounded-3xl bg-white border border-slate-200/80 shadow-xs hover:border-orange-300 hover:shadow-md transition-all duration-200 flex flex-col justify-between space-y-3 group',
         className
       )}
     >
-      <div className="flex items-center justify-between">
-        <span className="text-overline text-[var(--eg-text-muted)]">{label}</span>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+          {label}
+        </span>
         {Icon && (
-          <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center', iconColor)}>
-            <Icon className="w-4 h-4" />
+          <div
+            className={cn(
+              'w-11 h-11 rounded-2xl border flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0',
+              iconStyle
+            )}
+          >
+            <Icon className="w-5 h-5" />
           </div>
         )}
       </div>
 
       <div className="space-y-1">
-        <div className="text-2xl lg:text-3xl font-bold text-[var(--eg-text-primary)] tracking-tight">
+        <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono tracking-tight">
           {value}
         </div>
         {subValue && (
-          <div className="text-caption text-[var(--eg-text-muted)] flex items-center gap-1.5">
+          <div className="text-[11px] text-slate-500 font-medium flex items-center gap-1.5">
             {trend && (
               <span
                 className={cn(
-                  'font-semibold',
-                  trend.isPositive ? 'text-[var(--eg-success)]' : 'text-[var(--eg-error)]'
+                  'font-bold',
+                  trend.isPositive ? 'text-emerald-600' : 'text-rose-600'
                 )}
               >
                 {trend.value}
