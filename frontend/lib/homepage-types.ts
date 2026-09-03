@@ -109,11 +109,17 @@ export interface GuideSectionConfig {
 }
 
 export interface PreparationConfig {
+  badgeText?: string;
   headline: string;
   description: string;
   features: string[];
   ctaText: string;
   ctaUrl: string;
+  secondaryCtaText?: string;
+  secondaryCtaUrl?: string;
+  imageUrl?: string;
+  imageAlt?: string;
+  gradientTheme?: 'executive-flame' | 'warm-sunset' | 'obsidian-orange' | 'charcoal-glow';
   enabled: boolean;
 }
 
@@ -276,6 +282,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageFullConfig = {
     enabled: true,
   },
   preparation: {
+    badgeText: 'THE PREPARATION PLATFORM',
     headline: 'Know where to apply. Now prepare to get in.',
     description:
       'Turn your target university and admission unit into a personalized preparation plan with visual lessons, chapter-wise MCQs, and past 15 years question bank.',
@@ -284,11 +291,16 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageFullConfig = {
       'Chapter-wise MCQ practice drills',
       'Past 15 years solved admission questions',
       'Full-length timed mock test simulator',
-      '24/7 AI Admission Tutor with step derivations',
+      '24/7 AI Admission Tutor with step-by-step derivations',
       'Personalized mistake notebook & revision queue',
     ],
-    ctaText: 'Start Preparing Free',
+    ctaText: 'Start Preparing',
     ctaUrl: '/prepare',
+    secondaryCtaText: 'Explore Mock Tests',
+    secondaryCtaUrl: '/mock-tests',
+    imageUrl: '/images/study-platform-mockup.svg',
+    imageAlt: 'EduGuide Preparation Platform Mockup',
+    gradientTheme: 'executive-flame',
     enabled: true,
   },
   faq: {

@@ -1,0 +1,102 @@
+<svg width="600" height="420" viewBox="0 0 600 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background Gradients -->
+    <linearGradient id="cardBg" x1="0" y1="0" x2="600" y2="420" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1E293B" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#0F172A" stop-opacity="0.98"/>
+    </linearGradient>
+
+    <linearGradient id="brandGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FF5500"/>
+      <stop offset="100%" stop-color="#FF8800"/>
+    </linearGradient>
+
+    <linearGradient id="glowGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FF5500" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#FF5500" stop-opacity="0"/>
+    </linearGradient>
+
+    <linearGradient id="accentCyan" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+
+    <filter id="dropShadow" x="-20" y="-20" width="640" height="460" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="25" stdDeviation="30" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+
+    <filter id="badgeShadow" x="0" y="0" width="200" height="80" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#FF5500" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Ambient Outer Glow -->
+  <circle cx="500" cy="100" r="180" fill="url(#glowGrad)" filter="blur(60px)"/>
+
+  <!-- Main Window Frame -->
+  <rect x="25" y="25" width="550" height="370" rx="24" fill="url(#cardBg)" stroke="#334155" stroke-width="1.5" filter="url(#dropShadow)"/>
+
+  <!-- Window Header with Dots -->
+  <rect x="25" y="25" width="550" height="54" rx="24" fill="#0F172A" fill-opacity="0.8"/>
+  <circle cx="55" cy="52" r="5" fill="#EF4444"/>
+  <circle cx="73" cy="52" r="5" fill="#F59E0B"/>
+  <circle cx="91" cy="52" r="5" fill="#10B981"/>
+
+  <!-- EduGuide Header Badge -->
+  <rect x="120" y="40" width="24" height="24" rx="6" fill="url(#brandGrad)"/>
+  <text x="126" y="56" fill="#FFFFFF" font-family="system-ui, sans-serif" font-weight="900" font-size="11">EG</text>
+  <text x="152" y="56" fill="#F8FAFC" font-family="system-ui, sans-serif" font-weight="700" font-size="13">Study Deck Pro</text>
+  <text x="250" y="56" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="11">Target: BUET Ka Unit • HSC 2026</text>
+
+  <!-- Status Pill -->
+  <rect x="475" y="41" width="75" height="22" rx="11" fill="#FF5500" fill-opacity="0.15" stroke="#FF5500" stroke-opacity="0.3"/>
+  <circle cx="488" cy="52" r="3" fill="#FF5500"/>
+  <text x="497" y="56" fill="#FF8800" font-family="system-ui, sans-serif" font-weight="700" font-size="10">LIVE PREP</text>
+
+  <!-- Content Section 1: Progress Meter -->
+  <g transform="translate(55, 100)">
+    <text x="0" y="15" fill="#E2E8F0" font-family="system-ui, sans-serif" font-weight="700" font-size="13">Syllabus Completion</text>
+    <text x="490" y="15" fill="#FF5500" font-family="monospace" font-weight="800" font-size="14" text-anchor="end">68.5%</text>
+
+    <!-- Track -->
+    <rect x="0" y="26" width="490" height="8" rx="4" fill="#334155"/>
+    <!-- Fill -->
+    <rect x="0" y="26" width="335" height="8" rx="4" fill="url(#brandGrad)"/>
+  </g>
+
+  <!-- Content Section 2: Up Next Lesson Card -->
+  <g transform="translate(55, 155)">
+    <rect x="0" y="0" width="490" height="105" rx="16" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+
+    <rect x="16" y="16" width="74" height="20" rx="6" fill="#FF5500" fill-opacity="0.15"/>
+    <text x="24" y="30" fill="#FF5500" font-family="monospace" font-weight="800" font-size="9" letter-spacing="1">UP NEXT</text>
+
+    <text x="16" y="60" fill="#FFFFFF" font-family="system-ui, sans-serif" font-weight="800" font-size="16">Physics: Newton's Laws &amp; Impulse</text>
+    <text x="16" y="82" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="12">25 min visual concept derivation + past 10 years BUET solved questions</text>
+
+    <!-- Play Button Icon -->
+    <circle cx="445" cy="52" r="22" fill="url(#brandGrad)"/>
+    <polygon points="441,44 453,52 441,60" fill="#FFFFFF"/>
+  </g>
+
+  <!-- Content Section 3: Metric Cards -->
+  <g transform="translate(55, 280)">
+    <!-- Card 1: Target Questions -->
+    <rect x="0" y="0" width="150" height="80" rx="14" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+    <text x="16" y="24" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="11">Daily MCQ Target</text>
+    <text x="16" y="54" fill="#FFFFFF" font-family="system-ui, sans-serif" font-weight="800" font-size="20">24 / 30</text>
+    <text x="86" y="53" fill="#10B981" font-family="system-ui, sans-serif" font-weight="700" font-size="11">+4 bonus</text>
+
+    <!-- Card 2: Accuracy Rate -->
+    <rect x="170" y="0" width="150" height="80" rx="14" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+    <text x="186" y="24" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="11">Accuracy Rate</text>
+    <text x="186" y="54" fill="#10B981" font-family="system-ui, sans-serif" font-weight="800" font-size="20">88.4%</text>
+    <text x="256" y="53" fill="#64748B" font-family="system-ui, sans-serif" font-size="10">High Score</text>
+
+    <!-- Card 3: AI Advisor Queue -->
+    <rect x="340" y="0" width="150" height="80" rx="14" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+    <text x="356" y="24" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="11">Mistake Queue</text>
+    <text x="356" y="54" fill="#FF5500" font-family="system-ui, sans-serif" font-weight="800" font-size="20">3 Items</text>
+    <text x="430" y="53" fill="#F59E0B" font-family="system-ui, sans-serif" font-size="10">Review</text>
+  </g>
+</svg>

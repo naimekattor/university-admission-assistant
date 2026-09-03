@@ -30,9 +30,11 @@ import {
   RefreshCw,
   X,
   Database,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { RichTextEditor } from '@/components/rich-text/rich-text-editor';
+import { PreparationCtaSection } from '@/components/homepage/preparation-cta-section';
 import { PublishModal } from '@/components/admin/homepage/publish-modal';
 import { useToast } from '@/components/ui/custom-toast';
 import {
@@ -1684,38 +1686,91 @@ export default function AdminHomepageCMSPage() {
           {activeTab === 'preparation' && (
             <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-6">
               <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-                <div>
-                  <h3 className="font-bold text-lg text-slate-900">Preparation Platform Banner Editor</h3>
-                  <p className="text-xs text-slate-500">Edit headline, feature bullets, and student conversion CTA.</p>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-lg text-slate-900">Preparation Platform Banner Editor</h3>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span>Live PostgreSQL Section</span>
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Fully customize the headline, description, 6 checklist bullets, primary & secondary CTAs, background linear gradient, and right-side illustration.
+                  </p>
                 </div>
                 <button
                   onClick={() => handleSaveSection('preparation', draftConfig.preparation)}
                   disabled={saving}
-                  className="px-4 py-2 rounded-full bg-[#FF5500] hover:bg-[#E64D00] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+                  className="px-5 py-2.5 rounded-full bg-[#FF5500] hover:bg-[#E64D00] text-white text-xs font-bold flex items-center gap-2 shadow-sm transition cursor-pointer"
                 >
                   <Save className="w-3.5 h-3.5" />
-                  <span>{saving ? 'Saving...' : 'Save Prep Draft'}</span>
+                  <span>{saving ? 'Saving to DB...' : 'Save Prep Draft to DB'}</span>
                 </button>
               </div>
 
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-900">Conversion Headline</label>
-                  <input
-                    type="text"
-                    value={draftConfig.preparation?.headline || ''}
-                    onChange={(e) =>
-                      setDraftConfig({
-                        ...draftConfig,
-                        preparation: { ...draftConfig.preparation, headline: e.target.value },
-                      })
-                    }
-                    className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-bold focus:outline-none focus:border-[#FF5500]"
-                  />
+              <div className="space-y-6">
+                {/* 1. Visibility Toggle */}
+                <div className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-200 bg-slate-50/70">
+                  <div>
+                    <div className="text-xs font-bold text-slate-900">Enable Preparation Section</div>
+                    <div className="text-[11px] text-slate-500">Display conversion banner on public homepage</div>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={draftConfig.preparation?.enabled !== false}
+                      onChange={(e) =>
+                        setDraftConfig({
+                          ...draftConfig,
+                          preparation: { ...draftConfig.preparation, enabled: e.target.checked },
+                        })
+                      }
+                      className="w-4 h-4 text-[#FF5500] rounded cursor-pointer"
+                    />
+                    <span className="text-xs font-semibold text-slate-700">
+                      {draftConfig.preparation?.enabled !== false ? 'Enabled' : 'Hidden'}
+                    </span>
+                  </label>
                 </div>
 
+                {/* 2. Badge & Headline */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-900">Top Tag / Badge Text</label>
+                    <input
+                      type="text"
+                      value={draftConfig.preparation?.badgeText || 'THE PREPARATION PLATFORM'}
+                      onChange={(e) =>
+                        setDraftConfig({
+                          ...draftConfig,
+                          preparation: { ...draftConfig.preparation, badgeText: e.target.value },
+                        })
+                      }
+                      placeholder="e.g. THE PREPARATION PLATFORM"
+                      className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-bold uppercase tracking-wider font-mono focus:outline-none focus:border-[#FF5500]"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-xs font-bold text-slate-900">Conversion Headline *</label>
+                    <input
+                      type="text"
+                      value={draftConfig.preparation?.headline || ''}
+                      onChange={(e) =>
+                        setDraftConfig({
+                          ...draftConfig,
+                          preparation: { ...draftConfig.preparation, headline: e.target.value },
+                        })
+                      }
+                      placeholder="Know where to apply. Now prepare to get in."
+                      className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-bold focus:outline-none focus:border-[#FF5500]"
+                    />
+                  </div>
+                </div>
+
+                {/* 3. Description */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-900">Description</label>
+                  <label className="text-xs font-bold text-slate-900">Subtitle Description *</label>
                   <textarea
                     rows={2}
                     value={draftConfig.preparation?.description || ''}
@@ -1725,58 +1780,345 @@ export default function AdminHomepageCMSPage() {
                         preparation: { ...draftConfig.preparation, description: e.target.value },
                       })
                     }
+                    placeholder="Turn your target university and admission unit into a personalized preparation plan with visual lessons, chapter-wise MCQs, and past 15 years question bank."
                     className="w-full p-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-900">CTA Button Text</label>
-                    <input
-                      type="text"
-                      value={draftConfig.preparation?.ctaText || ''}
-                      onChange={(e) =>
-                        setDraftConfig({
-                          ...draftConfig,
-                          preparation: { ...draftConfig.preparation, ctaText: e.target.value },
-                        })
-                      }
-                      className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-900">CTA Button URL</label>
-                    <input
-                      type="text"
-                      value={draftConfig.preparation?.ctaUrl || ''}
-                      onChange={(e) =>
-                        setDraftConfig({
-                          ...draftConfig,
-                          preparation: { ...draftConfig.preparation, ctaUrl: e.target.value },
-                        })
-                      }
-                      className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
-                    />
+                {/* 4. Background Linear Gradient Theme */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#FF5500]" />
+                    <span>Modern Linear Gradient Theme (Theme-Consistent)</span>
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {[
+                      {
+                        id: 'executive-flame',
+                        label: 'Executive Flame',
+                        sub: 'Obsidian & Warm Flame (Default)',
+                        preview: 'from-[#1C120C] via-[#2A170B] to-[#140D08]',
+                      },
+                      {
+                        id: 'warm-sunset',
+                        label: 'Warm Sunset',
+                        sub: 'Radiant Orange Energy',
+                        preview: 'from-[#FF5500] via-[#E64D00] to-[#8C2300]',
+                      },
+                      {
+                        id: 'obsidian-orange',
+                        label: 'Obsidian Orange',
+                        sub: 'Midnight Slate & Ember',
+                        preview: 'from-[#0F172A] via-[#1A1829] to-[#25130A]',
+                      },
+                      {
+                        id: 'charcoal-glow',
+                        label: 'Charcoal Glow',
+                        sub: 'Minimal Dark Charcoal',
+                        preview: 'from-[#18181B] via-[#27272A] to-[#18181B]',
+                      },
+                    ].map((t) => {
+                      const isSelected =
+                        (draftConfig.preparation?.gradientTheme || 'executive-flame') === t.id;
+                      return (
+                        <div
+                          key={t.id}
+                          onClick={() =>
+                            setDraftConfig({
+                              ...draftConfig,
+                              preparation: { ...draftConfig.preparation, gradientTheme: t.id as any },
+                            })
+                          }
+                          className={`p-3 rounded-2xl border cursor-pointer transition ${
+                            isSelected
+                              ? 'border-[#FF5500] ring-2 ring-orange-500/20 bg-orange-50/20'
+                              : 'border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className={`h-8 rounded-xl bg-gradient-to-r ${t.preview} mb-2 border border-white/10 shadow-xs`} />
+                          <div className="text-xs font-bold text-slate-900">{t.label}</div>
+                          <div className="text-[10px] text-slate-500">{t.sub}</div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-slate-50/50">
-                  <div>
-                    <div className="text-xs font-bold text-slate-900">Enable Preparation Section</div>
-                    <div className="text-[11px] text-slate-500">Display conversion banner on homepage</div>
+                {/* 5. Feature Bullets Checklist Editor */}
+                <div className="space-y-3 p-4 rounded-2xl border border-slate-200 bg-slate-50/50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#FF5500]" />
+                        <span>Feature Checklist Bullets ({draftConfig.preparation?.features?.length || 0})</span>
+                      </h4>
+                      <p className="text-[11px] text-slate-500">Edit, add, or remove key value propositions shown on the banner.</p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const defaults = [
+                            'Visual interactive lessons',
+                            'Chapter-wise MCQ practice drills',
+                            'Past 15 years solved admission questions',
+                            'Full-length timed mock test simulator',
+                            '24/7 AI Admission Tutor with step-by-step derivations',
+                            'Personalized mistake notebook & revision queue',
+                          ];
+                          setDraftConfig({
+                            ...draftConfig,
+                            preparation: { ...draftConfig.preparation, features: defaults },
+                          });
+                        }}
+                        className="text-[11px] text-slate-500 hover:text-slate-800 underline cursor-pointer"
+                      >
+                        Reset Defaults
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const current = draftConfig.preparation?.features || [];
+                          setDraftConfig({
+                            ...draftConfig,
+                            preparation: {
+                              ...draftConfig.preparation,
+                              features: [...current, 'New preparation feature point'],
+                            },
+                          });
+                        }}
+                        className="px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-2xs transition cursor-pointer flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3 text-[#FF5500]" />
+                        <span>Add Bullet</span>
+                      </button>
+                    </div>
                   </div>
-                  <input
-                    type="checkbox"
-                    checked={draftConfig.preparation?.enabled !== false}
-                    onChange={(e) =>
-                      setDraftConfig({
-                        ...draftConfig,
-                        preparation: { ...draftConfig.preparation, enabled: e.target.checked },
-                      })
-                    }
-                    className="w-4 h-4 text-[#FF5500] rounded cursor-pointer"
-                  />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {(draftConfig.preparation?.features || []).map((feat, fIdx) => (
+                      <div
+                        key={fIdx}
+                        className="flex items-center gap-2 p-2 rounded-xl bg-white border border-slate-200 focus-within:border-[#FF5500]"
+                      >
+                        <CheckCircle2 className="w-4 h-4 text-[#FF5500] shrink-0" />
+                        <input
+                          type="text"
+                          value={feat}
+                          onChange={(e) => {
+                            const updated = [...(draftConfig.preparation?.features || [])];
+                            updated[fIdx] = e.target.value;
+                            setDraftConfig({
+                              ...draftConfig,
+                              preparation: { ...draftConfig.preparation, features: updated },
+                            });
+                          }}
+                          className="flex-1 text-xs font-medium text-slate-900 focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = (draftConfig.preparation?.features || []).filter(
+                              (_, idx) => idx !== fIdx
+                            );
+                            setDraftConfig({
+                              ...draftConfig,
+                              preparation: { ...draftConfig.preparation, features: updated },
+                            });
+                          }}
+                          className="p-1 rounded-md text-slate-300 hover:text-red-500 hover:bg-red-50 transition cursor-pointer"
+                          title="Remove feature"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 6. Right-Side Image Configuration */}
+                <div className="p-4 rounded-2xl border border-slate-200 bg-white space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                        <ImageIcon className="w-3.5 h-3.5 text-[#FF5500]" />
+                        <span>Right-Side Mockup Image</span>
+                      </h4>
+                      <p className="text-[11px] text-slate-500">
+                        Choose a built-in vector illustration or provide a custom image URL.
+                      </p>
+                    </div>
+
+                    {/* Quick Presets */}
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDraftConfig({
+                            ...draftConfig,
+                            preparation: {
+                              ...draftConfig.preparation,
+                              imageUrl: '/images/study-platform-mockup.svg',
+                            },
+                          })
+                        }
+                        className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-orange-50 text-[#FF5500] border border-orange-200 hover:bg-orange-100 transition cursor-pointer"
+                      >
+                        Default SVG Mockup
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDraftConfig({
+                            ...draftConfig,
+                            preparation: {
+                              ...draftConfig.preparation,
+                              imageUrl: '',
+                            },
+                          })
+                        }
+                        className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition cursor-pointer"
+                      >
+                        Interactive Glass Card
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="space-y-1 md:col-span-2">
+                      <label className="text-[11px] font-bold text-slate-700">Image URL / Path</label>
+                      <input
+                        type="text"
+                        value={draftConfig.preparation?.imageUrl || ''}
+                        onChange={(e) =>
+                          setDraftConfig({
+                            ...draftConfig,
+                            preparation: { ...draftConfig.preparation, imageUrl: e.target.value },
+                          })
+                        }
+                        placeholder="e.g. /images/study-platform-mockup.svg or https://..."
+                        className="w-full h-9 px-3 rounded-lg border border-slate-200 text-xs font-mono focus:outline-none focus:border-[#FF5500]"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-700">Alt Text</label>
+                      <input
+                        type="text"
+                        value={draftConfig.preparation?.imageAlt || ''}
+                        onChange={(e) =>
+                          setDraftConfig({
+                            ...draftConfig,
+                            preparation: { ...draftConfig.preparation, imageAlt: e.target.value },
+                          })
+                        }
+                        placeholder="EduGuide Study Platform Mockup"
+                        className="w-full h-9 px-3 rounded-lg border border-slate-200 text-xs focus:outline-none focus:border-[#FF5500]"
+                      />
+                    </div>
+                  </div>
+
+                  {draftConfig.preparation?.imageUrl && (
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center gap-3">
+                      <img
+                        src={draftConfig.preparation.imageUrl}
+                        alt="Preview"
+                        className="w-20 h-14 object-cover rounded-lg border border-slate-200 bg-white"
+                        onError={(e) => (e.currentTarget.src = '/placeholder.svg')}
+                      />
+                      <div className="text-[11px] text-slate-500">
+                        <span className="font-semibold text-slate-700">Image Active:</span> Will render on the right-hand column of the banner with sleek glassmorphism framing.
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 7. Action Buttons Configuration */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-2xl border border-slate-200 bg-white space-y-3">
+                    <span className="text-xs font-bold text-slate-900 block">Primary CTA Button</span>
+                    <div className="space-y-2">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-600">Button Text</label>
+                        <input
+                          type="text"
+                          value={draftConfig.preparation?.ctaText || 'Start Preparing'}
+                          onChange={(e) =>
+                            setDraftConfig({
+                              ...draftConfig,
+                              preparation: { ...draftConfig.preparation, ctaText: e.target.value },
+                            })
+                          }
+                          className="w-full h-9 px-3 rounded-lg border border-slate-200 text-xs font-bold focus:outline-none focus:border-[#FF5500]"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-600">Button URL</label>
+                        <input
+                          type="text"
+                          value={draftConfig.preparation?.ctaUrl || '/prepare'}
+                          onChange={(e) =>
+                            setDraftConfig({
+                              ...draftConfig,
+                              preparation: { ...draftConfig.preparation, ctaUrl: e.target.value },
+                            })
+                          }
+                          className="w-full h-9 px-3 rounded-lg border border-slate-200 text-xs font-mono focus:outline-none focus:border-[#FF5500]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl border border-slate-200 bg-white space-y-3">
+                    <span className="text-xs font-bold text-slate-900 block">Secondary Button (Optional)</span>
+                    <div className="space-y-2">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-600">Button Text</label>
+                        <input
+                          type="text"
+                          value={draftConfig.preparation?.secondaryCtaText || ''}
+                          onChange={(e) =>
+                            setDraftConfig({
+                              ...draftConfig,
+                              preparation: { ...draftConfig.preparation, secondaryCtaText: e.target.value },
+                            })
+                          }
+                          placeholder="e.g. Explore Mock Tests"
+                          className="w-full h-9 px-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-600">Button URL</label>
+                        <input
+                          type="text"
+                          value={draftConfig.preparation?.secondaryCtaUrl || '/mock-tests'}
+                          onChange={(e) =>
+                            setDraftConfig({
+                              ...draftConfig,
+                              preparation: { ...draftConfig.preparation, secondaryCtaUrl: e.target.value },
+                            })
+                          }
+                          placeholder="/mock-tests"
+                          className="w-full h-9 px-3 rounded-lg border border-slate-200 text-xs font-mono focus:outline-none focus:border-[#FF5500]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 8. Live In-Admin Preview Box */}
+                <div className="space-y-2 pt-2">
+                  <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <Eye className="w-3.5 h-3.5 text-[#FF5500]" />
+                    <span>Live In-Admin Banner Preview</span>
+                  </span>
+
+                  <div className="rounded-3xl border border-slate-200 overflow-hidden shadow-md">
+                    <PreparationCtaSection config={draftConfig.preparation} />
+                  </div>
                 </div>
               </div>
             </div>
