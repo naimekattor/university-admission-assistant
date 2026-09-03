@@ -11,8 +11,11 @@ import {
   FileText,
   Trash2,
   Eye,
+  Cpu,
+  Layers,
+  Sparkles,
+  ArrowRight,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { StatCard } from '@/components/ui/stat-card';
 
 export default function AdminKnowledgePage() {
@@ -62,7 +65,10 @@ export default function AdminKnowledgePage() {
     setMsg(null);
     setTimeout(() => {
       setUploading(false);
-      setMsg({ success: true, text: `Successfully indexed ${file.name} into PostgreSQL pgvector table document_chunks!` });
+      setMsg({
+        success: true,
+        text: `Successfully indexed ${file.name} into PostgreSQL pgvector table document_chunks!`,
+      });
       setFile(null);
     }, 1200);
   };
@@ -73,15 +79,15 @@ export default function AdminKnowledgePage() {
       breadcrumbs={[{ label: 'Admin', href: '/admin' }, { label: 'Knowledge Base' }]}
     >
       <div className="space-y-6">
-        
+        {/* ── Success Alert ── */}
         {msg && (
-          <div className="p-4 rounded-xl text-xs font-semibold flex items-center gap-2 bg-[var(--eg-success-soft)] text-[var(--eg-success)] border border-[var(--eg-success)]/20">
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <div className="p-4 rounded-2xl text-xs font-semibold flex items-center gap-2 bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>{msg.text}</span>
           </div>
         )}
 
-        {/* RAG Health Status Grid */}
+        {/* ── RAG Health Status Grid ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             label="INDEXED CHUNKS"
@@ -113,23 +119,36 @@ export default function AdminKnowledgePage() {
           />
         </div>
 
-        {/* PDF Circular Upload Box */}
-        <div className="eg-card space-y-4">
-          <div className="flex items-center justify-between border-b border-[var(--eg-border)] pb-3">
-            <div className="flex items-center gap-2">
-              <Upload className="w-5 h-5 text-[var(--eg-primary)]" />
-              <h3 className="text-body-lg font-bold text-[var(--eg-text-primary)]">
-                Upload Admission Circular PDF → Automatic pgvector Chunking
-              </h3>
+        {/* ── PDF Circular Ingestion Box ── */}
+        <div className="rounded-3xl bg-white border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-2xl bg-orange-50 border border-orange-200/60 text-[#FF5500] flex items-center justify-center shadow-2xs shrink-0">
+                <Upload className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-black text-sm sm:text-base text-slate-900 leading-snug">
+                  Upload Admission Circular PDF → Automatic pgvector Chunking
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Ingest official prospectus PDFs to index into vectorized semantic search
+                </p>
+              </div>
             </div>
-            <span className="text-xs text-[var(--eg-text-muted)]">Official Circular Ingestion</span>
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-orange-50 text-[#FF5500] border border-orange-200 self-start sm:self-auto">
+              Official Circular Ingestion
+            </span>
           </div>
 
           <form onSubmit={handleUpload} className="space-y-4 text-xs">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Target University Tag</label>
-                <select value={university} onChange={(e) => setUniversity(e.target.value)} className="eg-input">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-900 block">Target University Tag</label>
+                <select
+                  value={university}
+                  onChange={(e) => setUniversity(e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF5500]/20 focus:border-[#FF5500]"
+                >
                   <option>BUET</option>
                   <option>DU</option>
                   <option>KUET</option>
@@ -137,28 +156,49 @@ export default function AdminKnowledgePage() {
                   <option>CUET</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Unit Tag</label>
-                <input value={unit} onChange={(e) => setUnit(e.target.value)} className="eg-input" />
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-900 block">Unit Tag</label>
+                <input
+                  value={unit}
+                  onChange={(e) => setUnit(e.target.value)}
+                  placeholder="e.g. Ka Unit, A Unit"
+                  className="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF5500]/20 focus:border-[#FF5500]"
+                />
               </div>
             </div>
 
-            <div>
-              <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Select Circular PDF File</label>
-              <input
-                type="file"
-                accept=".pdf"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-                required
-                className="eg-input py-2"
-              />
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-900 block">Select Circular PDF File</label>
+              <div className="border-2 border-dashed border-slate-200 hover:border-orange-400 bg-slate-50/70 hover:bg-orange-50/20 rounded-2xl p-5 text-center transition cursor-pointer relative">
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  required
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                <div className="space-y-1 pointer-events-none">
+                  <div className="w-10 h-10 rounded-full bg-white border border-slate-200 text-[#FF5500] flex items-center justify-center mx-auto shadow-2xs">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div className="text-xs font-bold text-slate-900 pt-1">
+                    {file ? file.name : 'Click to browse or drag and drop official PDF'}
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    {file
+                      ? `${(file.size / (1024 * 1024)).toFixed(2)} MB PDF ready to index`
+                      : 'PDF circular files up to 25MB supported'}
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex justify-end pt-1">
               <button
                 type="submit"
                 disabled={uploading || !file}
-                className="btn btn-primary font-semibold text-xs"
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#FF5500] hover:bg-[#E04B00] text-white text-xs font-bold shadow-md shadow-orange-500/20 hover:shadow-lg transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {uploading ? (
                   <>
@@ -176,43 +216,90 @@ export default function AdminKnowledgePage() {
           </form>
         </div>
 
-        {/* Document Chunks Table */}
-        <div className="eg-card p-0 overflow-hidden shadow-card">
-          <div className="p-4 border-b border-[var(--eg-border)] font-bold text-sm text-[var(--eg-text-primary)]">
-            Indexed Documents & Chunk Telemetry
+        {/* ── Document Chunks Table ── */}
+        <div className="rounded-3xl bg-white border border-slate-200/80 shadow-xs overflow-hidden">
+          <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-sm text-slate-900">
+                Indexed Documents & Chunk Telemetry
+              </h3>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Semantic search embeddings stored in PostgreSQL pgvector
+              </p>
+            </div>
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200">
+              {documentChunks.length} Documents Active
+            </span>
           </div>
+
           <div className="overflow-x-auto">
-            <table className="w-full text-left admin-table">
-              <thead>
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold uppercase tracking-wider text-slate-400">
                 <tr>
-                  <th>Document Name</th>
-                  <th>University • Unit</th>
-                  <th>Chunks</th>
-                  <th>Dimensions</th>
-                  <th>Status</th>
-                  <th>Last Indexed</th>
-                  <th>Actions</th>
+                  <th className="py-3.5 px-5">Document Name</th>
+                  <th className="py-3.5 px-4">University • Unit</th>
+                  <th className="py-3.5 px-4">Chunks</th>
+                  <th className="py-3.5 px-4">Dimensions</th>
+                  <th className="py-3.5 px-4">Status</th>
+                  <th className="py-3.5 px-4">Last Indexed</th>
+                  <th className="py-3.5 px-5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-100">
                 {documentChunks.map((doc) => (
-                  <tr key={doc.id}>
-                    <td className="font-semibold text-xs text-[var(--eg-text-primary)]">{doc.sourceDoc}</td>
-                    <td>{doc.university} • {doc.unit}</td>
-                    <td className="font-bold text-xs text-[var(--eg-primary)]">{doc.chunkCount} Chunks</td>
-                    <td className="text-caption font-mono text-[var(--eg-text-muted)]">{doc.embeddingDimension}d</td>
-                    <td>
-                      <Badge variant={doc.status === 'Indexed' ? 'success' : 'warning'} size="sm">
-                        {doc.status}
-                      </Badge>
+                  <tr key={doc.id} className="hover:bg-slate-50/70 transition">
+                    <td className="py-4 px-5">
+                      <div className="font-bold text-slate-900 text-xs flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-[#FF5500] shrink-0" />
+                        <span>{doc.sourceDoc}</span>
+                      </div>
                     </td>
-                    <td className="text-caption text-[var(--eg-text-muted)]">{doc.lastIndexed}</td>
-                    <td>
-                      <div className="flex items-center gap-2">
-                        <button className="p-1.5 rounded hover:bg-[var(--eg-surface-subtle)] text-[var(--eg-text-muted)] hover:text-[var(--eg-primary)]">
+                    <td className="py-4 px-4">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                        {doc.university} • {doc.unit}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className="font-mono font-bold text-[#FF5500] text-xs">
+                        {doc.chunkCount} Chunks
+                      </span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className="font-mono text-[11px] text-slate-500 font-semibold bg-slate-50 px-2 py-0.5 rounded border border-slate-200/60">
+                        {doc.embeddingDimension}d
+                      </span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                          doc.status === 'Indexed'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : 'bg-amber-50 text-amber-700 border border-amber-200'
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            doc.status === 'Indexed' ? 'bg-emerald-500' : 'bg-amber-500'
+                          }`}
+                        />
+                        {doc.status}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4 text-slate-400 text-[11px] font-medium">
+                      {doc.lastIndexed}
+                    </td>
+                    <td className="py-4 px-5 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          className="p-2 rounded-xl bg-slate-50 hover:bg-[#FF5500] text-slate-500 hover:text-white border border-slate-200/70 transition shadow-2xs cursor-pointer"
+                          title="View Chunks"
+                        >
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button className="p-1.5 rounded hover:bg-[var(--eg-error-soft)] text-[var(--eg-text-muted)] hover:text-[var(--eg-error)]">
+                        <button
+                          className="p-2 rounded-xl bg-slate-50 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200/70 transition shadow-2xs cursor-pointer"
+                          title="Delete Vectors"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -223,7 +310,6 @@ export default function AdminKnowledgePage() {
             </table>
           </div>
         </div>
-
       </div>
     </AdminShell>
   );

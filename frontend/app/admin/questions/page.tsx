@@ -6,18 +6,21 @@ import {
   BookOpen,
   PlusCircle,
   Search,
-  Filter,
   CheckCircle2,
   Trash2,
   Edit,
   Eye,
+  HelpCircle,
+  Layers,
+  Sparkles,
+  TrendingUp,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 
 export default function AdminQuestionsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('All');
+  const [selectedDifficulty, setSelectedDifficulty] = useState('All');
   const [msg, setMsg] = useState<{ success: boolean; text: string } | null>(null);
 
   // Question Form state
@@ -74,6 +77,16 @@ export default function AdminQuestionsPage() {
     setQText('');
   };
 
+  const filtered = questions.filter((q) => {
+    const matchesSearch =
+      q.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      q.topic.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      q.source.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSubject = selectedSubject === 'All' || q.subject === selectedSubject;
+    const matchesDiff = selectedDifficulty === 'All' || q.difficulty === selectedDifficulty;
+    return matchesSearch && matchesSubject && matchesDiff;
+  });
+
   return (
     <AdminShell
       pageTitle="Question Bank & MCQ Management"
@@ -81,7 +94,7 @@ export default function AdminQuestionsPage() {
       actions={
         <button
           onClick={() => setShowAddModal(true)}
-          className="btn btn-primary btn-sm font-semibold shadow-sm"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#FF5500] hover:bg-[#E04B00] text-white text-xs font-bold shadow-md shadow-orange-500/20 hover:shadow-lg transition cursor-pointer"
         >
           <PlusCircle className="w-4 h-4" />
           <span>+ Add Question</span>
@@ -89,89 +102,174 @@ export default function AdminQuestionsPage() {
       }
     >
       <div className="space-y-6">
-        
+        {/* ── KPI Summary Cards ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="p-5 rounded-3xl bg-white border border-slate-200/80 shadow-xs flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Question Bank Size</p>
+              <h3 className="text-2xl font-black text-slate-900 font-mono">4,850 MCQs</h3>
+              <p className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Verified with step-by-step solutions
+              </p>
+            </div>
+            <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-200/60 text-[#FF5500] flex items-center justify-center shadow-2xs shrink-0">
+              <HelpCircle className="w-6 h-6" />
+            </div>
+          </div>
+
+          <div className="p-5 rounded-3xl bg-white border border-slate-200/80 shadow-xs flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Practice Attempts</p>
+              <h3 className="text-2xl font-black text-slate-900 font-mono">18,450 Solved</h3>
+              <p className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                <TrendingUp className="w-3 h-3 text-emerald-500" />
+                Across BUET, DU, Medical past questions
+              </p>
+            </div>
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200/60 text-emerald-600 flex items-center justify-center shadow-2xs shrink-0">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
+          </div>
+
+          <div className="p-5 rounded-3xl bg-white border border-slate-200/80 shadow-xs flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Core Disciplines</p>
+              <h3 className="text-2xl font-black text-slate-900 font-mono">3 Subjects</h3>
+              <p className="text-[11px] text-blue-600 font-semibold flex items-center gap-1">
+                <Layers className="w-3.5 h-3.5 text-blue-500" />
+                Physics, Chemistry, Higher Math
+              </p>
+            </div>
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200/60 text-blue-600 flex items-center justify-center shadow-2xs shrink-0">
+              <BookOpen className="w-6 h-6" />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Success Alert ── */}
         {msg && (
-          <div className="p-4 rounded-xl text-xs font-semibold flex items-center gap-2 bg-[var(--eg-success-soft)] text-[var(--eg-success)] border border-[var(--eg-success)]/20">
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <div className="p-4 rounded-2xl text-xs font-semibold flex items-center gap-2 bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>{msg.text}</span>
           </div>
         )}
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        {/* ── Search & Filter Toolbar ── */}
+        <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 absolute left-3 top-3 text-[var(--eg-text-muted)]" />
+            <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
             <input
               type="text"
-              placeholder="Search question bank by keyword..."
+              placeholder="Search question bank by keyword, topic, or source..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="eg-input pl-9"
+              className="w-full h-10 pl-9 pr-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF5500]/20 focus:border-[#FF5500]"
             />
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <select
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
-              className="eg-input w-auto text-xs font-medium"
+              className="h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF5500]/20 focus:border-[#FF5500]"
             >
               <option value="All">All Subjects</option>
               <option value="Physics">Physics</option>
               <option value="Chemistry">Chemistry</option>
               <option value="Higher Math">Higher Math</option>
             </select>
+
+            <select
+              value={selectedDifficulty}
+              onChange={(e) => setSelectedDifficulty(e.target.value)}
+              className="h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF5500]/20 focus:border-[#FF5500]"
+            >
+              <option value="All">All Difficulties</option>
+              <option value="Easy">Easy</option>
+              <option value="Medium">Medium</option>
+              <option value="Hard">Hard</option>
+            </select>
+
+            <span className="text-xs font-semibold text-slate-500 whitespace-nowrap pl-1">
+              <span className="font-bold text-slate-900 font-mono bg-slate-100 px-2 py-0.5 rounded-full">
+                {filtered.length}
+              </span>{' '}
+              questions
+            </span>
           </div>
         </div>
 
-        {/* Questions Table */}
-        <div className="eg-card p-0 overflow-hidden shadow-card">
+        {/* ── Modern Table Container ── */}
+        <div className="rounded-3xl bg-white border border-slate-200/80 shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left admin-table">
-              <thead>
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold uppercase tracking-wider text-slate-400">
                 <tr>
-                  <th>Question</th>
-                  <th>Subject • Chapter</th>
-                  <th>Difficulty</th>
-                  <th>Source</th>
-                  <th>Status</th>
-                  <th>Updated</th>
-                  <th>Actions</th>
+                  <th className="py-3.5 px-5">Question</th>
+                  <th className="py-3.5 px-4">Subject • Chapter</th>
+                  <th className="py-3.5 px-4">Difficulty</th>
+                  <th className="py-3.5 px-4">Source</th>
+                  <th className="py-3.5 px-4">Status</th>
+                  <th className="py-3.5 px-4">Updated</th>
+                  <th className="py-3.5 px-5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody>
-                {questions.map((q) => (
-                  <tr key={q.id}>
-                    <td className="max-w-md">
-                      <div className="font-semibold text-xs text-[var(--eg-text-primary)] truncate">
+              <tbody className="divide-y divide-slate-100">
+                {filtered.map((q) => (
+                  <tr key={q.id} className="hover:bg-slate-50/70 transition">
+                    <td className="py-4 px-5 max-w-md">
+                      <div className="font-bold text-slate-900 text-xs leading-snug line-clamp-2">
                         {q.text}
                       </div>
-                      <div className="text-caption text-[var(--eg-text-muted)]">{q.topic}</div>
+                      <div className="text-[11px] text-[#FF5500] font-semibold mt-1 flex items-center gap-1">
+                        <span>•</span>
+                        <span>{q.topic}</span>
+                      </div>
                     </td>
-                    <td>
-                      <div className="text-xs font-medium text-[var(--eg-text-primary)]">{q.subject}</div>
-                      <div className="text-caption text-[var(--eg-text-muted)]">{q.chapter}</div>
+                    <td className="py-4 px-4">
+                      <div className="font-semibold text-slate-900 text-xs">{q.subject}</div>
+                      <div className="text-[11px] text-slate-500">{q.chapter}</div>
                     </td>
-                    <td>
-                      <Badge
-                        variant={q.difficulty === 'Easy' ? 'success' : q.difficulty === 'Medium' ? 'default' : 'error'}
-                        size="sm"
+                    <td className="py-4 px-4">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                          q.difficulty === 'Easy'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : q.difficulty === 'Medium'
+                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                            : 'bg-rose-50 text-rose-700 border border-rose-200'
+                        }`}
                       >
                         {q.difficulty}
-                      </Badge>
+                      </span>
                     </td>
-                    <td className="text-caption font-semibold text-[var(--eg-text-secondary)]">{q.source}</td>
-                    <td>
-                      <Badge variant="success" size="sm">{q.status}</Badge>
+                    <td className="py-4 px-4">
+                      <span className="font-mono text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                        {q.source}
+                      </span>
                     </td>
-                    <td className="text-caption text-[var(--eg-text-muted)]">{q.updated}</td>
-                    <td>
-                      <div className="flex items-center gap-2">
-                        <button className="p-1.5 rounded hover:bg-[var(--eg-surface-subtle)] text-[var(--eg-text-muted)] hover:text-[var(--eg-text-primary)]">
+                    <td className="py-4 px-4">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        {q.status}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4 text-slate-400 text-[11px] font-medium">{q.updated}</td>
+                    <td className="py-4 px-5 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => {
+                            setQText(q.text);
+                            setSubject(q.subject);
+                            setChapter(q.chapter);
+                            setTopic(q.topic);
+                            setShowAddModal(true);
+                          }}
+                          className="p-2 rounded-xl bg-slate-50 hover:bg-slate-200 text-slate-600 border border-slate-200/70 transition shadow-2xs cursor-pointer"
+                          title="Edit Question"
+                        >
                           <Edit className="w-4 h-4" />
-                        </button>
-                        <button className="p-1.5 rounded hover:bg-[var(--eg-error-soft)] text-[var(--eg-text-muted)] hover:text-[var(--eg-error)]">
-                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
@@ -182,36 +280,57 @@ export default function AdminQuestionsPage() {
           </div>
         </div>
 
-        {/* Modal: Add MCQ */}
+        {/* ── Modern Create MCQ Modal ── */}
         {showAddModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto">
-            <div className="bg-[var(--eg-surface)] border border-[var(--eg-border)] rounded-2xl max-w-2xl w-full p-6 space-y-5 shadow-modal max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between border-b border-[var(--eg-border)] pb-3">
-                <h3 className="font-bold text-lg text-[var(--eg-text-primary)]">
-                  Create Practice MCQ with Explanation
-                </h3>
-                <button onClick={() => setShowAddModal(false)} className="text-xs text-[var(--eg-text-muted)]">
-                  Close
+            <div className="bg-white border border-slate-200/90 rounded-3xl max-w-2xl w-full p-6 sm:p-7 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div>
+                  <h3 className="font-black text-lg text-slate-900">
+                    Create Practice MCQ with Explanation
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Add verified question with step-by-step solutions for student tests
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition cursor-pointer"
+                >
+                  ✕
                 </button>
               </div>
 
               <form onSubmit={handleCreate} className="space-y-4 text-xs">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Subject</label>
-                    <select value={subject} onChange={(e) => setSubject(e.target.value)} className="eg-input">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-900 block">Subject</label>
+                    <select
+                      value={subject}
+                      onChange={(e) => setSubject(e.target.value)}
+                      className="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF5500]/20 focus:border-[#FF5500]"
+                    >
                       <option>Physics</option>
                       <option>Chemistry</option>
                       <option>Higher Math</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Chapter</label>
-                    <input value={chapter} onChange={(e) => setChapter(e.target.value)} className="eg-input" />
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-900 block">Chapter</label>
+                    <input
+                      value={chapter}
+                      onChange={(e) => setChapter(e.target.value)}
+                      placeholder="e.g. Newton's Mechanics"
+                      className="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF5500]/20 focus:border-[#FF5500]"
+                    />
                   </div>
-                  <div>
-                    <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Difficulty</label>
-                    <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className="eg-input">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-900 block">Difficulty</label>
+                    <select
+                      value={difficulty}
+                      onChange={(e) => setDifficulty(e.target.value)}
+                      className="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF5500]/20 focus:border-[#FF5500]"
+                    >
                       <option>Easy</option>
                       <option>Medium</option>
                       <option>Hard</option>
@@ -219,22 +338,26 @@ export default function AdminQuestionsPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Question Text (Bangla / English) *</label>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-900 block">
+                    Question Text (Bangla / English) *
+                  </label>
                   <textarea
                     rows={3}
                     required
                     value={qText}
                     onChange={(e) => setQText(e.target.value)}
-                    placeholder="Enter question text..."
-                    className="eg-input h-auto py-2"
+                    placeholder="Enter question statement or formula..."
+                    className="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF5500]/20 focus:border-[#FF5500] resize-none"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {opts.map((opt, i) => (
-                    <div key={i}>
-                      <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Option {String.fromCharCode(65 + i)}</label>
+                    <div key={i} className="space-y-1">
+                      <label className="text-xs font-bold text-slate-700 block">
+                        Option {String.fromCharCode(65 + i)}
+                      </label>
                       <input
                         value={opt}
                         onChange={(e) => {
@@ -242,52 +365,65 @@ export default function AdminQuestionsPage() {
                           n[i] = e.target.value;
                           setOpts(n);
                         }}
-                        className="eg-input"
+                        className="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF5500]/20 focus:border-[#FF5500]"
                       />
                     </div>
                   ))}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Correct Option</label>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-900 block">Correct Option</label>
                     <select
                       value={correctIdx}
                       onChange={(e) => setCorrectIdx(Number(e.target.value))}
-                      className="eg-input"
+                      className="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF5500]/20 focus:border-[#FF5500]"
                     >
                       {opts.map((_, i) => (
-                        <option key={i} value={i}>Option {String.fromCharCode(65 + i)}</option>
+                        <option key={i} value={i}>
+                          Option {String.fromCharCode(65 + i)} ({opts[i] || 'Empty'})
+                        </option>
                       ))}
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Past Admission Source Tag</label>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-900 block">
+                      Past Admission Source Tag
+                    </label>
                     <input
                       value={source}
                       onChange={(e) => setSource(e.target.value)}
-                      placeholder="e.g. BUET 2023"
-                      className="eg-input"
+                      placeholder="e.g. BUET 2023, DU 2024"
+                      className="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF5500]/20 focus:border-[#FF5500]"
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-[var(--eg-text-muted)] mb-1 font-semibold">Step-by-Step Solution Explanation</label>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-900 block">
+                    Step-by-Step Solution Explanation
+                  </label>
                   <textarea
                     rows={3}
                     value={explanation}
                     onChange={(e) => setExplanation(e.target.value)}
-                    placeholder="Detailed explanation..."
-                    className="eg-input h-auto py-2"
+                    placeholder="Detailed explanation and formulas for students..."
+                    className="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF5500]/20 focus:border-[#FF5500] resize-none"
                   />
                 </div>
 
-                <div className="flex justify-end gap-2 pt-2">
-                  <button type="button" onClick={() => setShowAddModal(false)} className="btn btn-secondary btn-sm">
+                <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer"
+                  >
                     Cancel
                   </button>
-                  <button type="submit" className="btn btn-primary btn-sm font-semibold">
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-full bg-[#FF5500] hover:bg-[#E04B00] text-white text-xs font-bold shadow-md shadow-orange-500/20 hover:shadow-lg transition cursor-pointer"
+                  >
                     Publish Question
                   </button>
                 </div>
@@ -295,7 +431,6 @@ export default function AdminQuestionsPage() {
             </div>
           </div>
         )}
-
       </div>
     </AdminShell>
   );
