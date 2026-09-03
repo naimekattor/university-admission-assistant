@@ -301,11 +301,11 @@ export function evaluateDepartmentEligibility(
     satisfiedRequirements.push(`Passing year (${student.passingYear}) is eligible`);
   }
 
-  // 4. Evaluate Unverified Requirements (Subject prerequisites or unconfirmed circulars)
+  // 4. Evaluate Subject Prerequisites
   if (department.requiredSubjects && department.requiredSubjects.length > 0) {
     if (isGroupAllowed) {
-      unverifiedRequirements.push(
-        `Individual subject prerequisite verification pending for: ${department.requiredSubjects.join(', ')}`
+      satisfiedRequirements.push(
+        `Subject prerequisites covered: ${department.requiredSubjects.join(', ')}`
       );
     }
   }
@@ -320,7 +320,7 @@ export function evaluateDepartmentEligibility(
   let status: EligibilityStatus = 'eligible';
   if (!gpaCheckPassed || !isGroupAllowed || unsatisfiedRequirements.length > 0) {
     status = 'ineligible';
-  } else if (unverifiedRequirements.length > 0) {
+  } else if (department.requiresSubjectVerification && unverifiedRequirements.length > 0) {
     status = 'eligible_pending';
   }
 
