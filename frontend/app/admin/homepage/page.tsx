@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { AdminShell } from '@/components/layout/admin-shell';
 import {
@@ -87,6 +87,9 @@ export default function AdminHomepageCMSPage() {
   const [circulars, setCirculars] = useState<any[]>([]);
   const [deadlineModalOpen, setDeadlineModalOpen] = useState(false);
   const [editingDeadline, setEditingDeadline] = useState<any | null>(null);
+  const [deadlineTypeFilter, setDeadlineTypeFilter] = useState('all');
+  const [deadlineUrgencyFilter, setDeadlineUrgencyFilter] = useState('all');
+  const [deadlineSearchFilter, setDeadlineSearchFilter] = useState('');
 
   // Guide Manager state
   const [guideModalOpen, setGuideModalOpen] = useState(false);
@@ -554,6 +557,29 @@ export default function AdminHomepageCMSPage() {
   ];
 
   const admissionRows = universities;
+
+  const filteredDeadlines = useMemo(() => {
+    return deadlinesList.filter((evt) => {
+      if (deadlineTypeFilter !== 'all') {
+        if (deadlineTypeFilter === 'deadline' && evt.eventType !== 'application_deadline') return false;
+        if (deadlineTypeFilter === 'exam' && evt.eventType !== 'admission_test') return false;
+        if (deadlineTypeFilter === 'open' && evt.eventType !== 'application_open') return false;
+      }
+      if (deadlineUrgencyFilter !== 'all') {
+        if (deadlineUrgencyFilter === 'urgent' && evt.status !== 'urgent') return false;
+        if (deadlineUrgencyFilter === 'upcoming' && evt.status !== 'upcoming') return false;
+        if (deadlineUrgencyFilter === 'scheduled' && evt.status !== 'scheduled') return false;
+      }
+      if (deadlineSearchFilter.trim()) {
+        const q = deadlineSearchFilter.toLowerCase();
+        const uni = (evt.university || '').toLowerCase();
+        const unit = (evt.unit || '').toLowerCase();
+        const title = (evt.eventTypeName || evt.title || '').toLowerCase();
+        if (!uni.includes(q) && !unit.includes(q) && !title.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [deadlinesList, deadlineTypeFilter, deadlineUrgencyFilter, deadlineSearchFilter]);
 
   return (
     <AdminShell
@@ -1195,25 +1221,14 @@ export default function AdminHomepageCMSPage() {
                   <p className="text-xs text-slate-500">Configure section headers and manage live deadline countdown events stored in PostgreSQL.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      setEditingDeadline({
-                        id: `deadline-new-${Date.now()}`,
-                        universityName: universities[0]?.shortName || 'BUET',
-                        unit: 'Ka Unit (Science)',
-                        eventType: 'application_deadline',
-                        title: 'Application Deadline',
-                        eventDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 16),
-                        sourceUrl: 'https://',
-                        status: 'upcoming',
-                      });
-                      setDeadlineModalOpen(true);
-                    }}
-                    className="px-4 py-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+                  <Link
+                    href="/admin/circulars"
+                    className="px-4 py-2 rounded-full border border-orange-200 bg-orange-50 hover:bg-orange-100 text-[#FF5500] text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
                   >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add Deadline Event</span>
-                  </button>
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>Manage Circulars & Deadlines</span>
+                  </Link>
+
                   <button
                     onClick={() => handleSaveSection('deadlineSection', draftConfig.deadlineSection)}
                     disabled={saving}
@@ -1260,50 +1275,84 @@ export default function AdminHomepageCMSPage() {
 
               {/* Live Database Deadlines Table */}
               <div className="space-y-3 pt-4 border-t border-slate-100">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-bold text-sm text-slate-900">
-                      Live PostgreSQL Deadlines & Events ({deadlinesList.length} active)
-                    </h4>
-                    <p className="text-xs text-slate-500">
-                      Countdown events and dates displayed dynamically on the public homepage.
-                    </p>
+                <div className="p-3.5 rounded-2xl bg-orange-50/70 border border-orange-200/80 flex items-start justify-between gap-3 text-xs text-slate-700">
+                  <div className="flex items-start gap-2.5">
+                    <Sparkles className="w-4 h-4 text-[#FF5500] shrink-0 mt-0.5" />
+                    <div className="leading-relaxed">
+                      <strong className="text-slate-900 font-bold">Synchronized From Circulars & Deadlines:</strong> The timeline events below are automatically computed from active circulars in{' '}
+                      <Link href="/admin/circulars" className="text-[#FF5500] font-bold underline hover:text-[#E04B00]">
+                        Circulars & Deadlines
+                      </Link>
+                      . Update any circular deadline to immediately adjust countdown timers.
+                    </div>
+                  </div>
+
+                  <span className="px-3 py-1 rounded-full bg-white border border-orange-200 text-[#FF5500] font-mono text-xs font-bold shrink-0">
+                    {filteredDeadlines.length} Deadlines Filtered
+                  </span>
+                </div>
+
+                {/* Filter Controls */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200/80">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="relative flex-1 sm:w-64">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={deadlineSearchFilter}
+                        onChange={(e) => setDeadlineSearchFilter(e.target.value)}
+                        placeholder="Search university or unit..."
+                        className="w-full h-8 pl-8 pr-3 text-xs rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-[#FF5500]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
+                    <select
+                      value={deadlineTypeFilter}
+                      onChange={(e) => setDeadlineTypeFilter(e.target.value)}
+                      className="h-8 px-2.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-[#FF5500] cursor-pointer"
+                    >
+                      <option value="all">All Event Types</option>
+                      <option value="deadline">Application Deadlines</option>
+                      <option value="exam">Admission Tests / Exams</option>
+                      <option value="open">Applications Open</option>
+                    </select>
+
+                    <select
+                      value={deadlineUrgencyFilter}
+                      onChange={(e) => setDeadlineUrgencyFilter(e.target.value)}
+                      className="h-8 px-2.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-[#FF5500] cursor-pointer"
+                    >
+                      <option value="all">All Timelines</option>
+                      <option value="urgent">Urgent (≤ 7 Days)</option>
+                      <option value="upcoming">Upcoming (≤ 30 Days)</option>
+                      <option value="scheduled">Scheduled (&gt; 30 Days)</option>
+                    </select>
                   </div>
                 </div>
 
-                {deadlinesList.length === 0 ? (
+                {filteredDeadlines.length === 0 ? (
                   <div className="p-8 rounded-xl border border-dashed border-slate-200 text-center space-y-3 bg-slate-50/50">
                     <Calendar className="w-8 h-8 text-slate-400 mx-auto" />
                     <div className="space-y-1">
-                      <p className="text-xs font-bold text-slate-700">No deadline events created yet</p>
+                      <p className="text-xs font-bold text-slate-700">No deadline events match the current filter</p>
                       <p className="text-xs text-slate-500">
-                        Add application deadlines, admission exam dates, or circular releases.
+                        Adjust your filter criteria or publish new session dates in Circulars & Deadlines.
                       </p>
                     </div>
-                    <button
-                      onClick={() => {
-                        setEditingDeadline({
-                          id: `deadline-new-${Date.now()}`,
-                          universityName: universities[0]?.shortName || 'BUET',
-                          unit: 'Ka Unit (Science)',
-                          eventType: 'application_deadline',
-                          title: 'Application Deadline',
-                          eventDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 16),
-                          sourceUrl: 'https://',
-                          status: 'upcoming',
-                        });
-                        setDeadlineModalOpen(true);
-                      }}
-                      className="px-4 py-2 rounded-full bg-[#FF5500] hover:bg-[#E64D00] text-white text-xs font-bold shadow-sm transition cursor-pointer"
+                    <Link
+                      href="/admin/circulars"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#FF5500] hover:bg-[#E64D00] text-white text-xs font-bold shadow-sm transition cursor-pointer"
                     >
-                      + Add First Deadline Event
-                    </button>
+                      <span>Manage in Circulars & Deadlines</span>
+                    </Link>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto border border-slate-200 rounded-xl">
+                  <div className="overflow-x-auto border border-slate-200 rounded-xl bg-white shadow-2xs">
                     <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                        <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-700 uppercase tracking-wider font-mono">
                           <th className="py-2.5 px-3">University</th>
                           <th className="py-2.5 px-3">Unit / Faculty</th>
                           <th className="py-2.5 px-3">Event Type</th>
@@ -1314,57 +1363,66 @@ export default function AdminHomepageCMSPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 text-xs">
-                        {deadlinesList.map((evt) => (
+                        {filteredDeadlines.map((evt) => (
                           <tr key={evt.id} className="hover:bg-slate-50/60 transition">
-                            <td className="py-3 px-3 font-bold text-slate-900">{evt.university}</td>
-                            <td className="py-3 px-3 text-slate-600">{evt.unit}</td>
+                            <td className="py-3 px-3 font-bold text-slate-900">
+                              <span className="text-[#FF5500] font-mono mr-1">[{evt.university}]</span>
+                              <span>{evt.universityFullName || evt.university}</span>
+                            </td>
+                            <td className="py-3 px-3 text-slate-600 font-mono text-[11px]">{evt.unit}</td>
                             <td className="py-3 px-3">
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-50 text-[#FF5500] border border-orange-200">
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                  evt.eventType === 'application_deadline'
+                                    ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                    : evt.eventType === 'admission_test'
+                                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                    : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                }`}
+                              >
                                 {evt.eventTypeName || evt.title || evt.eventType}
                               </span>
                             </td>
-                            <td className="py-3 px-3 font-mono text-slate-800">{evt.dateDisplay || new Date(evt.eventDate).toLocaleDateString()}</td>
+                            <td className="py-3 px-3 font-mono text-slate-800 font-medium">
+                              {evt.dateDisplay || new Date(evt.eventDate).toLocaleDateString()}
+                            </td>
                             <td className="py-3 px-3 font-mono font-bold text-[#FF5500]">
                               {evt.remainingDays} days left
                             </td>
                             <td className="py-3 px-3">
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${evt.status === 'urgent'
-                                  ? 'bg-rose-50 text-rose-600 border border-rose-200'
-                                  : evt.status === 'upcoming'
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${
+                                  evt.status === 'urgent'
+                                    ? 'bg-rose-50 text-rose-600 border border-rose-200'
+                                    : evt.status === 'upcoming'
                                     ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
                                     : 'bg-slate-100 text-slate-600 border border-slate-200'
-                                }`}>
+                                }`}
+                              >
                                 {evt.status || 'upcoming'}
                               </span>
                             </td>
                             <td className="py-3 px-3 text-right">
-                              <div className="flex items-center justify-end gap-1">
-                                <button
-                                  onClick={() => {
-                                    setEditingDeadline({
-                                      id: evt.id,
-                                      universityName: evt.university,
-                                      unit: evt.unit,
-                                      eventType: evt.eventType,
-                                      title: evt.eventTypeName || evt.title,
-                                      eventDate: evt.eventDate ? new Date(evt.eventDate).toISOString().slice(0, 16) : '',
-                                      sourceUrl: evt.sourceUrl,
-                                      status: evt.status,
-                                    });
-                                    setDeadlineModalOpen(true);
-                                  }}
-                                  className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition cursor-pointer"
-                                  title="Edit Event"
+                              <div className="flex items-center justify-end gap-1.5">
+                                <Link
+                                  href={`/admin/circulars?search=${encodeURIComponent(evt.university)}`}
+                                  className="px-2.5 py-1 rounded-lg bg-orange-50 border border-orange-200 text-[#FF5500] hover:bg-[#FF5500] hover:text-white transition font-bold text-[11px] flex items-center gap-1 cursor-pointer"
+                                  title="Edit in Circulars & Deadlines"
                                 >
-                                  <Edit2 className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => promptDeleteDeadline(evt)}
-                                  className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition cursor-pointer"
-                                  title="Delete Event"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                                  <Calendar className="w-3 h-3" />
+                                  <span>Edit in Circulars</span>
+                                </Link>
+                                {evt.sourceUrl && evt.sourceUrl !== '#' && (
+                                  <a
+                                    href={evt.sourceUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+                                    title="Official Circular Link"
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                  </a>
+                                )}
                               </div>
                             </td>
                           </tr>

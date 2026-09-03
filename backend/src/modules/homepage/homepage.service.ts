@@ -1204,24 +1204,115 @@ export class HomepageService {
    */
   public async getUpcomingDeadlines(limit = 20): Promise<any[]> {
     try {
-      // Ensure table exists
-      await this.pool.query(`
-        CREATE TABLE IF NOT EXISTS admission_events (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          university_id UUID REFERENCES universities(id) ON DELETE CASCADE,
-          university_name TEXT NOT NULL,
-          unit TEXT,
-          event_type TEXT NOT NULL,
-          title TEXT NOT NULL,
-          event_date TIMESTAMP NOT NULL,
-          description TEXT,
-          source_url TEXT,
-          status TEXT DEFAULT 'upcoming',
-          created_at TIMESTAMP DEFAULT NOW() NOT NULL
-        );
-      `);
+      // 1. Fetch active circulars with university details
+      const circRes = await this.pool.query(
+        `SELECT 
+           c.id::text,
+           c.university_id::text as "universityId",
+           COALESCE(u.short_name, u.name) as "universityShortName",
+           u.name as "universityName",
+           u.logo as "universityLogo",
+           c.unit,
+           c.title,
+           c.application_start_date as "applicationStartDate",
+           c.application_end_date as "applicationEndDate",
+           c.exam_date as "examDate",
+           c.result_date as "resultDate",
+           c.official_url as "officialUrl",
+           c.status
+         FROM admission_circulars c
+         JOIN universities u ON c.university_id = u.id
+         WHERE c.status != 'closed'`
+      );
 
-      const res = await this.pool.query(
+      const events: any[] = [];
+
+      for (const r of circRes.rows) {
+        const uniLabel = r.universityShortName || r.universityName;
+
+        // 1. Application Deadline
+        if (r.applicationEndDate) {
+          const endDate = new Date(r.applicationEndDate);
+          const diffMs = endDate.getTime() - Date.now();
+          const remainingDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+          const dynamicStatus = remainingDays === 0 ? 'passed' : remainingDays <= 7 ? 'urgent' : remainingDays <= 30 ? 'upcoming' : 'scheduled';
+          events.push({
+            id: `${r.id}-deadline`,
+            circularId: r.id,
+            university: uniLabel,
+            universityFullName: r.universityName,
+            universityLogo: r.universityLogo,
+            unit: r.unit || 'All Units',
+            eventType: 'application_deadline',
+            eventTypeName: 'Application Deadline',
+            title: `${uniLabel} ${r.unit} Application Deadline`,
+            eventDate: endDate.toISOString(),
+            dateDisplay: endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            remainingDays,
+            status: dynamicStatus,
+            sourceUrl: r.officialUrl || '#',
+          });
+        }
+
+        // 2. Admission Test Date
+        if (r.examDate) {
+          const examDate = new Date(r.examDate);
+          const diffMs = examDate.getTime() - Date.now();
+          const remainingDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+          const dynamicStatus = remainingDays === 0 ? 'passed' : remainingDays <= 7 ? 'urgent' : remainingDays <= 30 ? 'upcoming' : 'scheduled';
+          events.push({
+            id: `${r.id}-exam`,
+            circularId: r.id,
+            university: uniLabel,
+            universityFullName: r.universityName,
+            universityLogo: r.universityLogo,
+            unit: r.unit || 'All Units',
+            eventType: 'admission_test',
+            eventTypeName: 'Admission Test Exam',
+            title: `${uniLabel} ${r.unit} Admission Test`,
+            eventDate: examDate.toISOString(),
+            dateDisplay: examDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            remainingDays,
+            status: dynamicStatus,
+            sourceUrl: r.officialUrl || '#',
+          });
+        }
+
+        // 3. Application Start Date (if upcoming)
+        if (r.applicationStartDate) {
+          const startDate = new Date(r.applicationStartDate);
+          const diffMs = startDate.getTime() - Date.now();
+          if (diffMs > 0) {
+            const remainingDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+            const dynamicStatus = remainingDays <= 7 ? 'urgent' : 'upcoming';
+            events.push({
+              id: `${r.id}-start`,
+              circularId: r.id,
+              university: uniLabel,
+              universityFullName: r.universityName,
+              universityLogo: r.universityLogo,
+              unit: r.unit || 'All Units',
+              eventType: 'application_open',
+              eventTypeName: 'Application Opens',
+              title: `${uniLabel} ${r.unit} Application Opens`,
+              eventDate: startDate.toISOString(),
+              dateDisplay: startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+              remainingDays,
+              status: dynamicStatus,
+              sourceUrl: r.officialUrl || '#',
+            });
+          }
+        }
+      }
+
+      // If we got events from circulars, sort by eventDate ascending (earliest deadline first)
+      if (events.length > 0) {
+        events.sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime());
+        return events.slice(0, limit);
+      }
+
+      // Fallback to legacy admission_events if circulars table is empty
+      const legacyRes = await this.pool.query(
         `SELECT 
            id::text,
            university_name as "universityName",
@@ -1233,12 +1324,13 @@ export class HomepageService {
            source_url as "sourceUrl",
            status
          FROM admission_events 
+         WHERE event_date >= NOW() - INTERVAL '1 day'
          ORDER BY event_date ASC 
          LIMIT $1`,
         [limit]
       );
 
-      return res.rows.map((r) => {
+      return legacyRes.rows.map((r) => {
         const evtDate = new Date(r.eventDate);
         const diffMs = evtDate.getTime() - Date.now();
         const remainingDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
