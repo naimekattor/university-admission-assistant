@@ -86,7 +86,7 @@ export default function AdminUniversitiesPage() {
     message: '',
     confirmText: 'Yes, delete university',
     isDeleting: false,
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
 
   const loadUniversities = async () => {
@@ -246,7 +246,7 @@ export default function AdminUniversitiesPage() {
           className="px-4 py-2 rounded-full bg-[#FF5500] hover:bg-[#E64D00] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer"
         >
           <PlusCircle className="w-3.5 h-3.5" />
-          <span>+ Add University</span>
+          <span>Add University</span>
         </button>
       }
     >
@@ -340,13 +340,12 @@ export default function AdminUniversitiesPage() {
                         </td>
                         <td className="py-3.5 px-4">
                           <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                              isOpen
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isOpen
                                 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                 : isOpeningSoon
-                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                : 'bg-slate-100 text-slate-600 border border-slate-200'
-                            }`}
+                                  ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                  : 'bg-slate-100 text-slate-600 border border-slate-200'
+                              }`}
                           >
                             <span className={`w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-emerald-500 animate-pulse' : isOpeningSoon ? 'bg-amber-500' : 'bg-slate-400'}`} />
                             <span>{u.status || 'Scheduled'}</span>

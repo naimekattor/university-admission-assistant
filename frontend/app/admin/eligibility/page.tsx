@@ -194,7 +194,7 @@ export default function AdminEligibilityPage() {
             className="px-3.5 py-1.5 rounded-lg bg-[#FF5500] hover:bg-[#E04B00] text-white text-xs font-bold flex items-center gap-1.5 transition shadow-sm cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
-            <span>+ Manage in Circulars</span>
+            <span>Manage in Circulars</span>
           </Link>
         </div>
       }
@@ -256,41 +256,36 @@ export default function AdminEligibilityPage() {
           <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 rounded-xl">
             <button
               onClick={() => setActiveTab('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                activeTab === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${activeTab === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
             >
               All Rules ({stats.total})
             </button>
             <button
               onClick={() => setActiveTab('science')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                activeTab === 'science' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${activeTab === 'science' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
             >
               Science ({stats.science})
             </button>
             <button
               onClick={() => setActiveTab('commerce')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                activeTab === 'commerce' ? 'bg-white text-emerald-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${activeTab === 'commerce' ? 'bg-white text-emerald-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
             >
               Commerce ({stats.commerce})
             </button>
             <button
               onClick={() => setActiveTab('humanities')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                activeTab === 'humanities' ? 'bg-white text-purple-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${activeTab === 'humanities' ? 'bg-white text-purple-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
             >
               Humanities ({stats.humanities})
             </button>
             <button
               onClick={() => setActiveTab('second_time')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                activeTab === 'second_time' ? 'bg-white text-[#FF5500] shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${activeTab === 'second_time' ? 'bg-white text-[#FF5500] shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
             >
               2nd-Time ({stats.secondTime})
             </button>
@@ -364,13 +359,12 @@ export default function AdminEligibilityPage() {
                       {/* Group */}
                       <td className="py-3.5 px-4">
                         <span
-                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                            r.group === 'Science'
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${r.group === 'Science'
                               ? 'bg-blue-50 text-blue-700 border border-blue-100'
                               : r.group === 'Commerce'
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                              : 'bg-purple-50 text-purple-700 border border-purple-100'
-                          }`}
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                : 'bg-purple-50 text-purple-700 border border-purple-100'
+                            }`}
                         >
                           {r.group}
                         </span>

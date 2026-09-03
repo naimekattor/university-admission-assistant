@@ -406,7 +406,7 @@ export default function AdminCircularsPage() {
             className="px-3.5 py-1.5 rounded-lg bg-[#FF5500] hover:bg-[#E04B00] text-white text-xs font-bold flex items-center gap-1.5 transition shadow-sm cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
-            <span>+ Add Circular</span>
+            <span>Add Circular</span>
           </button>
         </div>
       }
@@ -633,15 +633,14 @@ export default function AdminCircularsPage() {
                       {/* Status */}
                       <td className="py-3.5 px-4">
                         <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${
-                            c.status === 'active'
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${c.status === 'active'
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : c.status === 'upcoming'
-                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                              : c.status === 'closed'
-                              ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                              : 'bg-amber-50 text-amber-700 border border-amber-200'
-                          }`}
+                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                : c.status === 'closed'
+                                  ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                                  : 'bg-amber-50 text-amber-700 border border-amber-200'
+                            }`}
                         >
                           {c.status}
                         </span>

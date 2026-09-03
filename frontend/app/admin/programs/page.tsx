@@ -301,7 +301,7 @@ export default function AdminProgramsPage() {
             className="px-3.5 py-1.5 rounded-lg bg-[#FF5500] hover:bg-[#E04B00] text-white text-xs font-bold flex items-center gap-1.5 transition shadow-sm cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
-            <span>+ Add Program</span>
+            <span>Add Program</span>
           </button>
         </div>
       }
