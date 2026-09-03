@@ -22,6 +22,7 @@ import {
   BookOpen,
 } from 'lucide-react';
 import { useToast } from '@/components/ui/custom-toast';
+import { RichTextEditor } from '@/components/rich-text/rich-text-editor';
 
 interface UniversityItem {
   id: string;
@@ -391,7 +392,7 @@ export default function AdminUniversitiesPage() {
       {/* ── CREATE / EDIT UNIVERSITY MODAL ── */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="w-full max-w-2xl rounded-3xl bg-white border border-slate-200 p-6 sm:p-7 shadow-2xl space-y-4 my-8">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white border border-slate-200 p-6 sm:p-7 shadow-2xl space-y-4 my-8">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="font-bold text-base text-slate-900">
@@ -558,14 +559,19 @@ export default function AdminUniversitiesPage() {
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-900">Description / Overview</label>
-                <textarea
-                  rows={3}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <BookOpen className="w-3.5 h-3.5 text-[#FF5500]" />
+                    <span>Description / Overview (Quill Rich Text Editor)</span>
+                  </label>
+                  <span className="text-[10px] font-mono text-slate-400">Rich HTML Support</span>
+                </div>
+                <RichTextEditor
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Provide an overview of faculties, research, and admission criteria..."
-                  className="w-full p-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                  onChange={setDescription}
+                  placeholder="Provide an overview of faculties, research, campus facilities, and admission criteria..."
+                  minHeight="140px"
                 />
               </div>
 
