@@ -600,3 +600,61 @@ export const lessonsRelations = relations(lessons, ({ one, many }) => ({
   }),
   assets: many(lessonAssets),
 }));
+
+export const lessonAssetsRelations = relations(lessonAssets, ({ one }) => ({
+  lesson: one(lessons, {
+    fields: [lessonAssets.lessonId],
+    references: [lessons.id],
+  }),
+}));
+
+export const questionsRelations = relations(questions, ({ one, many }) => ({
+  concept: one(concepts, {
+    fields: [questions.conceptId],
+    references: [concepts.id],
+  }),
+  chapter: one(chapters, {
+    fields: [questions.chapterId],
+    references: [chapters.id],
+  }),
+  subject: one(subjects, {
+    fields: [questions.subjectId],
+    references: [subjects.id],
+  }),
+  options: many(questionOptions),
+}));
+
+export const questionOptionsRelations = relations(questionOptions, ({ one }) => ({
+  question: one(questions, {
+    fields: [questionOptions.questionId],
+    references: [questions.id],
+  }),
+}));
+
+export const admissionCircularsRelations = relations(admissionCirculars, ({ one }) => ({
+  university: one(universities, {
+    fields: [admissionCirculars.universityId],
+    references: [universities.id],
+  }),
+}));
+
+export const activityLogsRelations = relations(activityLogs, ({ one }) => ({
+  session: one(sessions, {
+    fields: [activityLogs.sessionId],
+    references: [sessions.id],
+  }),
+}));
+
+export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
+  session: one(sessions, {
+    fields: [chatMessages.sessionId],
+    references: [sessions.id],
+  }),
+}));
+
+export const userPreferencesRelations = relations(userPreferences, ({ one }) => ({
+  session: one(sessions, {
+    fields: [userPreferences.sessionId],
+    references: [sessions.id],
+  }),
+}));
