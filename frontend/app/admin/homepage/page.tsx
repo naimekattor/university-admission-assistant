@@ -82,6 +82,10 @@ export default function AdminHomepageCMSPage() {
   const [deadlineModalOpen, setDeadlineModalOpen] = useState(false);
   const [editingDeadline, setEditingDeadline] = useState<any | null>(null);
 
+  // Guide Manager state
+  const [guideModalOpen, setGuideModalOpen] = useState(false);
+  const [editingGuide, setEditingGuide] = useState<any | null>(null);
+
   const fetchAdminData = async () => {
     // 1. Check local storage for drafts
     if (typeof window !== 'undefined') {
@@ -144,6 +148,17 @@ export default function AdminHomepageCMSPage() {
         const faqData = await faqRes.json();
         if (faqData.data && Array.isArray(faqData.data)) {
           setFaqs(faqData.data);
+        }
+      }
+    } catch {}
+
+    // 6. Ensure live PostgreSQL guides are loaded
+    try {
+      const guideRes = await fetch('/api/v1/admin/homepage/guides');
+      if (guideRes.ok) {
+        const guideData = await guideRes.json();
+        if (guideData.data && Array.isArray(guideData.data) && guideData.data.length > 0) {
+          setGuides(guideData.data);
         }
       }
     } catch {}
@@ -436,6 +451,53 @@ export default function AdminHomepageCMSPage() {
           await fetchAdminData();
         } catch {
           toast.error('Failed to delete deadline.', 'Error');
+        } finally {
+          setDeleteDialog((prev) => ({ ...prev, isOpen: false, isDeleting: false }));
+        }
+      },
+    });
+  };
+
+  // Guide Handlers
+  const handleSaveGuideModal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingGuide) return;
+
+    try {
+      const res = await fetch('/api/v1/admin/homepage/guides', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingGuide),
+      });
+
+      if (res.ok) {
+        toast.success(`Guide article "${editingGuide.title}" saved to PostgreSQL database!`, 'Guide Saved');
+        setGuideModalOpen(false);
+        setEditingGuide(null);
+        await fetchAdminData();
+      } else {
+        toast.error('Failed to save guide article.', 'Error');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Error saving guide article.', 'Error');
+    }
+  };
+
+  const promptDeleteGuide = (guide: any) => {
+    setDeleteDialog({
+      isOpen: true,
+      title: 'Delete Guide Article?',
+      message: `Are you sure you want to delete "${guide.title}" from PostgreSQL database?`,
+      confirmText: 'Yes, delete guide',
+      onConfirm: async () => {
+        setDeleteDialog((prev) => ({ ...prev, isDeleting: true }));
+        try {
+          await fetch(`/api/v1/admin/homepage/guides/${guide.id}`, { method: 'DELETE' });
+          setGuides((prev) => prev.filter((g) => g.id !== guide.id));
+          toast.success('Guide article deleted from PostgreSQL database.', 'Deleted');
+          await fetchAdminData();
+        } catch {
+          toast.error('Failed to delete guide article.', 'Error');
         } finally {
           setDeleteDialog((prev) => ({ ...prev, isOpen: false, isDeleting: false }));
         }
@@ -1371,7 +1433,7 @@ export default function AdminHomepageCMSPage() {
               <div className="flex items-center justify-between border-b border-slate-200 pb-4">
                 <div>
                   <h3 className="font-bold text-lg text-slate-900">Admission Guides Section</h3>
-                  <p className="text-xs text-slate-500">Pick featured guide articles and article showcases.</p>
+                  <p className="text-xs text-slate-500">Pick featured guide articles, manage article showcases, and post new guides directly to PostgreSQL.</p>
                 </div>
                 <button
                   onClick={() => handleSaveSection('guideSection', draftConfig.guideSection)}
@@ -1383,7 +1445,8 @@ export default function AdminHomepageCMSPage() {
                 </button>
               </div>
 
-              <div className="space-y-4">
+              {/* Section Settings */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-900">Section Title</label>
                   <input
@@ -1398,6 +1461,219 @@ export default function AdminHomepageCMSPage() {
                     className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
                   />
                 </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-900">Max Display Count on Homepage</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={draftConfig.guideSection?.maxDisplayCount || 4}
+                    onChange={(e) =>
+                      setDraftConfig({
+                        ...draftConfig,
+                        guideSection: { ...draftConfig.guideSection, maxDisplayCount: Number(e.target.value) },
+                      })
+                    }
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+
+                <div className="md:col-span-2 space-y-1.5">
+                  <label className="text-xs font-bold text-slate-900">Section Description</label>
+                  <textarea
+                    rows={2}
+                    value={draftConfig.guideSection?.description || ''}
+                    onChange={(e) =>
+                      setDraftConfig({
+                        ...draftConfig,
+                        guideSection: { ...draftConfig.guideSection, description: e.target.value },
+                      })
+                    }
+                    className="w-full p-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-900">Selection Mode</label>
+                  <select
+                    value={draftConfig.guideSection?.selectionMode || 'recent'}
+                    onChange={(e) =>
+                      setDraftConfig({
+                        ...draftConfig,
+                        guideSection: { ...draftConfig.guideSection, selectionMode: e.target.value as any },
+                      })
+                    }
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                  >
+                    <option value="recent">Recent (Automatic Latest Articles)</option>
+                    <option value="manual">Manual (Featured Selected Slugs)</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-slate-50/50">
+                  <div>
+                    <div className="text-xs font-bold text-slate-900">Enable Guides Section</div>
+                    <div className="text-[11px] text-slate-500">Show or hide on public landing page</div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={draftConfig.guideSection?.enabled !== false}
+                    onChange={(e) =>
+                      setDraftConfig({
+                        ...draftConfig,
+                        guideSection: { ...draftConfig.guideSection, enabled: e.target.checked },
+                      })
+                    }
+                    className="w-4 h-4 text-[#FF5500] rounded cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* Live Database Guide Articles Manager */}
+              <div className="space-y-4 pt-6 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                      <span>Live PostgreSQL Guides & Articles</span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                        {guides.length} in DB
+                      </span>
+                    </h4>
+                    <p className="text-xs text-slate-500">
+                      Articles stored in PostgreSQL <code>articles</code> table. Select which articles appear on the homepage or post a new one.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setEditingGuide({
+                        id: `guide-new-${Date.now()}`,
+                        title: '',
+                        slug: '',
+                        category: 'Engineering Guide',
+                        readingTimeMinutes: 6,
+                        summary: '',
+                        content: '',
+                        isPublished: true,
+                      });
+                      setGuideModalOpen(true);
+                    }}
+                    className="px-3.5 py-1.5 rounded-full bg-[#FF5500] hover:bg-[#E64D00] text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Post New Guide Article</span>
+                  </button>
+                </div>
+
+                {guides.length === 0 ? (
+                  <div className="p-8 rounded-xl border border-dashed border-slate-200 text-center space-y-3 bg-slate-50/50">
+                    <BookOpen className="w-8 h-8 text-slate-400 mx-auto" />
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-slate-700">No guide articles in database</p>
+                      <p className="text-xs text-slate-500">Post high-yield preparation tips and circular breakdowns.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {guides.map((guide) => {
+                      const selectedSlugs = draftConfig.guideSection?.selectedSlugs || [];
+                      const isFeaturedOnHome = selectedSlugs.includes(guide.slug);
+                      const isShowcase = draftConfig.guideSection?.featuredArticleSlug === guide.slug;
+
+                      return (
+                        <div
+                          key={guide.id}
+                          className="p-4 rounded-xl border border-slate-200 hover:border-slate-300 bg-white flex flex-col md:flex-row md:items-center justify-between gap-3 transition"
+                        >
+                          <div className="space-y-1 max-w-xl">
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 font-mono">
+                                {guide.category || 'General Guide'}
+                              </span>
+                              <span className="text-[11px] text-slate-400 font-mono">
+                                {guide.readingTimeMinutes || 5} min read
+                              </span>
+                              {isShowcase && (
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-orange-100 text-[#FF5500] font-mono">
+                                  Main Showcase
+                                </span>
+                              )}
+                            </div>
+                            <h5 className="text-xs font-bold text-slate-900 leading-tight">
+                              {guide.title}
+                            </h5>
+                            <p className="text-[11px] text-slate-500 line-clamp-1">
+                              {guide.summary || guide.slug}
+                            </p>
+                            <div className="text-[10px] text-slate-400 font-mono">
+                              Slug: /guides/{guide.slug}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer select-none bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
+                              <input
+                                type="checkbox"
+                                checked={isFeaturedOnHome}
+                                onChange={(e) => {
+                                  let newSlugs = [...selectedSlugs];
+                                  if (e.target.checked) {
+                                    if (!newSlugs.includes(guide.slug)) newSlugs.push(guide.slug);
+                                  } else {
+                                    newSlugs = newSlugs.filter((s) => s !== guide.slug);
+                                  }
+                                  setDraftConfig({
+                                    ...draftConfig,
+                                    guideSection: { ...draftConfig.guideSection, selectedSlugs: newSlugs },
+                                  });
+                                }}
+                                className="w-3.5 h-3.5 text-[#FF5500] rounded"
+                              />
+                              <span className="text-[11px] font-semibold">Featured</span>
+                            </label>
+
+                            <button
+                              onClick={() => {
+                                setDraftConfig({
+                                  ...draftConfig,
+                                  guideSection: { ...draftConfig.guideSection, featuredArticleSlug: guide.slug },
+                                });
+                                toast.success(`Set "${guide.title}" as main showcase guide!`, 'Showcase Updated');
+                              }}
+                              className={`px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition cursor-pointer ${
+                                isShowcase
+                                  ? 'bg-orange-50 border-orange-200 text-[#FF5500]'
+                                  : 'border-slate-200 hover:bg-slate-50 text-slate-600'
+                              }`}
+                            >
+                              Showcase
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                setEditingGuide(guide);
+                                setGuideModalOpen(true);
+                              }}
+                              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition cursor-pointer"
+                              title="Edit Article"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+
+                            <button
+                              onClick={() => promptDeleteGuide(guide)}
+                              className="p-1.5 rounded-lg border border-red-200 hover:bg-red-50 text-red-600 transition cursor-pointer"
+                              title="Delete Article"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1409,7 +1685,7 @@ export default function AdminHomepageCMSPage() {
             <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-6">
               <div className="flex items-center justify-between border-b border-slate-200 pb-4">
                 <div>
-                  <h3 className="font-bold text-lg text-slate-900">Preparation Conversion Banner Editor</h3>
+                  <h3 className="font-bold text-lg text-slate-900">Preparation Platform Banner Editor</h3>
                   <p className="text-xs text-slate-500">Edit headline, feature bullets, and student conversion CTA.</p>
                 </div>
                 <button
@@ -1435,6 +1711,71 @@ export default function AdminHomepageCMSPage() {
                       })
                     }
                     className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-bold focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-900">Description</label>
+                  <textarea
+                    rows={2}
+                    value={draftConfig.preparation?.description || ''}
+                    onChange={(e) =>
+                      setDraftConfig({
+                        ...draftConfig,
+                        preparation: { ...draftConfig.preparation, description: e.target.value },
+                      })
+                    }
+                    className="w-full p-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-900">CTA Button Text</label>
+                    <input
+                      type="text"
+                      value={draftConfig.preparation?.ctaText || ''}
+                      onChange={(e) =>
+                        setDraftConfig({
+                          ...draftConfig,
+                          preparation: { ...draftConfig.preparation, ctaText: e.target.value },
+                        })
+                      }
+                      className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-900">CTA Button URL</label>
+                    <input
+                      type="text"
+                      value={draftConfig.preparation?.ctaUrl || ''}
+                      onChange={(e) =>
+                        setDraftConfig({
+                          ...draftConfig,
+                          preparation: { ...draftConfig.preparation, ctaUrl: e.target.value },
+                        })
+                      }
+                      className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-slate-50/50">
+                  <div>
+                    <div className="text-xs font-bold text-slate-900">Enable Preparation Section</div>
+                    <div className="text-[11px] text-slate-500">Display conversion banner on homepage</div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={draftConfig.preparation?.enabled !== false}
+                    onChange={(e) =>
+                      setDraftConfig({
+                        ...draftConfig,
+                        preparation: { ...draftConfig.preparation, enabled: e.target.checked },
+                      })
+                    }
+                    className="w-4 h-4 text-[#FF5500] rounded cursor-pointer"
                   />
                 </div>
               </div>
@@ -1977,6 +2318,147 @@ export default function AdminHomepageCMSPage() {
                   className="px-5 py-2 rounded-full bg-[#FF5500] hover:bg-[#E64D00] text-white text-xs font-bold shadow-sm transition cursor-pointer"
                 >
                   Save Deadline
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── GUIDE ARTICLE MODAL ── */}
+      {guideModalOpen && editingGuide && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-2xl w-full p-6 space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="space-y-0.5">
+                <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-[#FF5500]" />
+                  <span>{editingGuide.id?.startsWith('guide-new-') ? 'Post New Guide Article' : 'Edit Guide Article'}</span>
+                </h3>
+                <p className="text-xs text-slate-500">Saves directly into PostgreSQL <code>articles</code> database table.</p>
+              </div>
+              <button
+                onClick={() => setGuideModalOpen(false)}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveGuideModal} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-900">Article Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={editingGuide.title}
+                  onChange={(e) => {
+                    const title = e.target.value;
+                    const autoSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+                    setEditingGuide({
+                      ...editingGuide,
+                      title,
+                      slug: editingGuide.slug ? editingGuide.slug : autoSlug,
+                    });
+                  }}
+                  placeholder="e.g. DU Ka Unit Physics Preparation Guide 2026"
+                  className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="space-y-1 md:col-span-2">
+                  <label className="text-xs font-bold text-slate-900">URL Slug *</label>
+                  <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden focus-within:border-[#FF5500]">
+                    <span className="bg-slate-50 text-slate-400 text-xs px-2.5 py-2.5 font-mono">/guides/</span>
+                    <input
+                      type="text"
+                      required
+                      value={editingGuide.slug}
+                      onChange={(e) => setEditingGuide({ ...editingGuide, slug: e.target.value })}
+                      placeholder="du-ka-unit-guide"
+                      className="w-full h-10 px-2 text-xs font-mono font-medium focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-900">Reading Time (min)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={editingGuide.readingTimeMinutes || 5}
+                    onChange={(e) => setEditingGuide({ ...editingGuide, readingTimeMinutes: Number(e.target.value) })}
+                    className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-900">Category</label>
+                <select
+                  value={editingGuide.category || 'General Guide'}
+                  onChange={(e) => setEditingGuide({ ...editingGuide, category: e.target.value })}
+                  className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                >
+                  <option value="Engineering Guide">Engineering Guide</option>
+                  <option value="Varsity Science">Varsity Science</option>
+                  <option value="Medical Guide">Medical Guide</option>
+                  <option value="Cluster Guide">Cluster Guide</option>
+                  <option value="General Guide">General Guide</option>
+                  <option value="Strategy & Tips">Strategy & Tips</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-900">Short Summary (Shown on homepage card) *</label>
+                <textarea
+                  required
+                  rows={2}
+                  value={editingGuide.summary}
+                  onChange={(e) => setEditingGuide({ ...editingGuide, summary: e.target.value })}
+                  placeholder="Concise overview of what students will learn from this admission guide..."
+                  className="w-full p-2.5 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-900">Article Content (Detailed notes)</label>
+                <textarea
+                  rows={4}
+                  value={editingGuide.content || ''}
+                  onChange={(e) => setEditingGuide({ ...editingGuide, content: e.target.value })}
+                  placeholder="Comprehensive subject analysis and preparation strategy..."
+                  className="w-full p-2.5 rounded-lg border border-slate-200 text-xs font-mono focus:outline-none focus:border-[#FF5500]"
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-slate-50/50">
+                <span className="text-xs font-bold text-slate-700">Published Status</span>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editingGuide.isPublished !== false}
+                    onChange={(e) => setEditingGuide({ ...editingGuide, isPublished: e.target.checked })}
+                    className="w-4 h-4 text-[#FF5500] rounded"
+                  />
+                  <span className="text-xs text-slate-600 font-semibold">Published Live</span>
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setGuideModalOpen(false)}
+                  className="px-4 py-2 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-full bg-[#FF5500] hover:bg-[#E64D00] text-white text-xs font-bold shadow-sm transition cursor-pointer"
+                >
+                  Save Guide Article to PostgreSQL
                 </button>
               </div>
             </form>

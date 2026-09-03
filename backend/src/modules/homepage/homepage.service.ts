@@ -1723,7 +1723,77 @@ export class HomepageService {
   }
 
   public async getAllGuides(): Promise<any[]> {
+    try {
+      const res = await this.pool.query(
+        `SELECT a.id::text, a.title, a.slug, a.summary, a.content,
+                a.reading_time_minutes as "readingTimeMinutes", a.is_published as "isPublished",
+                a.featured_image as "featuredImage", a.created_at as "createdAt",
+                COALESCE(c.name, 'General Guide') as category
+         FROM articles a
+         LEFT JOIN article_categories c ON a.category_id = c.id
+         ORDER BY a.created_at DESC`
+      );
+      if (res.rows.length > 0) {
+        return res.rows.map((r) => ({
+          ...r,
+          publishedDate: new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        }));
+      }
+    } catch (err: any) {
+      console.warn('[HomepageService] getAllGuides DB query error:', err?.message);
+    }
     return this.getPublishedGuides(20);
+  }
+
+  public async saveGuide(guideData: any): Promise<{ success: boolean; data: any }> {
+    try {
+      const slug = (guideData.slug || guideData.title || 'guide')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)+/g, '');
+      const content = guideData.content || guideData.summary || 'Admission guide detailed preparation content.';
+      const summary = guideData.summary || guideData.title;
+      const readingTime = Number(guideData.readingTimeMinutes) || 5;
+      const isPublished = guideData.isPublished !== false;
+
+      let res;
+      if (guideData.id && !guideData.id.startsWith('guide-new-') && !guideData.id.startsWith('g')) {
+        res = await this.pool.query(
+          `UPDATE articles
+           SET title = $1, slug = $2, summary = $3, content = $4, reading_time_minutes = $5,
+               is_published = $6, updated_at = NOW()
+           WHERE id = $7::uuid
+           RETURNING id::text, title, slug, summary, content, reading_time_minutes as "readingTimeMinutes",
+                     is_published as "isPublished", created_at as "createdAt"`,
+          [guideData.title, slug, summary, content, readingTime, isPublished, guideData.id]
+        );
+      } else {
+        res = await this.pool.query(
+          `INSERT INTO articles (title, slug, summary, content, reading_time_minutes, is_published)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING id::text, title, slug, summary, content, reading_time_minutes as "readingTimeMinutes",
+                     is_published as "isPublished", created_at as "createdAt"`,
+          [guideData.title, slug, summary, content, readingTime, isPublished]
+        );
+      }
+
+      console.log(`[HomepageService] Guide article '${guideData.title}' persisted to PostgreSQL database.`);
+      return { success: true, data: res.rows[0] };
+    } catch (err: any) {
+      console.error('[HomepageService] Error saving guide article:', err?.message);
+      throw err;
+    }
+  }
+
+  public async deleteGuide(id: string): Promise<{ success: boolean; message: string }> {
+    try {
+      await this.pool.query(`DELETE FROM articles WHERE id = $1::uuid`, [id]);
+      console.log(`[HomepageService] Guide article ${id} deleted from PostgreSQL database.`);
+      return { success: true, message: 'Guide article deleted from PostgreSQL database.' };
+    } catch (err: any) {
+      console.error('[HomepageService] Error deleting guide article:', err?.message);
+      throw err;
+    }
   }
 
   private mapDbRowToConfig(row: any, status: 'draft' | 'published'): HomepageFullConfig {

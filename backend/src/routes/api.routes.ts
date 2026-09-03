@@ -302,6 +302,44 @@ apiRouter.delete('/admin/homepage/faqs/:id', async (req: Request, res: Response,
   }
 });
 
+apiRouter.get('/admin/homepage/guides', async (req: Request, res: Response, next) => {
+  try {
+    const guides = await homepageService.getAllGuides();
+    res.json({ success: true, data: guides });
+  } catch (error) {
+    next(error);
+  }
+});
+
+apiRouter.post('/admin/homepage/guides', async (req: Request, res: Response, next) => {
+  try {
+    const result = await homepageService.saveGuide(req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+apiRouter.put('/admin/homepage/guides/:id', async (req: Request, res: Response, next) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const result = await homepageService.saveGuide({ ...req.body, id });
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+apiRouter.delete('/admin/homepage/guides/:id', async (req: Request, res: Response, next) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const result = await homepageService.deleteGuide(id);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // ==========================================
 // UNIVERSITIES CRUD ENDPOINTS
 // ==========================================
