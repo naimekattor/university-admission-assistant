@@ -1489,18 +1489,83 @@ export default function AdminHomepageCMSPage() {
                 </div>
 
                 <div className="space-y-2 pt-2 border-t border-slate-100">
-                  <label className="text-xs font-bold text-slate-900">Selected Universities ({draftConfig.featuredUniversities?.selectedUniversityIds?.length || 0})</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-900">
+                      Selected Universities ({
+                        universities.filter((u) => {
+                          const list = draftConfig.featuredUniversities?.selectedUniversityIds || [];
+                          const id = String(u.id).toLowerCase();
+                          const shortName = String(u.shortName || '').toLowerCase();
+                          const name = String(u.name || '').toLowerCase();
+                          return list.some((s) => {
+                            const target = String(s).toLowerCase();
+                            return target === id || target === shortName || target === name;
+                          });
+                        }).length
+                      })
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDraftConfig({
+                            ...draftConfig,
+                            featuredUniversities: {
+                              ...draftConfig.featuredUniversities,
+                              selectedUniversityIds: universities.map((u) => u.id),
+                            },
+                          });
+                        }}
+                        className="text-[11px] font-semibold text-[#FF5500] hover:underline cursor-pointer"
+                      >
+                        Select All
+                      </button>
+                      <span className="text-slate-300">|</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDraftConfig({
+                            ...draftConfig,
+                            featuredUniversities: {
+                              ...draftConfig.featuredUniversities,
+                              selectedUniversityIds: [],
+                            },
+                          });
+                        }}
+                        className="text-[11px] font-semibold text-slate-500 hover:text-slate-700 hover:underline cursor-pointer"
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {universities.map((uni) => {
-                      const isSelected = (draftConfig.featuredUniversities?.selectedUniversityIds || []).includes(uni.id);
+                      const list = draftConfig.featuredUniversities?.selectedUniversityIds || [];
+                      const id = String(uni.id).toLowerCase();
+                      const shortName = String(uni.shortName || '').toLowerCase();
+                      const name = String(uni.name || '').toLowerCase();
+                      const isSelected = list.some((s) => {
+                        const target = String(s).toLowerCase();
+                        return target === id || target === shortName || target === name;
+                      });
+
                       return (
                         <div
                           key={uni.id}
                           onClick={() => {
-                            const current = draftConfig.featuredUniversities?.selectedUniversityIds || [];
-                            const updated = isSelected
-                              ? current.filter((id) => id !== uni.id)
-                              : [...current, uni.id];
+                            let updated: string[];
+                            if (isSelected) {
+                              updated = list.filter((s) => {
+                                const target = String(s).toLowerCase();
+                                return target !== id && target !== shortName && target !== name;
+                              });
+                            } else {
+                              const cleaned = list.filter((s) => {
+                                const target = String(s).toLowerCase();
+                                return target !== id && target !== shortName && target !== name;
+                              });
+                              updated = [...cleaned, uni.id];
+                            }
                             setDraftConfig({
                               ...draftConfig,
                               featuredUniversities: { ...draftConfig.featuredUniversities, selectedUniversityIds: updated },

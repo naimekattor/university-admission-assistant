@@ -205,7 +205,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageFullConfig = {
   featuredUniversities: {
     title: 'Explore Universities',
     description: 'Explore top engineering, general, medical, and agricultural universities across Bangladesh.',
-    selectedUniversityIds: ['buet', 'du', 'kuet', 'ruet', 'cuet', 'ju', 'dmc', 'sust'],
+    selectedUniversityIds: [],
     enabled: true,
   },
   aiAdvisor: {
