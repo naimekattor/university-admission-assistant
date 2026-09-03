@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { Navbar } from '@/components/navbar'
 import { ToastProvider } from '@/components/ui/custom-toast'
+import { FloatingAiChat } from '@/components/ai/floating-ai-chat'
 
 export const metadata: Metadata = {
   title: 'EduGuide - AI-Powered University Admission Preparation for Bangladesh',
@@ -46,6 +47,7 @@ export default function RootLayout({
         <ToastProvider>
           <Navbar />
           <main className="flex-1">{children}</main>
+          <FloatingAiChat />
           {process.env.NODE_ENV === 'production' && <Analytics />}
         </ToastProvider>
       </body>
