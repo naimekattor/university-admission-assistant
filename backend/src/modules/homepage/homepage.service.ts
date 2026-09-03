@@ -836,7 +836,8 @@ export class HomepageService {
           COALESCE(u.metadata->'gallery', '[]'::jsonb) AS "gallery",
           COALESCE(u.metadata->'facilities', '[]'::jsonb) AS "facilities"
         FROM universities u
-        LEFT JOIN admission_circulars c ON u.id = c.university_id
+        JOIN admission_circulars c ON u.id = c.university_id
+        WHERE c.status != 'closed'
         GROUP BY u.id, u.name, u.short_name, u.logo, u.location, u.website, u.admission_type, u.metadata, u.description, u.founded_year
         ORDER BY 
           COUNT(DISTINCT c.id) DESC,

@@ -14,28 +14,43 @@ export function AdmissionAtGlance({ config: propConfig, admissions: propAdmissio
   const [fetchedAdmissions, setFetchedAdmissions] = useState<AdmissionRowItem[]>([]);
   const [fetchedConfig, setFetchedConfig] = useState<AdmissionSectionConfig | null>(null);
 
-  // Self-fetch from /api/v1/homepage if parent didn't supply admissions
+  // Fetch directly from /api/v1/admin/circulars to ensure 100% circular-backed data
   React.useEffect(() => {
-    if (!propAdmissions || propAdmissions.length === 0) {
-      const fetchHomepage = async () => {
-        try {
-          const res = await fetch('/api/v1/homepage', { cache: 'no-store' });
-          if (res.ok) {
-            const data = await res.json();
-            if (data.admissions && data.admissions.length > 0) {
-              setFetchedAdmissions(data.admissions);
-            }
-            if (data.config?.admissionSection) {
-              setFetchedConfig(data.config.admissionSection);
-            }
+    const fetchCirculars = async () => {
+      try {
+        const res = await fetch('/api/v1/admin/circulars', { cache: 'no-store' });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data)) {
+            const mapped: AdmissionRowItem[] = json.data.map((c: any) => ({
+              id: c.id,
+              name: c.universityName,
+              shortName: c.universityShortName || 'UNI',
+              location: c.universityLocation || 'Bangladesh',
+              group: c.group || 'Science',
+              units: c.unit || 'All Units',
+              seats: c.totalSeats || 100,
+              status: c.status === 'active' ? 'Applications Open' : c.status === 'upcoming' ? 'Upcoming' : 'Closed',
+              applicationWindow: (c.applicationStartDate && c.applicationEndDate)
+                ? `${new Date(c.applicationStartDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} – ${new Date(c.applicationEndDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                : 'Circular Not Published',
+              testDate: c.examDate
+                ? new Date(c.examDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                : 'To Be Announced (TBA)',
+              minGpa: c.minCombinedGpa
+                ? `Combined GPA ${c.minCombinedGpa} (SSC ${c.minSscGpa}, HSC ${c.minHscGpa})`
+                : 'Criteria Awaiting Notice',
+              circularUrl: c.officialUrl || '#',
+            }));
+            setFetchedAdmissions(mapped);
           }
-        } catch {
-          // Offline fallback
         }
-      };
-      fetchHomepage();
-    }
-  }, [propAdmissions]);
+      } catch (err) {
+        console.error('Error fetching circulars for Admission at a Glance:', err);
+      }
+    };
+    fetchCirculars();
+  }, []);
 
   const config = propConfig || fetchedConfig;
   const title = config?.title || 'Admission at a Glance';
@@ -44,17 +59,14 @@ export function AdmissionAtGlance({ config: propConfig, admissions: propAdmissio
     'See important admission schedules, application dates, and GPA criteria across Bangladesh universities.';
 
   const rawRows: AdmissionRowItem[] = useMemo(() => {
-    if (propAdmissions && propAdmissions.length > 0) {
-      return propAdmissions;
-    }
     if (fetchedAdmissions && fetchedAdmissions.length > 0) {
       return fetchedAdmissions;
     }
-    if (config?.customRows && config.customRows.length > 0) {
-      return config.customRows;
+    if (propAdmissions && propAdmissions.length > 0) {
+      return propAdmissions;
     }
     return [];
-  }, [propAdmissions, fetchedAdmissions, config?.customRows]);
+  }, [fetchedAdmissions, propAdmissions]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string>('All');
@@ -91,17 +103,20 @@ export function AdmissionAtGlance({ config: propConfig, admissions: propAdmissio
             Applications Open
           </span>
         );
+      case 'Upcoming':
+      case 'upcoming':
       case 'Opening Soon':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-50 text-[#FF5500] border border-orange-200">
-            <Clock className="w-3 h-3 text-[#FF5500]" />
-            Opening Soon
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+            <Clock className="w-3 h-3 text-amber-600" />
+            Upcoming
           </span>
         );
       case 'Deadline Passed':
+      case 'Closed':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-200">
-            Deadline Passed
+            Closed
           </span>
         );
       default:
@@ -146,7 +161,7 @@ export function AdmissionAtGlance({ config: propConfig, admissions: propAdmissio
 
           <div className="flex items-center gap-3 shrink-0">
             <div className="text-xs text-slate-500 font-mono hidden sm:block">
-              Showing <strong className="text-slate-900">{displayedRows.length}</strong> of {rawRows.length} universities
+              Showing <strong className="text-slate-900">{displayedRows.length}</strong> of {rawRows.length} circulars
             </div>
             <Link href="/admission">
               <button className="px-3.5 py-1.5 rounded-full bg-orange-50 hover:bg-orange-100 border border-orange-200 text-[#FF5500] text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-2xs">
@@ -348,7 +363,7 @@ export function AdmissionAtGlance({ config: propConfig, admissions: propAdmissio
           <div className="flex justify-center pt-2">
             <Link href="/admission">
               <button className="px-6 py-2.5 rounded-full bg-orange-50 hover:bg-orange-100 border border-orange-200 text-[#FF5500] text-xs font-bold flex items-center gap-2 shadow-2xs hover:shadow-xs transition cursor-pointer">
-                <span>View Full Admission Table & All {rawRows.length} Universities</span>
+                <span>View Full Admission Table & All {rawRows.length} Circulars</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </Link>
