@@ -31,6 +31,7 @@ import {
   X,
   Database,
   Image as ImageIcon,
+  MessageSquare,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { RichTextEditor } from '@/components/rich-text/rich-text-editor';
@@ -104,7 +105,7 @@ export default function AdminHomepageCMSPage() {
             setDraftConfig(parsed);
           }
         }
-      } catch {}
+      } catch { }
     }
 
     // 2. Fetch from backend
@@ -132,7 +133,7 @@ export default function AdminHomepageCMSPage() {
           setUniversities(uniData.data);
         }
       }
-    } catch {}
+    } catch { }
 
     // 4. Ensure live PostgreSQL deadlines are loaded
     try {
@@ -143,7 +144,7 @@ export default function AdminHomepageCMSPage() {
           setDeadlinesList(deadData.data);
         }
       }
-    } catch {}
+    } catch { }
 
     // 5. Ensure live PostgreSQL FAQs are loaded
     try {
@@ -154,7 +155,7 @@ export default function AdminHomepageCMSPage() {
           setFaqs(faqData.data);
         }
       }
-    } catch {}
+    } catch { }
 
     // 6. Ensure live PostgreSQL guides are loaded
     try {
@@ -165,7 +166,7 @@ export default function AdminHomepageCMSPage() {
           setGuides(guideData.data);
         }
       }
-    } catch {}
+    } catch { }
   };
 
   useEffect(() => {
@@ -184,7 +185,7 @@ export default function AdminHomepageCMSPage() {
       try {
         localStorage.setItem('eduguide_homepage_draft', JSON.stringify(updatedConfig));
         localStorage.setItem('eduguide_homepage_config', JSON.stringify(updatedConfig));
-      } catch {}
+      } catch { }
     }
 
     try {
@@ -217,7 +218,7 @@ export default function AdminHomepageCMSPage() {
       try {
         localStorage.setItem('eduguide_homepage_draft', JSON.stringify(draftConfig));
         localStorage.setItem('eduguide_homepage_config', JSON.stringify(draftConfig));
-      } catch {}
+      } catch { }
     }
 
     try {
@@ -252,7 +253,7 @@ export default function AdminHomepageCMSPage() {
       try {
         localStorage.setItem('eduguide_homepage_published', JSON.stringify(published));
         localStorage.setItem('eduguide_homepage_config', JSON.stringify(published));
-      } catch {}
+      } catch { }
     }
 
     try {
@@ -314,7 +315,7 @@ export default function AdminHomepageCMSPage() {
     message: '',
     confirmText: 'Yes, delete it!',
     isDeleting: false,
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
 
   const promptDeleteAdmissionRow = (row: AdmissionRowItem) => {
@@ -582,11 +583,10 @@ export default function AdminHomepageCMSPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`w-full p-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition cursor-pointer ${
-                    isActive
+                  className={`w-full p-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition cursor-pointer ${isActive
                       ? 'bg-orange-50 text-[#FF5500] font-bold border border-orange-200'
                       : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2.5">
                     <Icon className="w-4 h-4" />
@@ -688,11 +688,10 @@ export default function AdminHomepageCMSPage() {
                     warnings.map((w) => (
                       <div
                         key={w.id}
-                        className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${
-                          w.severity === 'high'
+                        className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${w.severity === 'high'
                             ? 'bg-red-50/70 border-red-200 text-red-900'
                             : 'bg-amber-50/70 border-amber-200 text-amber-900'
-                        }`}
+                          }`}
                       >
                         <div>
                           <div className="font-bold text-sm">{w.title}</div>
@@ -1236,13 +1235,12 @@ export default function AdminHomepageCMSPage() {
                               {evt.remainingDays} days left
                             </td>
                             <td className="py-3 px-3">
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                evt.status === 'urgent'
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${evt.status === 'urgent'
                                   ? 'bg-rose-50 text-rose-600 border border-rose-200'
                                   : evt.status === 'upcoming'
-                                  ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
-                                  : 'bg-slate-100 text-slate-600 border border-slate-200'
-                              }`}>
+                                    ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                                    : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                }`}>
                                 {evt.status || 'upcoming'}
                               </span>
                             </td>
@@ -1355,11 +1353,10 @@ export default function AdminHomepageCMSPage() {
                               featuredUniversities: { ...draftConfig.featuredUniversities, selectedUniversityIds: updated },
                             });
                           }}
-                          className={`p-3.5 rounded-xl border flex items-center justify-between cursor-pointer transition ${
-                            isSelected
+                          className={`p-3.5 rounded-xl border flex items-center justify-between cursor-pointer transition ${isSelected
                               ? 'bg-orange-50 border-orange-300 text-slate-900 font-bold'
                               : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
-                          }`}
+                            }`}
                         >
                           <div>
                             <div className="font-bold text-xs">{uni.shortName}</div>
@@ -1524,11 +1521,10 @@ export default function AdminHomepageCMSPage() {
                               aiAdvisor: { ...draftConfig.aiAdvisor, gradientTheme: t.id as any },
                             })
                           }
-                          className={`p-3 rounded-2xl border cursor-pointer transition ${
-                            isSelected
+                          className={`p-3 rounded-2xl border cursor-pointer transition ${isSelected
                               ? 'border-[#FF5500] ring-2 ring-orange-500/20 bg-orange-50/20'
                               : 'border-slate-200 hover:border-slate-300'
-                          }`}
+                            }`}
                         >
                           <div className={`h-8 rounded-xl bg-gradient-to-r ${t.preview} mb-2 border border-slate-200 shadow-xs`} />
                           <div className="text-xs font-bold text-slate-900">{t.label}</div>
@@ -2067,11 +2063,10 @@ export default function AdminHomepageCMSPage() {
                                 });
                                 toast.success(`Set "${guide.title}" as main showcase guide!`, 'Showcase Updated');
                               }}
-                              className={`px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition cursor-pointer ${
-                                isShowcase
+                              className={`px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition cursor-pointer ${isShowcase
                                   ? 'bg-orange-50 border-orange-200 text-[#FF5500]'
                                   : 'border-slate-200 hover:bg-slate-50 text-slate-600'
-                              }`}
+                                }`}
                             >
                               Showcase
                             </button>
@@ -2253,11 +2248,10 @@ export default function AdminHomepageCMSPage() {
                               preparation: { ...draftConfig.preparation, gradientTheme: t.id as any },
                             })
                           }
-                          className={`p-3 rounded-2xl border cursor-pointer transition ${
-                            isSelected
+                          className={`p-3 rounded-2xl border cursor-pointer transition ${isSelected
                               ? 'border-[#FF5500] ring-2 ring-orange-500/20 bg-orange-50/20'
                               : 'border-slate-200 hover:border-slate-300'
-                          }`}
+                            }`}
                         >
                           <div className={`h-8 rounded-xl bg-gradient-to-r ${t.preview} mb-2 border border-white/10 shadow-xs`} />
                           <div className="text-xs font-bold text-slate-900">{t.label}</div>
@@ -2411,53 +2405,34 @@ export default function AdminHomepageCMSPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div className="space-y-1 md:col-span-2">
-                      <label className="text-[11px] font-bold text-slate-700">Image URL / Path</label>
-                      <input
-                        type="text"
-                        value={draftConfig.preparation?.imageUrl || ''}
-                        onChange={(e) =>
-                          setDraftConfig({
-                            ...draftConfig,
-                            preparation: { ...draftConfig.preparation, imageUrl: e.target.value },
-                          })
-                        }
-                        placeholder="e.g. /images/study-platform-mockup.svg or https://..."
-                        className="w-full h-9 px-3 rounded-lg border border-slate-200 text-xs font-mono focus:outline-none focus:border-[#FF5500]"
-                      />
-                    </div>
+                  <UnifiedImageUploader
+                    value={draftConfig.preparation?.imageUrl || ''}
+                    onChange={(url) =>
+                      setDraftConfig({
+                        ...draftConfig,
+                        preparation: { ...draftConfig.preparation, imageUrl: url },
+                      })
+                    }
+                    label="Upload Image Asset (Cloudinary / ImgBB / Local)"
+                    hint="Choose file to automatically upload to Cloudinary (with ImgBB and local fallback), or enter an image link."
+                    aspectRatio="video"
+                  />
 
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-slate-700">Alt Text</label>
-                      <input
-                        type="text"
-                        value={draftConfig.preparation?.imageAlt || ''}
-                        onChange={(e) =>
-                          setDraftConfig({
-                            ...draftConfig,
-                            preparation: { ...draftConfig.preparation, imageAlt: e.target.value },
-                          })
-                        }
-                        placeholder="EduGuide Study Platform Mockup"
-                        className="w-full h-9 px-3 rounded-lg border border-slate-200 text-xs focus:outline-none focus:border-[#FF5500]"
-                      />
-                    </div>
+                  <div className="space-y-1 pt-1">
+                    <label className="text-[11px] font-bold text-slate-700">Image Alt Text</label>
+                    <input
+                      type="text"
+                      value={draftConfig.preparation?.imageAlt || ''}
+                      onChange={(e) =>
+                        setDraftConfig({
+                          ...draftConfig,
+                          preparation: { ...draftConfig.preparation, imageAlt: e.target.value },
+                        })
+                      }
+                      placeholder="EduGuide Study Platform Mockup"
+                      className="w-full h-9 px-3 rounded-lg border border-slate-200 text-xs focus:outline-none focus:border-[#FF5500]"
+                    />
                   </div>
-
-                  {draftConfig.preparation?.imageUrl && (
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center gap-3">
-                      <img
-                        src={draftConfig.preparation.imageUrl}
-                        alt="Preview"
-                        className="w-20 h-14 object-cover rounded-lg border border-slate-200 bg-white"
-                        onError={(e) => (e.currentTarget.src = '/placeholder.svg')}
-                      />
-                      <div className="text-[11px] text-slate-500">
-                        <span className="font-semibold text-slate-700">Image Active:</span> Will render on the right-hand column of the banner with sleek glassmorphism framing.
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 {/* 7. Action Buttons Configuration */}
