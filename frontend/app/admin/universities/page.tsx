@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/components/ui/custom-toast';
 import { RichTextEditor } from '@/components/rich-text/rich-text-editor';
+import { UnifiedImageUploader } from '@/components/ui/unified-image-uploader';
 
 interface UniversityItem {
   id: string;
@@ -322,7 +323,15 @@ export default function AdminUniversitiesPage() {
                       <tr key={u.id} className="hover:bg-slate-50/60 transition">
                         <td className="py-3.5 px-4 font-bold text-slate-900">
                           <div className="flex items-center gap-2.5">
-                            <span className="text-xl">{u.logo || '🏛️'}</span>
+                            {u.logo && (u.logo.startsWith('http') || u.logo.startsWith('/')) ? (
+                              <img
+                                src={u.logo}
+                                alt={u.shortName || u.name}
+                                className="w-8 h-8 rounded-full object-contain bg-white border border-slate-200 p-0.5 shadow-2xs shrink-0"
+                              />
+                            ) : (
+                              <span className="text-xl shrink-0">{u.logo || '🏛️'}</span>
+                            )}
                             <div>
                               <div className="flex items-center gap-1.5">
                                 <span className="font-mono text-xs font-black text-[#FF5500]">{u.shortName}</span>
@@ -535,28 +544,58 @@ export default function AdminUniversitiesPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-900">Official Portal / Circular URL</label>
-                  <input
-                    type="text"
-                    value={website}
-                    onChange={(e) => setWebsite(e.target.value)}
-                    placeholder="https://buet.ac.bd"
-                    className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
-                  />
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-900">Official Portal / Circular URL</label>
+                <input
+                  type="text"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="https://buet.ac.bd"
+                  className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
+                />
+              </div>
+
+              {/* University Emblem / Logo Uploader with Emoji Fallback */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                  <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <span>🏛️ University Emblem / Official Logo</span>
+                  </label>
+                  <div className="flex items-center gap-1 text-[11px] text-slate-500">
+                    <span className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Quick Emoji:</span>
+                    {['🏛️', '🎓', '🏥', '⚙️', '🌐', '🔬', '📚'].map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => setLogo(emoji)}
+                        className={`px-1.5 py-0.5 rounded text-sm hover:bg-white transition cursor-pointer ${
+                          logo === emoji ? 'bg-white shadow-2xs border border-orange-200 scale-110' : ''
+                        }`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-900">Emblem Logo Emoji</label>
-                  <input
-                    type="text"
-                    value={logo}
-                    onChange={(e) => setLogo(e.target.value)}
-                    placeholder="🏛️"
-                    className="w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-[#FF5500]"
-                  />
-                </div>
+                <UnifiedImageUploader
+                  value={logo.startsWith('http') || logo.startsWith('/') ? logo : ''}
+                  onChange={(url) => setLogo(url || '🏛️')}
+                  folder="universities"
+                  aspectRatio="square"
+                  label=""
+                  hint="Upload PNG/SVG/JPG official emblem (saved to 'universities' folder) or paste external logo URL"
+                  placeholder="https://... or click to browse image"
+                />
+
+                {!logo.startsWith('http') && !logo.startsWith('/') && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <span className="text-xs text-slate-500">Current Emoji Fallback:</span>
+                    <span className="text-xl px-2.5 py-0.5 bg-white rounded-lg border border-slate-200 shadow-2xs">
+                      {logo || '🏛️'}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1.5">
