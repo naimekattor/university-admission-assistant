@@ -68,9 +68,8 @@ export function createApp(): Express {
     optionsSuccessStatus: 204,
   };
 
-  // Basic security and parsing middleware
+  // Basic security and parsing middleware (cors handles all HTTP methods including OPTIONS)
   app.use(cors(corsOptions));
-  app.options('*', cors(corsOptions));
   app.use(express.json({ limit: '25mb' }));
   app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
