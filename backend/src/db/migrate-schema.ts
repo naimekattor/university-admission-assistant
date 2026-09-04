@@ -133,6 +133,152 @@ export async function autoMigrateDatabase(pool: Pool) {
       );
     `);
 
+    // 6. Ensure Community Q&A Tables, Indexes & Categories
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS community_categories (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT NOT NULL,
+        slug TEXT UNIQUE NOT NULL,
+        description TEXT,
+        icon TEXT,
+        color TEXT,
+        sort_order INT DEFAULT 0,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS community_questions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        session_id UUID REFERENCES sessions(id) ON DELETE SET NULL,
+        student_id UUID,
+        author_name TEXT NOT NULL DEFAULT 'HSC Student',
+        author_role TEXT NOT NULL DEFAULT 'student',
+        is_verified_author BOOLEAN NOT NULL DEFAULT FALSE,
+        author_badge TEXT,
+        title TEXT NOT NULL,
+        slug TEXT UNIQUE NOT NULL,
+        content TEXT NOT NULL,
+        content_format TEXT NOT NULL DEFAULT 'markdown_latex',
+        category_id UUID REFERENCES community_categories(id) ON DELETE RESTRICT,
+        subject_id UUID,
+        chapter_id UUID,
+        topic_id UUID,
+        university_id UUID,
+        unit TEXT,
+        question_type TEXT NOT NULL DEFAULT 'Problem Solving',
+        status TEXT NOT NULL DEFAULT 'published',
+        accepted_answer_id UUID,
+        answer_count INT NOT NULL DEFAULT 0,
+        vote_count INT NOT NULL DEFAULT 0,
+        view_count INT NOT NULL DEFAULT 0,
+        is_pinned BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        last_activity_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS community_answers (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        question_id UUID REFERENCES community_questions(id) ON DELETE CASCADE NOT NULL,
+        session_id UUID REFERENCES sessions(id) ON DELETE SET NULL,
+        student_id UUID,
+        author_name TEXT NOT NULL DEFAULT 'Community Contributor',
+        author_role TEXT NOT NULL DEFAULT 'student',
+        is_verified_author BOOLEAN NOT NULL DEFAULT FALSE,
+        author_badge TEXT,
+        content TEXT NOT NULL,
+        content_format TEXT NOT NULL DEFAULT 'markdown_latex',
+        parent_answer_id UUID REFERENCES community_answers(id) ON DELETE CASCADE,
+        is_accepted BOOLEAN NOT NULL DEFAULT FALSE,
+        vote_count INT NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'published',
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS community_question_votes (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        question_id UUID REFERENCES community_questions(id) ON DELETE CASCADE NOT NULL,
+        session_token TEXT NOT NULL,
+        student_id UUID,
+        vote INT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        UNIQUE(question_id, session_token)
+      );
+
+      CREATE TABLE IF NOT EXISTS community_answer_votes (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        answer_id UUID REFERENCES community_answers(id) ON DELETE CASCADE NOT NULL,
+        session_token TEXT NOT NULL,
+        student_id UUID,
+        vote INT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        UNIQUE(answer_id, session_token)
+      );
+
+      CREATE TABLE IF NOT EXISTS community_bookmarks (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        question_id UUID REFERENCES community_questions(id) ON DELETE CASCADE NOT NULL,
+        session_token TEXT NOT NULL,
+        student_id UUID,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        UNIQUE(question_id, session_token)
+      );
+
+      CREATE TABLE IF NOT EXISTS community_tags (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT UNIQUE NOT NULL,
+        slug TEXT UNIQUE NOT NULL,
+        usage_count INT DEFAULT 0 NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS community_question_tags (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        question_id UUID REFERENCES community_questions(id) ON DELETE CASCADE NOT NULL,
+        tag_id UUID REFERENCES community_tags(id) ON DELETE CASCADE NOT NULL,
+        UNIQUE(question_id, tag_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS community_reports (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        session_token TEXT NOT NULL,
+        question_id UUID REFERENCES community_questions(id) ON DELETE CASCADE,
+        answer_id UUID REFERENCES community_answers(id) ON DELETE CASCADE,
+        reason TEXT NOT NULL,
+        description TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
+        reviewed_by TEXT,
+        reviewed_at TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      -- Helpful indexes for feed queries and search performance
+      CREATE INDEX IF NOT EXISTS idx_comm_q_feed ON community_questions (status, last_activity_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_comm_q_votes ON community_questions (status, vote_count DESC);
+      CREATE INDEX IF NOT EXISTS idx_comm_q_category ON community_questions (category_id, status);
+      CREATE INDEX IF NOT EXISTS idx_comm_q_slug ON community_questions (slug);
+      CREATE INDEX IF NOT EXISTS idx_comm_a_question ON community_answers (question_id, created_at ASC);
+    `);
+
+    // Seed default categories if none exist
+    const { rows: existingCats } = await pool.query('SELECT COUNT(*) as count FROM community_categories');
+    if (parseInt(existingCats[0]?.count || '0', 10) === 0) {
+      console.log('[Database Migration] Seeding initial Community Categories...');
+      await pool.query(`
+        INSERT INTO community_categories (name, slug, description, icon, color, sort_order) VALUES
+          ('All Questions', 'all', 'All discussions across topics and universities', 'Compass', '#FF5500', 0),
+          ('Admission Circulars & Guidelines', 'admission', 'Deadlines, GPA requirements, seat capacity & circular updates', 'GraduationCap', '#FF5500', 1),
+          ('Higher Mathematics', 'mathematics', 'Calculus, vectors, trigonometry, algebra & geometry problem solving', 'Sigma', '#3b82f6', 2),
+          ('Physics', 'physics', 'Mechanics, dynamics, electricity, optics & atomic physics', 'Zap', '#f59e0b', 3),
+          ('Chemistry', 'chemistry', 'Organic reactions, bonding, thermodynamics & solutions', 'FlaskConical', '#10b981', 4),
+          ('Biology', 'biology', 'Medical & university biology concepts, genetics & botany', 'Dna', '#ec4899', 5),
+          ('English & General Knowledge', 'english', 'English vocabulary, grammar, reading comprehension & GK', 'Languages', '#8b5cf6', 6),
+          ('University Guidance & Prep', 'university', 'BUET, DU, Medical, CKET comparisons & study strategies', 'Building2', '#06b6d4', 7)
+        ON CONFLICT (slug) DO NOTHING;
+      `);
+    }
+
     console.log('[Database Migration] Schema & columns successfully verified!');
   } catch (err: any) {
     console.error('[Database Migration] Error during schema verification:', err.message || err);

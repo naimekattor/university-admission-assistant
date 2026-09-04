@@ -4,6 +4,9 @@
   "private": true,
   "packageManager": "pnpm@11.16.0",
   "scripts": {
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f postgres",
     "dev": "pnpm --parallel --filter eduguide-frontend --filter eduguide-backend dev",
     "dev:frontend": "pnpm --filter eduguide-frontend dev",
     "dev:backend": "pnpm --filter eduguide-backend dev",
@@ -17,6 +20,8 @@
     "seed:embeddings": "pnpm --filter eduguide-backend seed:embeddings",
     "seed:pgvector": "pnpm --filter eduguide-backend seed:pgvector",
     "seed": "pnpm --filter eduguide-backend seed",
+    "db:init": "pnpm --filter eduguide-backend db:init",
+    "db:push": "pnpm --filter eduguide-backend db:push",
     "clean:qdrant": "pnpm --filter eduguide-backend clean:qdrant",
     "test:ai": "pnpm --filter eduguide-backend test:ai",
     "test:groq": "pnpm --filter eduguide-backend test:groq",

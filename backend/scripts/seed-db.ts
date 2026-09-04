@@ -2,6 +2,7 @@ import { config } from 'dotenv';
 config({ path: '.env' });
 
 import pg from 'pg';
+import { autoMigrateDatabase } from '../src/db/migrate-schema';
 
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/admission_db' });
 
@@ -441,6 +442,7 @@ const all24Universities = [
 ];
 
 async function main() {
+  await autoMigrateDatabase(pool);
   console.log('Seeding PostgreSQL database with all 24 universities...');
 
   for (const u of all24Universities) {

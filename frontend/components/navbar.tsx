@@ -49,6 +49,7 @@ export function Navbar() {
   if (isStudentRoute) {
     const studentLinks = [
       { href: '/dashboard', label: 'Dashboard' },
+      { href: '/community', label: 'Community' },
       { href: '/prepare', label: 'Curriculum' },
       { href: '/practice', label: 'Practice MCQs' },
       { href: '/mock-tests', label: 'Mock Tests' },
@@ -113,6 +114,7 @@ export function Navbar() {
   // ==========================================
   const publicLinks = [
     { href: '/', label: 'Home' },
+    { href: '/community', label: 'Community' },
     { href: '/universities', label: 'Universities' },
     { href: '/eligibility', label: 'Eligibility' },
     { href: '/admission', label: 'Admission Circulars' },

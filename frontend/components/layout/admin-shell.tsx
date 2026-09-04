@@ -28,6 +28,7 @@ import {
   X,
   ExternalLink,
   Sparkles,
+  MessageSquare,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -56,6 +57,12 @@ export function AdminShell({ children, pageTitle, breadcrumbs, actions }: AdminS
       items: [
         { label: 'Homepage CMS', href: '/admin/homepage', icon: Globe },
         { label: 'SEO Guides & Articles', href: '/admin/guides', icon: FileText },
+      ],
+    },
+    {
+      group: 'COMMUNITY & Q&A',
+      items: [
+        { label: 'Community Moderation', href: '/admin/community', icon: MessageSquare },
       ],
     },
     {

@@ -679,4 +679,177 @@ export const userPreferencesRelations = relations(userPreferences, ({ one }) => 
     fields: [userPreferences.sessionId],
     references: [sessions.id],
   }),
-}));
+}));
+
+// ==========================================
+// 14. COMMUNITY Q&A & STUDENT DISCUSSION
+// ==========================================
+export const communityCategories = pgTable('community_categories', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  slug: text('slug').notNull().unique(),
+  description: text('description'),
+  icon: text('icon'),
+  color: text('color'),
+  sortOrder: integer('sort_order').default(0),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const communityQuestions = pgTable('community_questions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sessionId: uuid('session_id').references(() => sessions.id),
+  studentId: uuid('student_id').references(() => students.id),
+  authorName: text('author_name').notNull().default('HSC Student'),
+  authorRole: text('author_role').notNull().default('student'), // 'student' | 'senior' | 'teacher' | 'admin'
+  isVerifiedAuthor: boolean('is_verified_author').notNull().default(false),
+  authorBadge: text('author_badge'),
+  title: text('title').notNull(),
+  slug: text('slug').notNull().unique(),
+  content: text('content').notNull(), // Markdown + LaTeX math expressions
+  contentFormat: text('content_format').notNull().default('markdown_latex'),
+  categoryId: uuid('category_id').references(() => communityCategories.id).notNull(),
+  subjectId: uuid('subject_id').references(() => subjects.id),
+  chapterId: uuid('chapter_id').references(() => chapters.id),
+  topicId: uuid('topic_id').references(() => topics.id),
+  universityId: uuid('university_id').references(() => universities.id),
+  unit: text('unit'),
+  questionType: text('question_type').notNull().default('Problem Solving'),
+  status: text('status').notNull().default('published'), // 'published' | 'hidden' | 'flagged' | 'deleted'
+  acceptedAnswerId: uuid('accepted_answer_id'),
+  answerCount: integer('answer_count').notNull().default(0),
+  voteCount: integer('vote_count').notNull().default(0),
+  viewCount: integer('view_count').notNull().default(0),
+  isPinned: boolean('is_pinned').notNull().default(false),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  lastActivityAt: timestamp('last_activity_at').defaultNow().notNull(),
+});
+
+export const communityAnswers = pgTable('community_answers', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  questionId: uuid('question_id').references(() => communityQuestions.id, { onDelete: 'cascade' }).notNull(),
+  sessionId: uuid('session_id').references(() => sessions.id),
+  studentId: uuid('student_id').references(() => students.id),
+  authorName: text('author_name').notNull().default('Community Contributor'),
+  authorRole: text('author_role').notNull().default('student'),
+  isVerifiedAuthor: boolean('is_verified_author').notNull().default(false),
+  authorBadge: text('author_badge'),
+  content: text('content').notNull(),
+  contentFormat: text('content_format').notNull().default('markdown_latex'),
+  parentAnswerId: uuid('parent_answer_id'),
+  isAccepted: boolean('is_accepted').notNull().default(false),
+  voteCount: integer('vote_count').notNull().default(0),
+  status: text('status').notNull().default('published'), // 'published' | 'hidden' | 'flagged' | 'deleted'
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const communityQuestionVotes = pgTable('community_question_votes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  questionId: uuid('question_id').references(() => communityQuestions.id, { onDelete: 'cascade' }).notNull(),
+  sessionToken: text('session_token').notNull(),
+  studentId: uuid('student_id').references(() => students.id),
+  vote: integer('vote').notNull(), // +1 or -1
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const communityAnswerVotes = pgTable('community_answer_votes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  answerId: uuid('answer_id').references(() => communityAnswers.id, { onDelete: 'cascade' }).notNull(),
+  sessionToken: text('session_token').notNull(),
+  studentId: uuid('student_id').references(() => students.id),
+  vote: integer('vote').notNull(), // +1 or -1
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const communityBookmarks = pgTable('community_bookmarks', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  questionId: uuid('question_id').references(() => communityQuestions.id, { onDelete: 'cascade' }).notNull(),
+  sessionToken: text('session_token').notNull(),
+  studentId: uuid('student_id').references(() => students.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const communityTags = pgTable('community_tags', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull().unique(),
+  slug: text('slug').notNull().unique(),
+  usageCount: integer('usage_count').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const communityQuestionTags = pgTable('community_question_tags', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  questionId: uuid('question_id').references(() => communityQuestions.id, { onDelete: 'cascade' }).notNull(),
+  tagId: uuid('tag_id').references(() => communityTags.id, { onDelete: 'cascade' }).notNull(),
+});
+
+export const communityReports = pgTable('community_reports', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sessionToken: text('session_token').notNull(),
+  questionId: uuid('question_id').references(() => communityQuestions.id, { onDelete: 'cascade' }),
+  answerId: uuid('answer_id').references(() => communityAnswers.id, { onDelete: 'cascade' }),
+  reason: text('reason').notNull(),
+  description: text('description'),
+  status: text('status').notNull().default('pending'), // 'pending' | 'resolved' | 'dismissed'
+  reviewedBy: text('reviewed_by'),
+  reviewedAt: timestamp('reviewed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Community Relations
+export const communityQuestionsRelations = relations(communityQuestions, ({ one, many }) => ({
+  category: one(communityCategories, {
+    fields: [communityQuestions.categoryId],
+    references: [communityCategories.id],
+  }),
+  subject: one(subjects, {
+    fields: [communityQuestions.subjectId],
+    references: [subjects.id],
+  }),
+  chapter: one(chapters, {
+    fields: [communityQuestions.chapterId],
+    references: [chapters.id],
+  }),
+  topic: one(topics, {
+    fields: [communityQuestions.topicId],
+    references: [topics.id],
+  }),
+  university: one(universities, {
+    fields: [communityQuestions.universityId],
+    references: [universities.id],
+  }),
+  answers: many(communityAnswers),
+  tags: many(communityQuestionTags),
+  votes: many(communityQuestionVotes),
+  bookmarks: many(communityBookmarks),
+}));
+
+export const communityAnswersRelations = relations(communityAnswers, ({ one, many }) => ({
+  question: one(communityQuestions, {
+    fields: [communityAnswers.questionId],
+    references: [communityQuestions.id],
+  }),
+  parentAnswer: one(communityAnswers, {
+    fields: [communityAnswers.parentAnswerId],
+    references: [communityAnswers.id],
+    relationName: 'parent_reply',
+  }),
+  replies: many(communityAnswers, {
+    relationName: 'parent_reply',
+  }),
+  votes: many(communityAnswerVotes),
+}));
+
+export const communityQuestionTagsRelations = relations(communityQuestionTags, ({ one }) => ({
+  question: one(communityQuestions, {
+    fields: [communityQuestionTags.questionId],
+    references: [communityQuestions.id],
+  }),
+  tag: one(communityTags, {
+    fields: [communityQuestionTags.tagId],
+    references: [communityTags.id],
+  }),
+}));
+

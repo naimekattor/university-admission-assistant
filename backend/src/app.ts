@@ -4,6 +4,7 @@ import path from 'path';
 import { ENV } from './config';
 import { apiRouter } from './routes/api.routes';
 import { uploadRouter } from './routes/upload.routes';
+import { communityRouter } from './modules/community/community.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { extractSession } from './middleware/auth.middleware';
 
@@ -31,8 +32,9 @@ export function createApp(): Express {
     });
   });
 
-  // Mount Upload Router and API Router
+  // Mount Upload Router, Community Router and API Router
   app.use('/api', uploadRouter);
+  app.use('/api/community', communityRouter);
   app.use('/api', apiRouter);
 
   // Global Error Handler
