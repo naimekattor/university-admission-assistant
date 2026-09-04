@@ -11,13 +11,20 @@ import {
   FunctionSquare,
 } from 'lucide-react';
 import { MathRenderer } from './math-renderer';
+import { VisualMathStudio } from './visual-math-studio';
 
 interface MathEditorToolbarProps {
   onInsert: (snippet: string) => void;
   currentContent?: string;
+  defaultOpenStudio?: boolean;
 }
 
-export function MathEditorToolbar({ onInsert, currentContent = '' }: MathEditorToolbarProps) {
+export function MathEditorToolbar({
+  onInsert,
+  currentContent = '',
+  defaultOpenStudio = true,
+}: MathEditorToolbarProps) {
+  const [showStudio, setShowStudio] = useState(defaultOpenStudio);
   const [showPreview, setShowPreview] = useState(false);
   const [activeTab, setActiveTab] = useState<'basics' | 'calculus' | 'greek' | 'templates'>('basics');
 
@@ -134,20 +141,42 @@ export function MathEditorToolbar({ onInsert, currentContent = '' }: MathEditorT
           </button>
         </div>
 
-        {/* Live Preview Toggle */}
-        <button
-          type="button"
-          onClick={() => setShowPreview(!showPreview)}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition ${
-            showPreview
-              ? 'bg-[#FF5500] text-white border-[#FF5500] shadow-2xs'
-              : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
-          }`}
-        >
-          {showPreview ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5 text-[#FF5500]" />}
-          <span>{showPreview ? 'Hide Preview' : 'Live KaTeX Preview'}</span>
-        </button>
+        {/* Action Toggles: Studio & Live Preview */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowStudio(!showStudio)}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition cursor-pointer ${
+              showStudio
+                ? 'bg-orange-50 text-[#FF5500] border-orange-300 shadow-2xs'
+                : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-[#FF5500]" />
+            <span>{showStudio ? 'Hide Studio' : 'Visual Graph Canvas'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowPreview(!showPreview)}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition cursor-pointer ${
+              showPreview
+                ? 'bg-[#FF5500] text-white border-[#FF5500] shadow-2xs'
+                : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+            }`}
+          >
+            {showPreview ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5 text-[#FF5500]" />}
+            <span>{showPreview ? 'Hide Preview' : 'Live Preview'}</span>
+          </button>
+        </div>
       </div>
+
+      {/* ── VISUAL MATH STUDIO (GRAPH PAPER CANVAS MATCHING USER IMAGE 1) ── */}
+      {showStudio && (
+        <div className="p-3 bg-slate-50/70 border-b border-slate-200">
+          <VisualMathStudio onInsertEquation={onInsert} />
+        </div>
+      )}
 
       {/* ── SYMBOL BUTTONS ROW ── */}
       <div className="p-2.5 flex flex-wrap items-center gap-1.5 bg-slate-50/60 max-h-[120px] overflow-y-auto">

@@ -85,7 +85,7 @@ export function AnswerComposer({ questionId, onAnswerCreated }: AnswerComposerPr
             <span>Solution Content</span>
             <span className="text-slate-400 font-normal">(Click math symbols to insert formulas)</span>
           </label>
-          <MathEditorToolbar onInsert={handleInsertSnippet} currentContent={content} />
+          <MathEditorToolbar onInsert={handleInsertSnippet} currentContent={content} defaultOpenStudio={false} />
           <textarea
             rows={5}
             value={content}

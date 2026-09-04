@@ -10,21 +10,9 @@ export const metadata: Metadata = {
   description: 'AI-powered personal admission coach for Bangladeshi students preparing for BUET, DU, Medical, and Engineering admission tests.',
   generator: 'v0.app',
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
   },
   verification: {
     google: 'DM4k-Q6VQBItqCk_r-fWuYEspIJTaFJ8Dg_BneuaJPI',
