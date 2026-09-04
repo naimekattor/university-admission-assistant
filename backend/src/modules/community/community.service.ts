@@ -393,8 +393,6 @@ $$v = \\sqrt{6.6^2 + 3.6^2} = \\sqrt{43.56 + 12.96} = \\sqrt{56.52} \\approx 7.5
           q.*,
           c.name as category_name,
           c.slug as category_slug,
-          s.name as subject_name,
-          s.slug as subject_slug,
           u.name as university_name,
           u.short_name as university_short_name,
           COALESCE(
@@ -408,7 +406,6 @@ $$v = \\sqrt{6.6^2 + 3.6^2} = \\sqrt{43.56 + 12.96} = \\sqrt{56.52} \\approx 7.5
           COALESCE((SELECT vote FROM community_question_votes qv WHERE qv.question_id = q.id AND qv.session_token = $2), 0) as user_vote
         FROM community_questions q
         LEFT JOIN community_categories c ON q.category_id = c.id
-        LEFT JOIN subjects s ON q.subject_id = s.id
         LEFT JOIN universities u ON q.university_id = u.id
         WHERE q.slug = $1 OR q.id::text = $1
         LIMIT 1
@@ -439,15 +436,17 @@ $$v = \\sqrt{6.6^2 + 3.6^2} = \\sqrt{43.56 + 12.96} = \\sqrt{56.52} \\approx 7.5
           question,
           answers: parentAnswers.map((p) => ({ ...p, replies: replyMap[p.id] || [] })),
           relatedCurriculum: {
-            subjectName: question.subject_name || 'Higher Mathematics',
-            lessonTitle: `High-yield problem solving for ${question.subject_name || 'Admission'}`,
-            lessonSlug: question.subject_slug || 'calculus',
+            subjectName: question.category_name || question.unit || 'Higher Mathematics',
+            lessonTitle: `High-yield problem solving for ${question.category_name || 'Admission'}`,
+            lessonSlug: question.category_slug || 'mathematics',
             practiceUrl: `/practice`,
             lessonUrl: `/prepare`,
           },
         };
       }
-    } catch {}
+    } catch (err) {
+      console.error('[communityService.getQuestionBySlug] DB Query error:', err);
+    }
 
     // In-memory fallback
     const question = this.inMemoryQuestions.find((q) => q.slug === slug || q.id === slug);

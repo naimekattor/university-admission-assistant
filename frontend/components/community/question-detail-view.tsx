@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   ChevronLeft,
@@ -11,6 +11,8 @@ import {
   Share2,
   Bookmark,
   Sparkles,
+  Loader2,
+  HelpCircle,
 } from 'lucide-react';
 import { QuestionDetailResponse, CommunityAnswer } from '@/lib/community-types';
 import { MathRenderer } from './math-renderer';
@@ -21,10 +23,11 @@ import { ReportDialog } from './report-dialog';
 import { AnswerCard } from './answer-card';
 import { AnswerComposer } from './answer-composer';
 import { RelatedCurriculum } from './related-curriculum';
-import { acceptAnswer } from '@/lib/community-service';
+import { acceptAnswer, fetchQuestionBySlug } from '@/lib/community-service';
 
 interface QuestionDetailViewProps {
-  initialData: QuestionDetailResponse;
+  initialData?: QuestionDetailResponse | null;
+  slug?: string;
 }
 
 function formatRelativeTime(dateStr: string): string {
@@ -46,9 +49,57 @@ function formatRelativeTime(dateStr: string): string {
   }
 }
 
-export function QuestionDetailView({ initialData }: QuestionDetailViewProps) {
-  const [data, setData] = useState<QuestionDetailResponse>(initialData);
+export function QuestionDetailView({ initialData, slug }: QuestionDetailViewProps) {
+  const [data, setData] = useState<QuestionDetailResponse | null>(initialData || null);
+  const [loading, setLoading] = useState(!initialData && Boolean(slug));
+  const [notFoundState, setNotFoundState] = useState(!initialData && !slug);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!data && slug) {
+      setLoading(true);
+      fetchQuestionBySlug(slug)
+        .then((res) => {
+          if (res && res.question) {
+            setData(res);
+            setNotFoundState(false);
+          } else {
+            setNotFoundState(true);
+          }
+        })
+        .catch(() => setNotFoundState(true))
+        .finally(() => setLoading(false));
+    }
+  }, [slug, data]);
+
+  if (loading) {
+    return (
+      <div className="py-20 text-center flex flex-col items-center justify-center space-y-4">
+        <Loader2 className="w-9 h-9 animate-spin text-[#FF5500]" />
+        <p className="text-sm font-semibold text-slate-600">Loading question discussion...</p>
+      </div>
+    );
+  }
+
+  if (notFoundState || !data) {
+    return (
+      <div className="py-16 px-4 text-center max-w-lg mx-auto bg-white rounded-3xl border border-slate-200 shadow-sm mt-8">
+        <div className="w-14 h-14 mx-auto rounded-2xl bg-orange-50 border border-orange-200 flex items-center justify-center text-[#FF5500] mb-4">
+          <HelpCircle className="w-7 h-7" />
+        </div>
+        <h2 className="text-xl font-black text-slate-900 mb-2">Question Not Found</h2>
+        <p className="text-xs sm:text-sm text-slate-500 mb-6 leading-relaxed">
+          This question may have been removed, or the link might be incorrect.
+        </p>
+        <Link
+          href="/community"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#FF5500] text-white font-bold text-xs hover:bg-[#e04b00] transition shadow-xs"
+        >
+          <ChevronLeft className="w-4 h-4" /> Back to Community Discussions
+        </Link>
+      </div>
+    );
+  }
 
   const { question, answers, relatedCurriculum } = data;
   const isSolved = Boolean(question.accepted_answer_id);

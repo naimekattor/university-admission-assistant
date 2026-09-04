@@ -28,13 +28,9 @@ export default async function QuestionDetailPage({ params }: Props) {
   const { slug } = await params;
   const data = await fetchQuestionBySlug(slug);
 
-  if (!data || !data.question) {
-    notFound();
-  }
-
   return (
     <div className="max-w-4xl mx-auto">
-      <QuestionDetailView initialData={data} />
+      <QuestionDetailView initialData={data} slug={slug} />
     </div>
   );
 }

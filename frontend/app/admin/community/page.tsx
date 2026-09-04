@@ -20,9 +20,11 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL
-  ? `${process.env.NEXT_PUBLIC_API_URL}/community`
-  : 'http://localhost:4000/api/community';
+const RAW_API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.BACKEND_URL ? `${process.env.BACKEND_URL}/api` : 'http://localhost:4000/api');
+
+const API_BASE = `${RAW_API_BASE.replace(/\/+$/, '')}/community`;
 
 export default function AdminCommunityPage() {
   const [activeTab, setActiveTab] = useState<'questions' | 'reports' | 'contributors' | 'categories'>('questions');

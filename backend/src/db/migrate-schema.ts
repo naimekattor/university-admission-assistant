@@ -133,7 +133,22 @@ export async function autoMigrateDatabase(pool: Pool) {
       );
     `);
 
-    // 6. Ensure Community Q&A Tables, Indexes & Categories
+    // 6. Ensure Curriculum Subjects table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS subjects (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT UNIQUE NOT NULL,
+        slug TEXT UNIQUE NOT NULL,
+        code TEXT,
+        description TEXT,
+        icon TEXT,
+        color TEXT,
+        "order" INT DEFAULT 0,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    // 7. Ensure Community Q&A Tables, Indexes & Categories
     await pool.query(`
       CREATE TABLE IF NOT EXISTS community_categories (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
