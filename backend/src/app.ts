@@ -11,8 +11,66 @@ import { extractSession } from './middleware/auth.middleware';
 export function createApp(): Express {
   const app = express();
 
+  // Parse allowed origins from environment variable (strip trailing slashes, handle comma-separated list)
+  const rawOrigins = ENV.CORS_ORIGIN || '*';
+  const allowedOrigins = rawOrigins
+    .split(',')
+    .map((o) => o.trim().replace(/\/+$/, ''))
+    .filter(Boolean);
+
+  const corsOptions: cors.CorsOptions = {
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g., mobile apps, curl, server-to-server)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      // If wildcard is enabled, allow and echo the request origin (needed for credentials)
+      if (allowedOrigins.includes('*')) {
+        return callback(null, true);
+      }
+
+      const normalizedOrigin = origin.replace(/\/+$/, '');
+
+      const isAllowed = allowedOrigins.some((allowed) => {
+        if (allowed === normalizedOrigin) return true;
+        // Support all Vercel deployment preview and production domains if vercel.app is present
+        if (
+          allowed.includes('vercel.app') &&
+          normalizedOrigin.endsWith('.vercel.app')
+        ) {
+          return true;
+        }
+        // Support localhost for local testing
+        if (allowed.includes('localhost') && normalizedOrigin.includes('localhost')) {
+          return true;
+        }
+        return false;
+      });
+
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        console.warn(`[CORS] Blocked request from unauthorized origin: "${origin}"`);
+        callback(null, false);
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept',
+      'x-session-id',
+      'Origin',
+    ],
+    optionsSuccessStatus: 204,
+  };
+
   // Basic security and parsing middleware
-  app.use(cors({ origin: ENV.CORS_ORIGIN, credentials: true }));
+  app.use(cors(corsOptions));
+  app.options('*', cors(corsOptions));
   app.use(express.json({ limit: '25mb' }));
   app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 

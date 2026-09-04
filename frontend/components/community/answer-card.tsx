@@ -184,12 +184,21 @@ export function AnswerCard({
               <MathEditorToolbar onInsert={handleInsertSnippet} currentContent={replyContent} />
 
               <textarea
-                rows={2}
+                rows={3}
                 value={replyContent}
                 onChange={(e) => setReplyContent(e.target.value)}
                 placeholder="Write your explanation or follow-up question..."
-                className="w-full text-xs p-3 bg-white border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#FF5500]/20 focus:border-[#FF5500] resize-none"
+                className="w-full text-xs p-3 bg-white border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#FF5500]/20 focus:border-[#FF5500] resize-y font-mono"
               />
+
+              {replyContent.trim() && /[\$\\\{\}\^_\=\±\√]/.test(replyContent) && (
+                <div className="p-3 bg-white border border-orange-200 rounded-xl shadow-2xs">
+                  <span className="block text-[10px] font-bold text-[#FF5500] uppercase tracking-wider mb-1">
+                    Live Math Preview
+                  </span>
+                  <MathRenderer content={replyContent} />
+                </div>
+              )}
 
               <div className="flex justify-end gap-2 pt-1">
                 <button

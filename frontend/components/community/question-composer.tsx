@@ -13,8 +13,12 @@ import {
   HelpCircle,
   ArrowRight,
   CheckCircle2,
+  Code,
+  Eye,
+  Columns2,
 } from 'lucide-react';
 import { MathEditorToolbar } from './math-editor-toolbar';
+import { MathRenderer } from './math-renderer';
 import {
   createQuestion,
   checkSimilarQuestions,
@@ -59,6 +63,7 @@ export function QuestionComposer() {
   const [unit, setUnit] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>(['Calculus', 'BUET']);
+  const [viewMode, setViewMode] = useState<'write' | 'preview' | 'split'>('write');
 
   // Dynamic Categories
   const [categories, setCategories] = useState<CommunityCategory[]>([]);
@@ -196,27 +201,144 @@ export function QuestionComposer() {
 
       {/* ── CARD 2: RICH CONTENT & VISUAL MATHEMATICAL INPUT ── */}
       <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-2xs">
-        <label className="block text-sm font-extrabold text-slate-900 mb-1">
-          Detailed Description & Equations <span className="text-[#FF5500]">*</span>
-        </label>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+          <label className="block text-sm font-extrabold text-slate-900">
+            Detailed Description & Equations <span className="text-[#FF5500]">*</span>
+          </label>
+
+          {/* View Mode Switcher: Write vs Preview vs Split */}
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+            <button
+              type="button"
+              onClick={() => setViewMode('write')}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                viewMode === 'write'
+                  ? 'bg-white text-slate-900 shadow-2xs'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              <Code className="w-3.5 h-3.5 text-slate-600" />
+              <span>Write (LaTeX)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewMode('preview')}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                viewMode === 'preview'
+                  ? 'bg-[#FF5500] text-white shadow-2xs'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>Rendered Preview</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewMode('split')}
+              className={`hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                viewMode === 'split'
+                  ? 'bg-white text-[#FF5500] shadow-2xs'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              <Columns2 className="w-3.5 h-3.5" />
+              <span>Split View</span>
+            </button>
+          </div>
+        </div>
+
         <p className="text-xs text-slate-500 mb-3 leading-relaxed">
           Write out your working, formula, or what you tried. Use the visual math toolbar below to click and insert fractions, roots, integrals, and limits without typing raw LaTeX!
         </p>
 
         {/* Visual Math Toolbar with Live KaTeX Preview */}
-        <MathEditorToolbar onInsert={handleInsertSnippet} currentContent={content} />
+        {viewMode !== 'preview' && (
+          <MathEditorToolbar onInsert={handleInsertSnippet} currentContent={content} />
+        )}
 
-        <textarea
-          rows={8}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder={`Describe your problem step by step...
+        {viewMode === 'write' && (
+          <div className="space-y-3">
+            <textarea
+              rows={8}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder={`Describe your problem step by step...
 Example:
 I am trying to solve this integration:
 $$\\int_{0}^{1} \\frac{x^2+1}{x^4+1} dx$$
 I got stuck after substituting $u = x - 1/x$.`}
-          className="w-full p-4 bg-slate-50/60 border border-slate-200 rounded-2xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FF5500]/20 focus:border-[#FF5500] leading-relaxed resize-y font-normal"
-        />
+              className="w-full p-4 bg-slate-50/60 border border-slate-200 rounded-2xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FF5500]/20 focus:border-[#FF5500] leading-relaxed resize-y font-normal font-mono"
+            />
+
+            {/* Live Rendered Math Output if equations exist */}
+            {content.trim() && /[\$\\\{\}\^_\=\±\√]/.test(content) && (
+              <div className="p-4 bg-gradient-to-b from-orange-50/40 to-slate-50 border border-orange-200/70 rounded-2xl">
+                <div className="flex items-center justify-between pb-2 border-b border-orange-200/50 mb-3">
+                  <span className="text-[11px] font-bold text-[#FF5500] uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" /> Live Rendered Math Output (KaTeX)
+                  </span>
+                  <span className="text-[11px] text-slate-500 font-medium">
+                    Readers will see this formatted math
+                  </span>
+                </div>
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+                  <MathRenderer content={content} />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {viewMode === 'preview' && (
+          <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-2xs min-h-[200px]">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 mb-3">
+              <span className="text-xs font-bold text-slate-600 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-[#FF5500]" /> KaTeX Formatted Preview
+              </span>
+              <span className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-semibold">
+                Preview Mode
+              </span>
+            </div>
+            {content.trim() ? (
+              <div className="pt-1">
+                <MathRenderer content={content} />
+              </div>
+            ) : (
+              <div className="py-10 text-center text-slate-400 text-xs">
+                No content entered yet. Switch back to Write mode to type.
+              </div>
+            )}
+          </div>
+        )}
+
+        {viewMode === 'split' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <span className="block text-[11px] font-bold text-slate-500 mb-1">LaTeX Source</span>
+              <textarea
+                rows={10}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Type question content..."
+                className="w-full p-3.5 bg-slate-50/60 border border-slate-200 rounded-2xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FF5500]/20 focus:border-[#FF5500] leading-relaxed resize-y font-mono"
+              />
+            </div>
+            <div>
+              <span className="block text-[11px] font-bold text-[#FF5500] mb-1 flex items-center gap-1">
+                <Sparkles className="w-3 h-3" /> Live Rendered View
+              </span>
+              <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-2xs min-h-[240px] max-h-[400px] overflow-y-auto">
+                {content.trim() ? (
+                  <MathRenderer content={content} />
+                ) : (
+                  <p className="text-xs text-slate-400 italic">Formulas will appear here in real-time...</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── CARD 3: CATEGORY, QUESTION TYPE & TARGET CONTEXT ── */}
