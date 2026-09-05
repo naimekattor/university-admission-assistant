@@ -6,7 +6,6 @@ User-agent: *
 Allow: /
 Disallow: /admin/
 Disallow: /api/
-Disallow: /_next/
 Disallow: /private/
 
 # Host & Sitemap
