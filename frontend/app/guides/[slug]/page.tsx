@@ -35,7 +35,7 @@ export default async function GuideArticlePage(props: {
         }}
       />
 
-      <div className="relative z-10 flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 max-w-4xl">
+      <div className="relative z-10 flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 max-w-4xl w-full min-w-0">
         {/* ── BREADCRUMBS ── */}
         <nav className="flex items-center gap-2 text-xs text-slate-500 font-medium">
           <Link href="/" className="hover:text-[#FF5500] transition">
@@ -50,9 +50,9 @@ export default async function GuideArticlePage(props: {
         </nav>
 
         {/* ── ARTICLE DETAIL (Server-Rendered for SEO) ── */}
-        <article className="space-y-8">
+        <article className="space-y-8 w-full max-w-full min-w-0">
           {/* Header Card */}
-          <div className="p-6 sm:p-10 rounded-3xl bg-white border border-slate-200/90 shadow-sm space-y-5">
+          <div className="p-6 sm:p-10 rounded-3xl bg-white border border-slate-200/90 shadow-sm space-y-5 w-full max-w-full min-w-0 overflow-hidden break-words">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
               <Link
                 href="/guides"
@@ -86,22 +86,24 @@ export default async function GuideArticlePage(props: {
                 )}
               </div>
 
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-tight break-words">
                 {article.title}
               </h1>
 
-              <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal bg-[#FAF8F5] p-4 sm:p-5 rounded-2xl border border-slate-200/60">
-                {article.summary}
+              <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal bg-[#FAF8F5] p-4 sm:p-5 rounded-2xl border border-slate-200/60 break-words">
+                {article.summary?.replace(/&nbsp;/gi, ' ').replace(/\u00A0/g, ' ')}
               </p>
             </div>
           </div>
 
           {/* Body Content */}
-          <div className="p-6 sm:p-10 rounded-3xl bg-white border border-slate-200/90 shadow-sm">
-            <RichTextRenderer
-              content={article.content || article.summary}
-              className="text-sm sm:text-base"
-            />
+          <div className="p-6 sm:p-10 rounded-3xl bg-white border border-slate-200/90 shadow-sm w-full max-w-full min-w-0 overflow-hidden break-words">
+            <div className="w-full max-w-full min-w-0">
+              <RichTextRenderer
+                content={article.content || article.summary}
+                className="text-sm sm:text-base w-full max-w-full min-w-0"
+              />
+            </div>
           </div>
         </article>
       </div>
