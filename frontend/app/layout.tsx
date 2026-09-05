@@ -93,7 +93,7 @@ export default function RootLayout({
     <html lang="en" className="bg-[#FAF8F5] text-slate-900 overflow-x-hidden">
       <body className="antialiased min-h-screen flex flex-col bg-[#FAF8F5] text-slate-900 overflow-x-hidden">
         <WebSiteSchema url={siteUrl} searchUrl={`${siteUrl}/universities?search={search_term_string}`} />
-        <EducationalOrganizationSchema url={siteUrl} logo={`${siteUrl}/icon.svg`} />
+        <EducationalOrganizationSchema url={siteUrl} logo={`${siteUrl}/images/eduguide_logo.png`} />
         <AppQueryProvider>
           <ToastProvider>
             <Navbar />

@@ -3,6 +3,7 @@
 import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Shield,
   Lock,
@@ -69,10 +70,17 @@ function AdminLoginForm() {
   return (
     <div className="w-full max-w-md mx-auto space-y-6">
       {/* Brand Header */}
-      <div className="text-center space-y-2">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#FF5500] to-[#E64D00] text-white shadow-lg shadow-orange-500/30 mb-2">
-          <Shield className="w-7 h-7" />
-        </div>
+      <div className="text-center space-y-3">
+        <Link href="/" className="inline-block hover:opacity-95 transition">
+          <Image
+            src="/images/eduguide_logo.png"
+            alt="EduGuide"
+            width={180}
+            height={48}
+            className="h-11 w-auto mx-auto object-contain"
+            priority
+          />
+        </Link>
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-[#FF5500] text-[11px] font-bold uppercase tracking-wider font-mono shadow-2xs">
           <Sparkles className="w-3.5 h-3.5" />
           <span>PORTAL AUTHENTICATION</span>

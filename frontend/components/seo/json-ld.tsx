@@ -47,7 +47,7 @@ export function WebSiteSchema({
 export function EducationalOrganizationSchema({
   name = 'EduGuide Bangladesh',
   url = 'https://university-admission-assistant.vercel.app',
-  logo = 'https://university-admission-assistant.vercel.app/icon.svg',
+  logo = 'https://university-admission-assistant.vercel.app/images/eduguide_logo.png',
   description = 'Bangladesh premier data-driven university admission intelligence platform: official circulars, BUET, DU, Medical, and GST eligibility qualifier.',
 }: {
   name?: string;

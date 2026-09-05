@@ -81,7 +81,14 @@ export function Navbar() {
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2.5">
-            <Image src="/images/eduguide_logo.png" alt="Logo" width={32} height={32} />
+            <Image
+              src="/images/eduguide_logo.png"
+              alt="EduGuide Logo"
+              width={130}
+              height={36}
+              className="h-8 sm:h-9 w-auto object-contain"
+              priority
+            />
           </Link>
 
           <nav className="hidden lg:flex items-center gap-1 text-xs font-semibold">
@@ -156,14 +163,14 @@ export function Navbar() {
       <div className="sticky top-3 container mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-2">
         <header ref={navHeaderRef} className="max-w-5xl mx-auto px-5 py-2.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/80 shadow-md flex items-center justify-between">
 
-          {/* Brand Logo: EG badge + EduGuide brand name */}
+          {/* Brand Logo: EduGuide brand logo */}
           <Link href="/" className="flex items-center gap-2 group">
             <Image
               src="/images/eduguide_logo.png"
               alt="EduGuide Logo"
-              width={96}
-              height={32}
-              className="h-8 w-auto object-contain"
+              width={140}
+              height={38}
+              className="h-8 sm:h-9 w-auto object-contain"
               priority
             />
           </Link>
@@ -212,6 +219,16 @@ export function Navbar() {
         {/* Public Mobile Drawer */}
         {mobileMenuOpen && (
           <div className="md:hidden max-w-4xl mx-auto mt-2 bg-white rounded-2xl border border-slate-200 shadow-xl p-4 space-y-2 text-xs animate-in fade-in">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+              <Image
+                src="/images/eduguide_logo.png"
+                alt="EduGuide Logo"
+                width={115}
+                height={32}
+                className="h-7 w-auto object-contain"
+              />
+              <span className="text-[10px] font-bold text-slate-400 font-mono uppercase tracking-wider">Navigation</span>
+            </div>
             {publicLinks.map((link) => (
               <Link
                 key={link.href}

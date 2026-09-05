@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
@@ -124,22 +125,28 @@ export function AdminShell({ children, pageTitle, breadcrumbs, actions }: AdminS
         {/* Brand Header */}
         <div className="h-16 px-4 border-b border-slate-200/80 flex items-center justify-between">
           {!collapsed ? (
-            <Link href="/admin" className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#FF5500] text-white font-black flex items-center justify-center text-xs shadow-sm">
-                EG
-              </div>
-              <div>
-                <div className="font-extrabold text-sm leading-none text-slate-900">
-                  Edu<span className="text-[#FF5500]">Guide</span>
-                </div>
-                <div className="text-[10px] font-bold text-[#FF5500] uppercase tracking-wider font-mono">
-                  Admin Panel
-                </div>
-              </div>
+            <Link href="/admin" className="flex items-center gap-2">
+              <Image
+                src="/images/eduguide_logo.png"
+                alt="EduGuide Admin"
+                width={120}
+                height={32}
+                className="h-7 w-auto object-contain"
+                priority
+              />
+              <span className="text-[9px] font-bold text-[#FF5500] uppercase tracking-wider font-mono px-1.5 py-0.5 rounded bg-orange-50 border border-orange-200">
+                ADMIN
+              </span>
             </Link>
           ) : (
-            <div className="w-8 h-8 mx-auto rounded-lg bg-[#FF5500] text-white font-black flex items-center justify-center text-xs shadow-sm">
-              EG
+            <div className="w-8 h-8 mx-auto flex items-center justify-center overflow-hidden">
+              <Image
+                src="/images/eduguide_logo.png"
+                alt="EduGuide"
+                width={32}
+                height={32}
+                className="w-8 h-8 object-cover object-left"
+              />
             </div>
           )}
           <button
@@ -226,10 +233,16 @@ export function AdminShell({ children, pageTitle, breadcrumbs, actions }: AdminS
           <aside className="relative w-64 bg-white border-r border-slate-200 flex flex-col h-full z-50 p-4 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-[#FF5500] text-white font-black flex items-center justify-center text-xs">
-                  EG
-                </div>
-                <span className="font-extrabold text-sm text-slate-900">EduGuide Admin</span>
+                <Image
+                  src="/images/eduguide_logo.png"
+                  alt="EduGuide Admin"
+                  width={115}
+                  height={30}
+                  className="h-7 w-auto object-contain"
+                />
+                <span className="text-[9px] font-bold text-[#FF5500] uppercase tracking-wider font-mono px-1.5 py-0.5 rounded bg-orange-50 border border-orange-200">
+                  ADMIN
+                </span>
               </div>
               <button
                 onClick={() => setMobileOpen(false)}

@@ -80,9 +80,9 @@ export function FooterSection({ config }: FooterSectionProps) {
               <Image
                 src="/images/eduguide_logo.png"
                 alt="EduGuide Logo"
-                width={96}
-                height={32}
-                className="h-8 w-auto object-contain"
+                width={140}
+                height={38}
+                className="h-8 sm:h-9 w-auto object-contain"
                 priority
               />
             </Link>
