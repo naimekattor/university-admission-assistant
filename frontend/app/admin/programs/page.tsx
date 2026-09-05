@@ -463,7 +463,7 @@ export default function AdminProgramsPage() {
                             {p.universityLogo && (p.universityLogo.startsWith('http') || p.universityLogo.startsWith('/')) ? (
                               <img
                                 src={p.universityLogo}
-                                alt=""
+                                alt={`${p.universityShortName || 'University'} logo`}
                                 className="w-full h-full object-contain"
                                 onError={(e) => {
                                   e.currentTarget.style.display = 'none';

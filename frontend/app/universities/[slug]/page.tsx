@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -108,6 +109,7 @@ export default function UniversityDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'departments' | 'culture' | 'facilities' | 'gallery' | 'circulars'>('overview');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [logoFailed, setLogoFailed] = useState(false);
 
   useEffect(() => {
     async function loadUniversity() {
@@ -220,14 +222,18 @@ export default function UniversityDetailsPage() {
             <div className="flex items-start gap-4 sm:gap-5">
               {/* University Logo / Emblem */}
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-white border border-slate-200/90 flex items-center justify-center p-2 shadow-md shadow-orange-500/10 shrink-0 overflow-hidden">
-                {isImageLogo ? (
-                  <img
+                {isImageLogo && !logoFailed ? (
+                  <Image
                     src={uni.logo}
-                    alt={uni.name}
+                    alt={`${uni.name} official university crest`}
+                    width={80}
+                    height={80}
+                    priority
                     className="w-full h-full object-contain"
+                    onError={() => setLogoFailed(true)}
                   />
                 ) : (
-                  <span className="text-4xl sm:text-5xl">{uni.logo || '🏛️'}</span>
+                  <span className="text-4xl sm:text-5xl">{uni.logo && !uni.logo.startsWith('http') && !uni.logo.startsWith('/') ? uni.logo : '🏛️'}</span>
                 )}
               </div>
 
@@ -717,9 +723,11 @@ export default function UniversityDetailsPage() {
                       onClick={() => setSelectedImage(imgUrl)}
                       className="group relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 aspect-video cursor-pointer shadow-2xs hover:shadow-md transition"
                     >
-                      <img
+                      <Image
                         src={imgUrl}
-                        alt={`${uni.name} Campus Photo ${idx + 1}`}
+                        alt={`${uni.name} campus photo ${idx + 1}`}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                       />
                       <div className="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/30 transition flex items-center justify-center">
@@ -743,15 +751,17 @@ export default function UniversityDetailsPage() {
                 className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/90 backdrop-blur-sm p-4"
                 onClick={() => setSelectedImage(null)}
               >
-                <div className="relative max-w-4xl max-h-[90vh] rounded-2xl overflow-hidden bg-black">
-                  <img
+                <div className="relative max-w-4xl w-full h-[80vh] rounded-2xl overflow-hidden bg-black">
+                  <Image
                     src={selectedImage}
-                    alt="Campus View"
-                    className="w-full h-full object-contain max-h-[85vh]"
+                    alt={`${uni.name} campus view enlarged preview`}
+                    fill
+                    sizes="(max-width: 1200px) 95vw, 1200px"
+                    className="w-full h-full object-contain"
                   />
                   <button
                     onClick={() => setSelectedImage(null)}
-                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center text-sm hover:bg-black transition cursor-pointer"
+                    className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center text-sm hover:bg-black transition cursor-pointer"
                   >
                     ✕
                   </button>

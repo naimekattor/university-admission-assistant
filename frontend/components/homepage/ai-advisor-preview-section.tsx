@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Bot,
   Sparkles,
@@ -254,13 +255,12 @@ export function AiAdvisorPreviewSection({ config }: AiAdvisorPreviewSectionProps
             {/* Right: Modern AI Avatar / Illustration Card (5 cols) */}
             <div className="lg:col-span-5 flex flex-col items-center justify-center relative">
               <div className="relative group w-full max-w-sm rounded-3xl overflow-hidden border border-white/20 shadow-xl p-2 bg-gradient-to-b from-white/60 to-white/20 backdrop-blur-md transition-transform duration-300 hover:scale-[1.01]">
-                <img
+                <Image
                   src={imageUrl}
-                  alt={imageAlt}
+                  alt={imageAlt || "EduGuide AI Admission Intelligence Assistant preview"}
+                  width={400}
+                  height={300}
                   className="w-full h-auto object-contain rounded-2xl max-h-[300px]"
-                  onError={(e) => {
-                    e.currentTarget.src = '/placeholder.svg';
-                  }}
                 />
 
                 {/* Floating pill badge */}

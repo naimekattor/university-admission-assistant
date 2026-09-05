@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   CheckCircle2,
   Sparkles,
@@ -23,6 +24,7 @@ interface PreparationCtaSectionProps {
 export function PreparationCtaSection({ config }: PreparationCtaSectionProps) {
   const sectionRef = useRef<HTMLElement>(null);
   useScrollTriggerReveal(sectionRef, { y: 24 });
+  const [imgError, setImgError] = useState(false);
   const badgeText = config?.badgeText || 'THE PREPARATION PLATFORM';
   const headline = config?.headline || 'Know where to apply. Now prepare to get in.';
   const description =
@@ -143,46 +145,16 @@ export function PreparationCtaSection({ config }: PreparationCtaSectionProps) {
           {/* ── RIGHT COLUMN: MOCKUP / IMAGE (5 cols) ── */}
           <div className="lg:col-span-5 relative">
             {/* Image Preview with Glassmorphism Frame */}
-            {imageUrl ? (
+            {imageUrl && !imgError ? (
               <div className="relative group rounded-3xl overflow-hidden border border-white/15 bg-slate-950/40 shadow-2xl p-2 backdrop-blur-xs transition-transform duration-300 hover:scale-[1.01]">
-                <img
+                <Image
                   src={imageUrl}
-                  alt={imageAlt}
+                  alt={imageAlt || "EduGuide Admission Preparation and Exam Practice Interface"}
+                  width={600}
+                  height={400}
                   className="w-full h-auto object-cover rounded-2xl"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    const fallback = document.getElementById('study-card-default-fallback');
-                    if (fallback) fallback.style.display = 'block';
-                  }}
+                  onError={() => setImgError(true)}
                 />
-
-                {/* Optional Fallback if image path is unavailable */}
-                <div id="study-card-default-fallback" style={{ display: 'none' }} className="p-5 bg-white text-slate-900 rounded-2xl space-y-3.5">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-[#FF5500] text-white flex items-center justify-center text-xs font-black">
-                        EG
-                      </div>
-                      <div>
-                        <span className="font-bold text-xs text-slate-900">Study Deck Pro</span>
-                        <p className="text-[10px] text-slate-500">Target: BUET Ka Unit</p>
-                      </div>
-                    </div>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-orange-50 text-[#FF5500]">
-                      Active
-                    </span>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-xs font-semibold">
-                      <span className="text-slate-600">Syllabus Completion</span>
-                      <span className="text-[#FF5500] font-mono">68.5%</span>
-                    </div>
-                    <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-[#FF5500] to-orange-400 rounded-full w-[68.5%]" />
-                    </div>
-                  </div>
-                </div>
               </div>
             ) : (
               /* Fallback interactive card */

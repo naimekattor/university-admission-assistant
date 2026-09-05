@@ -416,7 +416,7 @@ export default function AdminUniversitiesPage() {
                             {u.logo && (u.logo.startsWith('http') || u.logo.startsWith('/')) ? (
                               <img
                                 src={u.logo}
-                                alt={u.shortName || u.name}
+                                alt={`${u.shortName || u.name} logo`}
                                 className="w-8 h-8 rounded-full object-contain bg-white border border-slate-200 p-0.5 shadow-2xs shrink-0"
                               />
                             ) : (
@@ -949,7 +949,7 @@ export default function AdminUniversitiesPage() {
                         <div key={idx} className="relative group rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 aspect-video">
                           <img
                             src={imgUrl}
-                            alt={`Gallery ${idx + 1}`}
+                            alt={`Campus gallery photo ${idx + 1}`}
                             className="w-full h-full object-cover"
                           />
                           <button

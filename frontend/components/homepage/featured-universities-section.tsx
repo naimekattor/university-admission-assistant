@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Building2, MapPin, ArrowRight, Users, Calendar } from 'lucide-react';
 import { FeaturedUniversitiesConfig } from '@/lib/homepage-types';
 import { FALLBACK_UNIVERSITIES } from '@/lib/universities-fallback';
@@ -14,6 +15,7 @@ interface FeaturedUniversitiesSectionProps {
 
 export function FeaturedUniversitiesSection({ config, universities = [] }: FeaturedUniversitiesSectionProps) {
   const [allUnis, setAllUnis] = useState<any[]>([]);
+  const [failedLogos, setFailedLogos] = useState<Record<string, boolean>>({});
   const gridRef = useRef<HTMLDivElement>(null);
 
   useScrollTriggerReveal(gridRef, {
@@ -100,22 +102,22 @@ export function FeaturedUniversitiesSection({ config, universities = [] }: Featu
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center p-1 overflow-hidden shrink-0">
-                    {isImageLogo ? (
-                      <img
+                    {isImageLogo && !failedLogos[uni.id] ? (
+                      <Image
                         src={uni.logo}
-                        alt={uni.shortName || uni.name}
+                        alt={`${uni.name || uni.shortName} official logo`}
+                        width={40}
+                        height={40}
                         className="w-full h-full object-contain"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                          if (e.currentTarget.nextElementSibling) {
-                            (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'block';
-                          }
+                        onError={() => {
+                          setFailedLogos((prev) => ({ ...prev, [uni.id]: true }));
                         }}
                       />
-                    ) : null}
-                    <span className={`${isImageLogo ? 'hidden' : 'block'} text-lg`}>
-                      {uni.logo || '🏛️'}
-                    </span>
+                    ) : (
+                      <span className="text-lg">
+                        {uni.logo && !isImageLogo ? uni.logo : '🏛️'}
+                      </span>
+                    )}
                   </div>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
                     {uni.status || 'Upcoming'}

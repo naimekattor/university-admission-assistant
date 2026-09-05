@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Search,
   MapPin,
@@ -46,6 +47,7 @@ interface UniversityItem {
 export default function UniversitiesPage() {
   const [universities, setUniversities] = useState<UniversityItem[]>(FALLBACK_UNIVERSITIES as any);
   const [loading, setLoading] = useState(false);
+  const [failedLogos, setFailedLogos] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
   const [selectedGroup, setSelectedGroup] = useState('All');
   const [selectedStatus, setSelectedStatus] = useState('All');
@@ -282,7 +284,7 @@ export default function UniversitiesPage() {
               const targetSlug = (uni.slug || uni.shortName || uni.id).toLowerCase().trim().replace(/[^a-z0-9]/g, '-');
               const isOpen = uni.status === 'Applications Open';
               const isOpeningSoon = uni.status === 'Opening Soon';
-              const isImageLogo = uni.logo && (uni.logo.startsWith('http://') || uni.logo.startsWith('https://') || uni.logo.startsWith('/'));
+              const isImageLogo = uni.logo && (uni.logo.startsWith('http://') || uni.logo.startsWith('https://') || uni.logo.startsWith('/')) && !failedLogos.has(uni.id);
 
               return (
                 <div
@@ -295,20 +297,17 @@ export default function UniversitiesPage() {
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-2xl bg-orange-50 border border-orange-200/60 flex items-center justify-center p-1.5 shadow-xs group-hover:scale-105 transition shrink-0 overflow-hidden">
                           {isImageLogo ? (
-                            <img
+                            <Image
                               src={uni.logo}
-                              alt={uni.shortName || uni.name}
+                              alt={`${uni.name || uni.shortName} official logo`}
+                              width={48}
+                              height={48}
                               className="w-full h-full object-contain"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                                if (e.currentTarget.nextElementSibling) {
-                                  (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'block';
-                                }
-                              }}
+                              onError={() => setFailedLogos((prev) => new Set(prev).add(uni.id))}
                             />
                           ) : null}
                           <span className={`${isImageLogo ? 'hidden' : 'block'} text-2xl`}>
-                            {uni.logo || '🏛️'}
+                            {uni.logo && !uni.logo.startsWith('http') && !uni.logo.startsWith('/') ? uni.logo : '🏛️'}
                           </span>
                         </div>
                         <div>
