@@ -4,7 +4,6 @@ import './globals.css'
 import { Navbar } from '@/components/navbar'
 import { ToastProvider } from '@/components/ui/custom-toast'
 import { FloatingAiChat } from '@/components/ai/floating-ai-chat'
-
 export const metadata: Metadata = {
   title: 'EduGuide - AI-Powered University Admission Preparation for Bangladesh',
   description: 'AI-powered personal admission coach for Bangladeshi students preparing for BUET, DU, Medical, and Engineering admission tests.',
