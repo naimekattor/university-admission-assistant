@@ -26,6 +26,7 @@ import {
 import { useGsapContext } from '@/hooks/use-gsap-motion';
 import { isReducedMotion } from '@/lib/animations/gsap-motion';
 import gsap from 'gsap';
+import Image from 'next/image';
 
 export function Navbar() {
   const pathname = usePathname();
@@ -80,15 +81,7 @@ export function Navbar() {
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#FF5500] text-white font-black flex items-center justify-center text-xs shadow-md">
-              EG
-            </div>
-            <div className="flex flex-col">
-              <span className="font-extrabold text-base text-slate-900 tracking-tight leading-none flex items-center gap-1.5">
-                Edu<span className="text-[#FF5500]">Guide</span> <span className="text-[#FF5500] font-mono text-xs font-bold uppercase">[STUDENT PASS]</span>
-              </span>
-              <span className="text-[10px] text-slate-500 font-medium">BUET CSE Target • 62 Days Remaining</span>
-            </div>
+            <Image src="/images/eduguide_logo.png" alt="Logo" width={32} height={32} />
           </Link>
 
           <nav className="hidden lg:flex items-center gap-1 text-xs font-semibold">
@@ -98,9 +91,8 @@ export function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`px-3 py-1.5 rounded-lg transition ${
-                    isActive ? 'bg-orange-50 text-[#FF5500] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                  }`}
+                  className={`px-3 py-1.5 rounded-lg transition ${isActive ? 'bg-orange-50 text-[#FF5500] font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    }`}
                 >
                   {link.label}
                 </Link>
@@ -163,16 +155,19 @@ export function Navbar() {
       {/* ── FLOATING PILL NAVBAR ── */}
       <div className="sticky top-3 container mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-2">
         <header ref={navHeaderRef} className="max-w-5xl mx-auto px-5 py-2.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/80 shadow-md flex items-center justify-between">
-          
+
           {/* Brand Logo: EG badge + EduGuide brand name */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-full bg-[#FF5500] text-white font-black flex items-center justify-center text-xs shadow-sm group-hover:scale-105 transition-transform">
-              EG
-            </div>
-            <span className="font-extrabold text-xl tracking-tight text-slate-900">
-              Edu<span className="text-[#FF5500]">Guide</span>
-            </span>
+            <Image
+              src="/images/eduguide_logo.png"
+              alt="EduGuide Logo"
+              width={96}
+              height={32}
+              className="h-8 w-auto object-contain"
+              priority
+            />
           </Link>
+
 
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center gap-5 text-xs font-medium text-slate-600">
@@ -182,11 +177,10 @@ export function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`transition ${
-                    isActive
-                      ? 'text-[#FF5500] font-bold'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                  className={`transition ${isActive
+                    ? 'text-[#FF5500] font-bold'
+                    : 'text-slate-600 hover:text-slate-900'
+                    }`}
                 >
                   {link.label}
                 </Link>

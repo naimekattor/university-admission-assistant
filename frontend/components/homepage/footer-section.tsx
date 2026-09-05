@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
 import { FooterConfig } from '@/lib/homepage-types';
 import { useScrollTriggerReveal } from '@/hooks/use-gsap-motion';
+import Image from 'next/image';
 
 interface FooterSectionProps {
   config?: FooterConfig;
@@ -75,14 +76,17 @@ export function FooterSection({ config }: FooterSectionProps) {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
           {/* Brand Info (4 cols) */}
           <div className="md:col-span-4 space-y-3.5">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-[#FF5500] text-white font-black flex items-center justify-center text-xs shadow-sm">
-                EG
-              </div>
-              <span className="font-extrabold text-xl tracking-tight text-slate-900">
-                Edu<span className="text-[#FF5500]">Guide</span>
-              </span>
+            <Link href="/" className="flex items-center gap-2 group">
+              <Image
+                src="/images/eduguide_logo.png"
+                alt="EduGuide Logo"
+                width={96}
+                height={32}
+                className="h-8 w-auto object-contain"
+                priority
+              />
             </Link>
+
 
             <p className="text-xs text-slate-600 leading-relaxed max-w-sm">
               {description}
