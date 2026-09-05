@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { ChevronDown, HelpCircle } from 'lucide-react';
 import { FaqConfig } from '@/lib/homepage-types';
 import { RichTextRenderer } from '@/components/rich-text/rich-text-renderer';
+import { useScrollTriggerReveal } from '@/hooks/use-gsap-motion';
 
 interface FaqItem {
   id: string;
@@ -19,6 +20,9 @@ interface FaqSectionProps {
 }
 
 export function FaqSection({ config, faqs = [] }: FaqSectionProps) {
+  const sectionRef = useRef<HTMLElement>(null);
+  useScrollTriggerReveal(sectionRef, { y: 22 });
+
   const title = config?.title || 'Frequently Asked Questions';
   const description =
     config?.description ||
@@ -39,7 +43,7 @@ export function FaqSection({ config, faqs = [] }: FaqSectionProps) {
   };
 
   return (
-    <section id="faq" className="py-12 container mx-auto px-4 sm:px-6 lg:px-8">
+    <section ref={sectionRef} id="faq" className="py-12 container mx-auto px-4 sm:px-6 lg:px-8">
       <div className="space-y-6 max-w-4xl mx-auto">
         {/* ── SECTION HEADER ── */}
         <div className="text-center space-y-2">

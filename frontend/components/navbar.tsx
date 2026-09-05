@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -23,10 +23,29 @@ import {
   ChevronsRight,
 } from 'lucide-react';
 
+import { useGsapContext } from '@/hooks/use-gsap-motion';
+import { isReducedMotion } from '@/lib/animations/gsap-motion';
+import gsap from 'gsap';
+
 export function Navbar() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [bannerVisible, setBannerVisible] = useState(true);
+  const navHeaderRef = useRef<HTMLElement>(null);
+
+  useGsapContext(
+    () => {
+      if (!navHeaderRef.current || isReducedMotion()) return;
+
+      gsap.fromTo(
+        navHeaderRef.current,
+        { opacity: 0, y: -10 },
+        { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }
+      );
+    },
+    navHeaderRef,
+    [pathname]
+  );
 
   const isAdminRoute = pathname.startsWith('/admin');
   const isStudentRoute =
@@ -143,7 +162,7 @@ export function Navbar() {
 
       {/* ── FLOATING PILL NAVBAR ── */}
       <div className="sticky top-3 container mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-2">
-        <header className="max-w-5xl mx-auto px-5 py-2.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/80 shadow-md flex items-center justify-between">
+        <header ref={navHeaderRef} className="max-w-5xl mx-auto px-5 py-2.5 rounded-full bg-white/95 backdrop-blur-md border border-slate-200/80 shadow-md flex items-center justify-between">
           
           {/* Brand Logo: EG badge + EduGuide brand name */}
           <Link href="/" className="flex items-center gap-2 group">

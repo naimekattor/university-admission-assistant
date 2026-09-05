@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef } from 'react';
 import Link from 'next/link';
 import {
   CheckCircle2,
@@ -14,12 +14,15 @@ import {
   Play,
 } from 'lucide-react';
 import { PreparationConfig } from '@/lib/homepage-types';
+import { useScrollTriggerReveal } from '@/hooks/use-gsap-motion';
 
 interface PreparationCtaSectionProps {
   config?: PreparationConfig;
 }
 
 export function PreparationCtaSection({ config }: PreparationCtaSectionProps) {
+  const sectionRef = useRef<HTMLElement>(null);
+  useScrollTriggerReveal(sectionRef, { y: 24 });
   const badgeText = config?.badgeText || 'THE PREPARATION PLATFORM';
   const headline = config?.headline || 'Know where to apply. Now prepare to get in.';
   const description =
@@ -58,7 +61,7 @@ export function PreparationCtaSection({ config }: PreparationCtaSectionProps) {
   }
 
   return (
-    <section id="preparation-cta" className="py-12 container mx-auto px-4 sm:px-6 lg:px-8">
+    <section ref={sectionRef} id="preparation-cta" className="py-12 container mx-auto px-4 sm:px-6 lg:px-8">
       <div className={`rounded-3xl ${bgGradientClass} text-white p-8 sm:p-12 relative overflow-hidden border transition-all duration-300`}>
         {/* ── AMBIENT GLOW ORBS ── */}
         <div

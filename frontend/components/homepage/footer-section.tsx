@@ -1,14 +1,17 @@
 'use client';
 
-import React from 'react';
+import React, { useRef } from 'react';
 import Link from 'next/link';
 import { FooterConfig } from '@/lib/homepage-types';
+import { useScrollTriggerReveal } from '@/hooks/use-gsap-motion';
 
 interface FooterSectionProps {
   config?: FooterConfig;
 }
 
 export function FooterSection({ config }: FooterSectionProps) {
+  const footerRef = useRef<HTMLElement>(null);
+  useScrollTriggerReveal(footerRef, { y: 15, duration: 0.5 });
   const description =
     config?.description ||
     'EduGuide is Bangladesh’s premier data-driven university admission intelligence and preparation platform, consolidating official circulars, GPA rules, deadlines, and smart preparation in one unified place.';
@@ -56,7 +59,7 @@ export function FooterSection({ config }: FooterSectionProps) {
     '© 2026 EduGuide Bangladesh. All rights reserved. Official admission data sourced from university circulars.';
 
   return (
-    <footer className="border-t border-slate-200 bg-white text-slate-900 mt-12">
+    <footer ref={footerRef} className="border-t border-slate-200 bg-white text-slate-900 mt-12">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 space-y-10">
         {/* ── TOP SECTION: BRAND & LINK GROUPS ── */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">

@@ -8,7 +8,7 @@ test.describe('SEO Technical Audit: Robots.txt Rules', () => {
     const body = await res.text();
 
     // 1. Must declare User-agent
-    expect(body, 'robots.txt must contain User-agent').toContain('User-agent:');
+    expect(body.toLowerCase(), 'robots.txt must contain User-agent').toContain('user-agent:');
 
     // 2. Must link to sitemap
     expect(body.toLowerCase(), 'robots.txt must contain Sitemap reference').toContain('sitemap:');

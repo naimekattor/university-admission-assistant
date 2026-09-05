@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { Building2, MapPin, ArrowRight, Users, Calendar } from 'lucide-react';
 import { FeaturedUniversitiesConfig } from '@/lib/homepage-types';
 import { FALLBACK_UNIVERSITIES } from '@/lib/universities-fallback';
+import { useScrollTriggerReveal } from '@/hooks/use-gsap-motion';
 
 interface FeaturedUniversitiesSectionProps {
   config?: FeaturedUniversitiesConfig;
@@ -13,6 +14,14 @@ interface FeaturedUniversitiesSectionProps {
 
 export function FeaturedUniversitiesSection({ config, universities = [] }: FeaturedUniversitiesSectionProps) {
   const [allUnis, setAllUnis] = useState<any[]>([]);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  useScrollTriggerReveal(gridRef, {
+    staggerChildren: '.university-card',
+    y: 20,
+    stagger: 0.07,
+    start: 'top 85%',
+  });
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -80,13 +89,13 @@ export function FeaturedUniversitiesSection({ config, universities = [] }: Featu
         </div>
 
         {/* ── UNIVERSITIES GRID ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           {displayedUniversities.map((uni) => {
             const isImageLogo = uni.logo && (uni.logo.startsWith('http') || uni.logo.startsWith('/'));
             return (
             <div
               key={uni.id}
-              className="p-5 rounded-2xl border border-slate-200 bg-white hover:border-orange-300 hover:shadow-xs transition-all flex flex-col justify-between space-y-3.5"
+              className="university-card p-5 rounded-2xl border border-slate-200 bg-white hover:border-orange-300 hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between space-y-3.5"
             >
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">

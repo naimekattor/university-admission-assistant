@@ -1,9 +1,12 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { Search, ExternalLink, Filter, Building2, Calendar, Award, ArrowRight, CheckCircle2, Clock, FileText } from 'lucide-react';
 import { AdmissionSectionConfig, AdmissionRowItem, DEFAULT_HOMEPAGE_CONFIG } from '@/lib/homepage-types';
+import { useGsapContext } from '@/hooks/use-gsap-motion';
+import { isReducedMotion } from '@/lib/animations/gsap-motion';
+import gsap from 'gsap';
 
 interface AdmissionAtGlanceProps {
   config?: AdmissionSectionConfig;
@@ -11,8 +14,33 @@ interface AdmissionAtGlanceProps {
 }
 
 export function AdmissionAtGlance({ config: propConfig, admissions: propAdmissions = [] }: AdmissionAtGlanceProps) {
+  const sectionRef = useRef<HTMLElement>(null);
   const [fetchedAdmissions, setFetchedAdmissions] = useState<AdmissionRowItem[]>([]);
   const [fetchedConfig, setFetchedConfig] = useState<AdmissionSectionConfig | null>(null);
+
+  useGsapContext(
+    () => {
+      if (!sectionRef.current || isReducedMotion()) return;
+
+      gsap.fromTo(
+        sectionRef.current,
+        { opacity: 0, y: 20 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.6,
+          ease: 'power2.out',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top 85%',
+            once: true,
+          },
+        }
+      );
+    },
+    sectionRef,
+    []
+  );
 
   // Fetch directly from /api/v1/admin/circulars to ensure 100% circular-backed data
   React.useEffect(() => {
@@ -143,7 +171,7 @@ export function AdmissionAtGlance({ config: propConfig, admissions: propAdmissio
   const displayedRows = filteredAdmissions.slice(0, maxDisplay);
 
   return (
-    <section id="admission-table" className="py-12 container mx-auto px-4 sm:px-6 lg:px-8">
+    <section ref={sectionRef} id="admission-table" className="py-12 container mx-auto px-4 sm:px-6 lg:px-8">
       <div className="space-y-6">
         {/* ── SECTION HEADER ── */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">

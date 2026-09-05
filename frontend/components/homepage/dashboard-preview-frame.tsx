@@ -1,6 +1,5 @@
 'use client';
-
-import React from 'react';
+import React, { useRef } from 'react';
 import Link from 'next/link';
 import {
   Search,
@@ -22,12 +21,45 @@ import {
   Atom,
   GraduationCap,
 } from 'lucide-react';
+import { useGsapContext } from '@/hooks/use-gsap-motion';
+import { isReducedMotion } from '@/lib/animations/gsap-motion';
+import gsap from 'gsap';
 
 export function DashboardPreviewFrame() {
+  const frameRef = useRef<HTMLDivElement>(null);
+
+  useGsapContext(
+    () => {
+      if (!frameRef.current || isReducedMotion()) return;
+
+      gsap.fromTo(
+        frameRef.current,
+        { opacity: 0, scale: 0.96, y: 30 },
+        {
+          opacity: 1,
+          scale: 1,
+          y: 0,
+          duration: 0.8,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: frameRef.current,
+            start: 'top 85%',
+            once: true,
+          },
+        }
+      );
+    },
+    frameRef,
+    []
+  );
+
   return (
     <div id="dashboard-preview" className="container mx-auto px-4 sm:px-6 lg:px-8 pb-16">
       {/* ── BROWSER / TABLET DEVICE FRAME ── */}
-      <div className="rounded-[2rem] border-[7px] border-slate-800 bg-[#FAFAF9] shadow-2xl overflow-hidden max-w-6xl mx-auto">
+      <div
+        ref={frameRef}
+        className="rounded-[2rem] border-[7px] border-slate-800 bg-[#FAFAF9] shadow-2xl overflow-hidden max-w-6xl mx-auto"
+      >
         
         {/* ── 1. DASHBOARD APP TOP BAR ── */}
         <div className="bg-white border-b border-slate-200/80 px-5 py-3 flex items-center justify-between gap-4">
