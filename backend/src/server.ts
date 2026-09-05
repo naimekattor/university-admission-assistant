@@ -10,8 +10,11 @@ async function bootstrap() {
 
   const app = createApp();
 
-  const server = app.listen(ENV.PORT, () => {
-    console.log(`[EduGuide Backend] Server listening on http://localhost:${ENV.PORT} (ENV: ${ENV.NODE_ENV})`);
+  const port = Number(ENV.PORT) || 4000;
+  const host = '0.0.0.0';
+
+  const server = app.listen(port, host, () => {
+    console.log(`[EduGuide Backend] Server listening on http://${host}:${port} (ENV: ${ENV.NODE_ENV})`);
     
     // Initialize keep-alive cron for Render.com (pings every 14 mins to prevent spin-down)
     startKeepAliveCron();

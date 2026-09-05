@@ -2,7 +2,7 @@ import { config } from 'dotenv';
 config();
 
 export const ENV = {
-  PORT: process.env.PORT || 4000,
+  PORT: Number(process.env.PORT) || 4000,
   NODE_ENV: process.env.NODE_ENV || 'development',
   CORS_ORIGIN: process.env.CORS_ORIGIN || '*',
   DATABASE_URL: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/admission_db',
