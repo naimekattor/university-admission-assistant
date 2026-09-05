@@ -6,6 +6,8 @@ import { fetchServerGuideBySlug } from '@/lib/server-api';
 import { GuideShareButton } from '@/components/guides/guide-share-button';
 import { FALLBACK_GUIDES } from '@/lib/guides-fallback';
 
+import { RichTextRenderer } from '@/components/rich-text/rich-text-renderer';
+
 export const revalidate = 3600; // ISR: 1 hour cache regeneration
 
 export async function generateStaticParams() {
@@ -96,9 +98,10 @@ export default async function GuideArticlePage(props: {
 
           {/* Body Content */}
           <div className="p-6 sm:p-10 rounded-3xl bg-white border border-slate-200/90 shadow-sm">
-            <div className="prose prose-slate prose-headings:font-black prose-headings:tracking-tight prose-a:text-[#FF5500] max-w-none text-slate-800 text-sm sm:text-base leading-relaxed space-y-4 whitespace-pre-line">
-              {article.content || article.summary}
-            </div>
+            <RichTextRenderer
+              content={article.content || article.summary}
+              className="text-sm sm:text-base"
+            />
           </div>
         </article>
       </div>
