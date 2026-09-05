@@ -20,7 +20,8 @@
     "test:ai": "tsx scripts/test-ai-fallback.ts",
     "test:groq": "tsx scripts/test-groq-api.ts",
     "test:claude": "tsx scripts/test-claude-api.ts",
-    "ping": "tsx scripts/ping-keep-alive.ts"
+    "ping": "tsx scripts/ping-keep-alive.ts",
+    "bench:concurrency": "tsx scripts/benchmark-concurrency.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.16",
