@@ -76,19 +76,38 @@ function HomepageInner() {
         }}
       />
 
-      {/* ── JSON-LD STRUCTURED DATA SCHEMA FOR SEO ── */}
+      {/* ── JSON-LD STRUCTURED DATA SCHEMAS FOR SEO ── */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'EducationalOrganization',
-            name: 'EduGuide Bangladesh',
-            url: 'https://eduguide.com.bd',
-            description:
-              config?.seo?.metaDescription ||
-              'Bangladesh university admission intelligence and preparation platform for BUET, DU, Medical, and GST.',
-          }),
+          __html: JSON.stringify([
+            {
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              name: 'EduGuide Bangladesh',
+              url: process.env.NEXT_PUBLIC_APP_URL || 'https://university-admission-assistant.vercel.app',
+              potentialAction: {
+                '@type': 'SearchAction',
+                target: `${process.env.NEXT_PUBLIC_APP_URL || 'https://university-admission-assistant.vercel.app'}/universities?search={search_term_string}`,
+                'query-input': 'required name=search_term_string',
+              },
+            },
+            {
+              '@context': 'https://schema.org',
+              '@type': 'EducationalOrganization',
+              name: 'EduGuide Bangladesh',
+              url: process.env.NEXT_PUBLIC_APP_URL || 'https://university-admission-assistant.vercel.app',
+              logo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://university-admission-assistant.vercel.app'}/icon.svg`,
+              description:
+                config?.seo?.metaDescription ||
+                'Bangladesh premier university admission intelligence and preparation platform for BUET, DU, Medical, and GST.',
+              address: {
+                '@type': 'PostalAddress',
+                addressCountry: 'BD',
+                addressLocality: 'Dhaka',
+              },
+            },
+          ]),
         }}
       />
 

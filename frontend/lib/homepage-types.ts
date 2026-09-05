@@ -397,8 +397,8 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageFullConfig = {
         title: 'Platform',
         links: [
           { label: 'Pricing & Passes', url: '/pricing' },
-          { label: 'Terms of Service', url: '#' },
-          { label: 'Privacy Policy', url: '#' },
+          { label: 'Terms of Service', url: '/terms' },
+          { label: 'Privacy Policy', url: '/privacy' },
         ],
       },
     ],

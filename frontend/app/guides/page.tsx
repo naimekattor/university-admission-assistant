@@ -30,26 +30,25 @@ interface GuideItem {
   featuredImage?: string;
 }
 
+import { FALLBACK_GUIDES } from '@/lib/guides-fallback';
+
 export default function GuidesPage() {
-  const [guides, setGuides] = useState<GuideItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [guides, setGuides] = useState<GuideItem[]>(FALLBACK_GUIDES);
+  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
   const fetchGuides = async () => {
     try {
-      setLoading(true);
       const res = await fetch('/api/v1/guides?limit=50', { cache: 'no-store' });
       if (res.ok) {
         const json = await res.json();
-        if (json.data && Array.isArray(json.data)) {
+        if (json.data && Array.isArray(json.data) && json.data.length > 0) {
           setGuides(json.data);
         }
       }
     } catch (err) {
       console.error('Error fetching guides from PostgreSQL:', err);
-    } finally {
-      setLoading(false);
     }
   };
 

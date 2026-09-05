@@ -4,10 +4,69 @@ import './globals.css'
 import { Navbar } from '@/components/navbar'
 import { ToastProvider } from '@/components/ui/custom-toast'
 import { FloatingAiChat } from '@/components/ai/floating-ai-chat'
+import { WebSiteSchema, EducationalOrganizationSchema } from '@/components/seo/json-ld'
+const rawSiteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://university-admission-assistant.vercel.app';
+const siteUrl = rawSiteUrl.replace(/\/+$/, '');
+
 export const metadata: Metadata = {
-  title: 'EduGuide - AI-Powered University Admission Preparation for Bangladesh',
-  description: 'AI-powered personal admission coach for Bangladeshi students preparing for BUET, DU, Medical, and Engineering admission tests.',
-  generator: 'v0.app',
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: 'EduGuide — Bangladesh University Admission Intelligence & Preparation',
+    template: '%s | EduGuide',
+  },
+  description:
+    'Official Bangladesh university admission circulars, GPA eligibility qualifier, deadlines, and smart preparation for BUET, DU, Medical, and GST 2026.',
+  keywords: [
+    'university admission 2026',
+    'BUET admission 2026',
+    'DU admission circular',
+    'medical admission test Bangladesh',
+    'GST admission eligibility',
+    'admission GPA calculator',
+    'admission circulars Bangladesh',
+    'admission test preparation',
+  ],
+  authors: [{ name: 'EduGuide Academic Advisory Board', url: siteUrl }],
+  creator: 'EduGuide Bangladesh',
+  publisher: 'EduGuide',
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: siteUrl,
+    siteName: 'EduGuide Bangladesh',
+    title: 'EduGuide — Bangladesh University Admission Intelligence & Preparation',
+    description:
+      'Official Bangladesh university admission circulars, GPA eligibility qualifier, deadlines, and smart preparation for BUET, DU, Medical, and GST 2026.',
+    images: [
+      {
+        url: '/icon.svg',
+        width: 512,
+        height: 512,
+        alt: 'EduGuide Bangladesh Brand Logo',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'EduGuide — University Admission Intelligence Bangladesh',
+    description:
+      'Official Bangladesh university admission circulars, GPA eligibility qualifier, deadlines, and smart preparation for BUET, DU, Medical, and GST 2026.',
+    images: ['/icon.svg'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   icons: {
     icon: '/icon.svg',
     shortcut: '/icon.svg',
@@ -16,7 +75,7 @@ export const metadata: Metadata = {
   verification: {
     google: 'DM4k-Q6VQBItqCk_r-fWuYEspIJTaFJ8Dg_BneuaJPI',
   },
-}
+};
 
 export const viewport: Viewport = {
   colorScheme: 'light',
@@ -31,6 +90,8 @@ export default function RootLayout({
   return (
     <html lang="en" className="bg-[#FAF8F5] text-slate-900 overflow-x-hidden">
       <body className="antialiased min-h-screen flex flex-col bg-[#FAF8F5] text-slate-900 overflow-x-hidden">
+        <WebSiteSchema url={siteUrl} searchUrl={`${siteUrl}/universities?search={search_term_string}`} />
+        <EducationalOrganizationSchema url={siteUrl} logo={`${siteUrl}/icon.svg`} />
         <ToastProvider>
           <Navbar />
           <main className="flex-1 w-full max-w-full overflow-x-clip">{children}</main>

@@ -95,13 +95,16 @@ interface UniversityDetails {
   events?: any[];
 }
 
+import { getUniversityBySlug } from '@/lib/universities-fallback';
+
 export default function UniversityDetailsPage() {
   const params = useParams();
   const router = useRouter();
-  const slug = params.slug as string;
+  const slug = (params.slug as string) || '';
 
-  const [uni, setUni] = useState<UniversityDetails | null>(null);
-  const [loading, setLoading] = useState(true);
+  const fallbackUni = getUniversityBySlug(slug);
+  const [uni, setUni] = useState<UniversityDetails | null>(fallbackUni as any);
+  const [loading, setLoading] = useState(!fallbackUni);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'departments' | 'culture' | 'facilities' | 'gallery' | 'circulars'>('overview');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -110,27 +113,28 @@ export default function UniversityDetailsPage() {
     async function loadUniversity() {
       if (!slug) return;
       try {
-        setLoading(true);
-        setError(null);
         const res = await fetch(`/api/v1/universities/${slug}`);
         if (res.ok) {
           const json = await res.json();
           if (json.data) {
             setUni(json.data);
-          } else {
+            setError(null);
+          } else if (!fallbackUni) {
             setError('University details not found.');
           }
-        } else {
+        } else if (!fallbackUni) {
           setError('University not found.');
         }
       } catch (err: any) {
-        setError(err.message || 'Failed to load university details.');
+        if (!fallbackUni) {
+          setError(err.message || 'Failed to load university details.');
+        }
       } finally {
         setLoading(false);
       }
     }
     loadUniversity();
-  }, [slug]);
+  }, [slug, fallbackUni]);
 
   if (loading) {
     return (
@@ -139,7 +143,7 @@ export default function UniversityDetailsPage() {
           <div className="w-12 h-12 rounded-2xl bg-orange-100 border border-orange-200 text-[#FF5500] flex items-center justify-center mx-auto animate-pulse">
             <Building2 className="w-6 h-6 animate-spin" />
           </div>
-          <p className="text-sm font-bold text-slate-700">Loading university profile from database...</p>
+          <p className="text-sm font-bold text-slate-700">Loading university profile...</p>
         </div>
       </div>
     );
@@ -150,9 +154,9 @@ export default function UniversityDetailsPage() {
       <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center p-6">
         <div className="max-w-md w-full p-8 rounded-3xl bg-white border border-slate-200 text-center space-y-4 shadow-xl">
           <AlertCircle className="w-12 h-12 text-rose-500 mx-auto" />
-          <h2 className="text-lg font-bold text-slate-900">University Not Found</h2>
+          <h1 className="text-lg font-bold text-slate-900">University Not Found</h1>
           <p className="text-xs text-slate-500">
-            We could not locate institutional records for <code className="bg-slate-100 px-1.5 py-0.5 rounded font-mono">{slug}</code> in PostgreSQL.
+            We could not locate institutional records for <code className="bg-slate-100 px-1.5 py-0.5 rounded font-mono">{slug}</code>.
           </p>
           <div className="pt-2 flex items-center justify-center gap-2">
             <Link
@@ -467,10 +471,10 @@ export default function UniversityDetailsPage() {
               {/* Detailed Profile Box with Rich HTML */}
               <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
                     <Building2 className="w-4 h-4 text-[#FF5500]" />
                     <span>About {uni.name}</span>
-                  </h3>
+                  </h2>
                   <span className="text-[11px] font-mono text-slate-400">Institutional Profile</span>
                 </div>
 
@@ -488,10 +492,10 @@ export default function UniversityDetailsPage() {
 
               {/* Institutional Highlights */}
               <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-4">
-                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
                   <Award className="w-4 h-4 text-[#FF5500]" />
                   <span>Key Campus Features</span>
-                </h3>
+                </h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                   <div className="p-4 rounded-2xl bg-orange-50/50 border border-orange-100 space-y-1">
@@ -572,10 +576,10 @@ export default function UniversityDetailsPage() {
           <div className="space-y-4">
             <div className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
                   <GraduationCap className="w-5 h-5 text-[#FF5500]" />
                   <span>Academic Degree Programs & Departments</span>
-                </h3>
+                </h2>
                 <p className="text-xs text-slate-500 mt-1">
                   Permanent academic faculties and degrees offered at {uni.name} (fetched dynamically from PostgreSQL).
                 </p>
@@ -638,10 +642,10 @@ export default function UniversityDetailsPage() {
           <div className="space-y-6">
             <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/80 shadow-xs space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-[#FF5500]" />
                   <span>Campus Culture, Traditions & Student Life</span>
-                </h3>
+                </h2>
                 <span className="text-[11px] font-mono text-slate-400">Student Experience</span>
               </div>
 
@@ -668,10 +672,10 @@ export default function UniversityDetailsPage() {
         {activeTab === 'facilities' && (
           <div className="space-y-6">
             <div className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <Library className="w-5 h-5 text-[#FF5500]" />
                 <span>Campus Infrastructure & Facilities ({facilitiesList.length})</span>
-              </h3>
+              </h2>
               <p className="text-xs text-slate-500 mt-1">
                 Life at {uni.name} is supported by state-of-the-art facilities, libraries, and dormitories (dynamically managed in admin).
               </p>
@@ -697,10 +701,10 @@ export default function UniversityDetailsPage() {
         {activeTab === 'gallery' && (
           <div className="space-y-6">
             <div className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <ImageIcon className="w-5 h-5 text-[#FF5500]" />
                 <span>Campus Photo Showcase ({galleryList.length} Photos)</span>
-              </h3>
+              </h2>
               <p className="text-xs text-slate-500 mt-1">
                 Visual highlights of campus landmarks, auditoriums, department complexes, and greenery.
               </p>
@@ -762,10 +766,10 @@ export default function UniversityDetailsPage() {
           <div className="space-y-4">
             <div className="p-6 rounded-3xl bg-white border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
                   <FileText className="w-5 h-5 text-[#FF5500]" />
                   <span>Admission Circulars & Unit Requirements</span>
-                </h3>
+                </h2>
                 <p className="text-xs text-slate-500 mt-1">
                   Official intake notices, GPA criteria, and application rules.
                 </p>

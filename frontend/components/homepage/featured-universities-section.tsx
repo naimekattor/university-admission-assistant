@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { Building2, MapPin, ArrowRight, Users, Calendar } from 'lucide-react';
 import { FeaturedUniversitiesConfig } from '@/lib/homepage-types';
+import { FALLBACK_UNIVERSITIES } from '@/lib/universities-fallback';
 
 interface FeaturedUniversitiesSectionProps {
   config?: FeaturedUniversitiesConfig;
@@ -30,7 +31,8 @@ export function FeaturedUniversitiesSection({ config, universities = [] }: Featu
 
   const displayedUniversities = useMemo(() => {
     const selectedIds = config?.selectedUniversityIds || [];
-    const source = allUnis.length > 0 ? allUnis : universities;
+    const baseSource = allUnis.length > 0 ? allUnis : universities;
+    const source = baseSource.length > 0 ? baseSource : FALLBACK_UNIVERSITIES;
 
     if (selectedIds.length > 0 && source.length > 0) {
       const selected = source.filter((u) => {
@@ -44,7 +46,7 @@ export function FeaturedUniversitiesSection({ config, universities = [] }: Featu
       });
       if (selected.length > 0) return selected;
     }
-    return universities.length > 0 ? universities : allUnis.slice(0, 8);
+    return source.slice(0, 8);
   }, [config?.selectedUniversityIds, universities, allUnis]);
 
   const title = config?.title || 'Explore Universities';
@@ -136,12 +138,17 @@ export function FeaturedUniversitiesSection({ config, universities = [] }: Featu
               </div>
 
               {/* Action */}
-              <Link href="/universities" className="block pt-1">
-                <button className="w-full py-1.5 px-3 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-[#FF5500] text-xs font-bold rounded-full flex items-center justify-center gap-1 transition cursor-pointer">
-                  <span>View Details</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              </Link>
+              {(() => {
+                const targetSlug = (uni.slug || uni.shortName || uni.id || 'buet').toLowerCase().trim().replace(/[^a-z0-9]/g, '-');
+                return (
+                  <Link href={`/universities/${targetSlug}`} className="block pt-1">
+                    <button className="w-full py-1.5 px-3 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-[#FF5500] text-xs font-bold rounded-full flex items-center justify-center gap-1 transition cursor-pointer">
+                      <span>View Details</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </Link>
+                );
+              })()}
             </div>
             );
           })}

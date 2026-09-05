@@ -32,12 +32,15 @@ interface GuideArticle {
   featuredImage?: string;
 }
 
+import { getGuideBySlug } from '@/lib/guides-fallback';
+
 export default function GuideArticlePage() {
   const params = useParams();
-  const slug = params?.slug as string;
+  const slug = (params?.slug as string) || '';
 
-  const [article, setArticle] = useState<GuideArticle | null>(null);
-  const [loading, setLoading] = useState(true);
+  const fallback = getGuideBySlug(slug);
+  const [article, setArticle] = useState<GuideArticle | null>(fallback as any);
+  const [loading, setLoading] = useState(!fallback);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -45,7 +48,6 @@ export default function GuideArticlePage() {
 
     const fetchArticle = async () => {
       try {
-        setLoading(true);
         const res = await fetch(`/api/v1/guides/${slug}`, { cache: 'no-store' });
         if (res.ok) {
           const json = await res.json();
@@ -115,7 +117,7 @@ export default function GuideArticlePage() {
         {!loading && !article && (
           <div className="p-12 rounded-3xl bg-white border border-slate-200 shadow-sm text-center space-y-4">
             <AlertCircle className="w-10 h-10 text-[#FF5500] mx-auto" />
-            <h2 className="text-2xl font-bold text-slate-900">Guide article not found</h2>
+            <h1 className="text-2xl font-bold text-slate-900">Guide article not found</h1>
             <p className="text-xs text-slate-500 max-w-md mx-auto">
               The article you are looking for might have been moved or unpublished. Browse all available guides.
             </p>

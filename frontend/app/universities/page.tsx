@@ -19,6 +19,8 @@ import {
   Award,
 } from 'lucide-react';
 
+import { FALLBACK_UNIVERSITIES } from '@/lib/universities-fallback';
+
 interface UniversityItem {
   id: string;
   name: string;
@@ -42,8 +44,8 @@ interface UniversityItem {
 }
 
 export default function UniversitiesPage() {
-  const [universities, setUniversities] = useState<UniversityItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [universities, setUniversities] = useState<UniversityItem[]>(FALLBACK_UNIVERSITIES as any);
+  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedGroup, setSelectedGroup] = useState('All');
   const [selectedStatus, setSelectedStatus] = useState('All');
@@ -51,18 +53,15 @@ export default function UniversitiesPage() {
   useEffect(() => {
     async function loadUniversities() {
       try {
-        setLoading(true);
         const res = await fetch('/api/v1/universities');
         if (res.ok) {
           const json = await res.json();
-          if (json.data && Array.isArray(json.data)) {
+          if (json.data && Array.isArray(json.data) && json.data.length > 0) {
             setUniversities(json.data);
           }
         }
       } catch (err) {
         console.error('Failed to load universities:', err);
-      } finally {
-        setLoading(false);
       }
     }
     loadUniversities();
@@ -272,7 +271,13 @@ export default function UniversitiesPage() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+                Verified Institutions & Admissions ({filteredUniversities.length})
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredUniversities.map((uni) => {
               const targetSlug = (uni.slug || uni.shortName || uni.id).toLowerCase().trim().replace(/[^a-z0-9]/g, '-');
               const isOpen = uni.status === 'Applications Open';
@@ -404,6 +409,7 @@ export default function UniversitiesPage() {
                 </div>
               );
             })}
+            </div>
           </div>
         )}
       </section>
