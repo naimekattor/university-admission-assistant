@@ -30,6 +30,10 @@ export const ENV = {
   // JWT Secret
   JWT_SECRET: process.env.JWT_SECRET || 'eduguide_secret_jwt_key_2026',
 
+  // Redis & Revalidation
+  REDIS_URL: process.env.REDIS_URL || 'redis://127.0.0.1:6379',
+  REVALIDATION_SECRET: process.env.REVALIDATION_SECRET || 'eduguide_revalidation_secure_secret_2026',
+
   // Render & Keep-Alive Cron Configuration
   // Render.com automatically supplies RENDER_EXTERNAL_URL (e.g., https://your-service.onrender.com)
   RENDER_EXTERNAL_URL: process.env.RENDER_EXTERNAL_URL || '',

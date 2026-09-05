@@ -10,6 +10,9 @@ import { admissionService } from '../modules/admission/admission.service';
 import { db, sessions, chatMessages } from '../db';
 import { eq, asc } from 'drizzle-orm';
 import { pingKeepAlive, getKeepAliveTargetUrl } from '../services/cron.service';
+import { routeCache } from '../middleware/cache.middleware';
+import { rateLimit } from '../middleware/rate-limit.middleware';
+import { RevalidationService } from '../services/revalidation.service';
 
 export const apiRouter = Router();
 
@@ -34,8 +37,11 @@ apiRouter.get('/cron/keep-alive', async (req: Request, res: Response) => {
 });
 
 
-// AI Advisor & Tutor Endpoint with PostgreSQL Session & Chat Persistence
-apiRouter.post('/ai/query', async (req: Request, res: Response, next) => {
+// AI Advisor & Tutor Endpoint with PostgreSQL Session & Chat Persistence (Rate limited to 6 RPM)
+apiRouter.post(
+  '/ai/query',
+  rateLimit({ windowSeconds: 60, maxRequests: 6, keyPrefix: 'ai', useSessionId: true }),
+  async (req: Request, res: Response, next) => {
   try {
     const { roleType = 'advisor', userQuery, studentContext, sessionToken: providedToken } = req.body;
     const token = providedToken || (req.headers['x-session-id'] as string) || 'sess_default';
@@ -95,6 +101,112 @@ apiRouter.post('/ai/query', async (req: Request, res: Response, next) => {
     next(error);
   }
 });
+
+// AI Real-Time Server-Sent Events (SSE) Streaming Endpoint (Rate limited to 6 RPM)
+apiRouter.post(
+  '/ai/stream',
+  rateLimit({ windowSeconds: 60, maxRequests: 6, keyPrefix: 'ai-stream', useSessionId: true }),
+  async (req: Request, res: Response, next) => {
+    // 1. Establish SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable Nginx buffering on VPS
+    res.flushHeaders?.();
+
+    const { roleType = 'advisor', userQuery, studentContext, sessionToken: providedToken } = req.body;
+    const token = providedToken || (req.headers['x-session-id'] as string) || 'sess_default';
+
+    if (!userQuery) {
+      res.write(`data: ${JSON.stringify({ error: 'userQuery is required', done: true })}\n\n`);
+      return res.end();
+    }
+
+    // 2. Session tracking and user message persistence in PostgreSQL
+    let sessionRecord: any = null;
+    try {
+      sessionRecord = await db.query.sessions.findFirst({
+        where: eq(sessions.sessionToken, token),
+      });
+
+      if (!sessionRecord) {
+        const [newSess] = await db.insert(sessions).values({
+          sessionToken: token,
+          userAgent: (req.headers['user-agent'] as string) || 'web',
+          ipAddress: req.ip || '127.0.0.1',
+        }).returning();
+        sessionRecord = newSess;
+      } else {
+        await db.update(sessions).set({ lastActiveAt: new Date() }).where(eq(sessions.id, sessionRecord.id));
+      }
+
+      if (sessionRecord && userQuery) {
+        await db.insert(chatMessages).values({
+          sessionId: sessionRecord.id,
+          role: 'user',
+          content: userQuery,
+        });
+      }
+    } catch (dbErr: any) {
+      console.warn('[SSE ChatPersistence] Error saving user message:', dbErr.message);
+    }
+
+    // 3. Stream AI generator tokens
+    let isClientClosed = false;
+    req.on('close', () => {
+      isClientClosed = true;
+    });
+
+    try {
+      const streamGen = aiOrchestratorService.streamQuery({
+        roleType,
+        userQuery,
+        studentContext,
+      });
+
+      let iteration = await streamGen.next();
+      while (!iteration.done) {
+        if (isClientClosed) break;
+        const chunk = iteration.value;
+        res.write(`data: ${JSON.stringify({ chunk, done: false })}\n\n`);
+        iteration = await streamGen.next();
+      }
+
+      const finalResult = iteration.value as { structured?: any; fullText?: string } | string | undefined;
+      if (!isClientClosed) {
+        res.write(`data: ${JSON.stringify({ finalResult, done: true })}\n\n`);
+        res.end();
+      }
+
+      // 4. Persist AI assistant response
+      try {
+        if (sessionRecord && finalResult) {
+          let contentToSave = 'Generated AI guidance.';
+          if (typeof finalResult === 'string') {
+            contentToSave = finalResult;
+          } else if (finalResult.structured) {
+            contentToSave = JSON.stringify(finalResult.structured);
+          } else if (finalResult.fullText) {
+            contentToSave = finalResult.fullText;
+          }
+          await db.insert(chatMessages).values({
+            sessionId: sessionRecord.id,
+            role: 'assistant',
+            content: contentToSave,
+          });
+        }
+      } catch (dbErr: any) {
+        console.warn('[SSE ChatPersistence] Error saving assistant message:', dbErr.message);
+      }
+    } catch (streamError: any) {
+      console.error('[SSE] Streaming error:', streamError.message || streamError);
+      if (!isClientClosed) {
+        res.write(`data: ${JSON.stringify({ error: streamError.message || 'Stream generation failed', done: true })}\n\n`);
+        res.end();
+      }
+    }
+  }
+);
 
 // Chat History Retrieval from PostgreSQL
 apiRouter.get('/ai/chat/history', async (req: Request, res: Response, next) => {
@@ -244,8 +356,8 @@ apiRouter.get('/homepage', async (req: Request, res: Response, next) => {
   }
 });
 
-// Dedicated Public Admissions Directory Endpoint (Supports query params: search, group, status, sortBy, page, limit)
-apiRouter.get('/admissions', async (req: Request, res: Response, next) => {
+// Dedicated Public Admissions Directory Endpoint (Cached 10 mins in Redis)
+apiRouter.get('/admissions', routeCache(600, 'admissions'), async (req: Request, res: Response, next) => {
   try {
     const search = req.query.search as string;
     const group = req.query.group as string;
@@ -311,8 +423,8 @@ apiRouter.get('/faqs', async (req: Request, res: Response, next) => {
   }
 });
 
-// Public SEO Guides Endpoint
-apiRouter.get('/guides', async (req: Request, res: Response, next) => {
+// Public SEO Guides Endpoint (Cached 1 hr in Redis)
+apiRouter.get('/guides', routeCache(3600, 'guides'), async (req: Request, res: Response, next) => {
   try {
     const limit = Number(req.query.limit || 50);
     const guides = await homepageService.getPublishedGuides(limit);
@@ -322,7 +434,7 @@ apiRouter.get('/guides', async (req: Request, res: Response, next) => {
   }
 });
 
-apiRouter.get('/guides/:slug', async (req: Request, res: Response, next) => {
+apiRouter.get('/guides/:slug', routeCache(3600, 'guides'), async (req: Request, res: Response, next) => {
   try {
     const slug = Array.isArray(req.params.slug) ? req.params.slug[0] : req.params.slug;
     const guide = await homepageService.getGuideBySlug(slug);
@@ -454,9 +566,9 @@ apiRouter.delete('/admin/homepage/guides/:id', async (req: Request, res: Respons
 });
 
 // ==========================================
-// UNIVERSITIES CRUD ENDPOINTS
+// UNIVERSITIES CRUD ENDPOINTS (Cached in Redis)
 // ==========================================
-apiRouter.get('/universities', async (req: Request, res: Response, next) => {
+apiRouter.get('/universities', routeCache(1800, 'universities'), async (req: Request, res: Response, next) => {
   try {
     const data = await homepageService.getAllUniversities();
     res.json({ success: true, data });
@@ -465,7 +577,7 @@ apiRouter.get('/universities', async (req: Request, res: Response, next) => {
   }
 });
 
-apiRouter.get('/universities/:slug', async (req: Request, res: Response, next) => {
+apiRouter.get('/universities/:slug', routeCache(900, 'universities'), async (req: Request, res: Response, next) => {
   try {
     const slug = Array.isArray(req.params.slug) ? req.params.slug[0] : req.params.slug;
     const data = await homepageService.getUniversityBySlug(slug);
@@ -481,6 +593,11 @@ apiRouter.get('/universities/:slug', async (req: Request, res: Response, next) =
 apiRouter.post('/universities', async (req: Request, res: Response, next) => {
   try {
     const result = await homepageService.createUniversity(req.body);
+    await RevalidationService.invalidateContent({
+      redisPattern: 'cache:universities:*',
+      tag: 'universities',
+      path: '/universities',
+    });
     res.json(result);
   } catch (error) {
     next(error);
@@ -491,6 +608,11 @@ apiRouter.put('/universities/:id', async (req: Request, res: Response, next) => 
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const result = await homepageService.updateUniversity(id, req.body);
+    await RevalidationService.invalidateContent({
+      redisPattern: 'cache:universities:*',
+      tag: 'universities',
+      path: '/universities',
+    });
     res.json(result);
   } catch (error) {
     next(error);
@@ -501,6 +623,11 @@ apiRouter.delete('/universities/:id', async (req: Request, res: Response, next) 
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const result = await homepageService.deleteUniversity(id);
+    await RevalidationService.invalidateContent({
+      redisPattern: 'cache:universities:*',
+      tag: 'universities',
+      path: '/universities',
+    });
     res.json(result);
   } catch (error) {
     next(error);
@@ -652,6 +779,11 @@ apiRouter.get('/admin/circulars/:id', async (req: Request, res: Response, next) 
 apiRouter.post('/admin/circulars', async (req: Request, res: Response, next) => {
   try {
     const created = await admissionService.createCircular(req.body);
+    await RevalidationService.invalidateContent({
+      redisPattern: 'cache:admissions:*',
+      tag: ['circulars', 'admissions'],
+      path: '/admission',
+    });
     res.status(201).json({ success: true, message: 'Circular created successfully', data: created });
   } catch (error) {
     next(error);
@@ -663,6 +795,11 @@ apiRouter.put('/admin/circulars/:id', async (req: Request, res: Response, next) 
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const updated = await admissionService.updateCircular(id, req.body);
+    await RevalidationService.invalidateContent({
+      redisPattern: 'cache:admissions:*',
+      tag: ['circulars', 'admissions'],
+      path: '/admission',
+    });
     res.json({ success: true, message: 'Circular updated successfully', data: updated });
   } catch (error) {
     next(error);
@@ -674,6 +811,11 @@ apiRouter.delete('/admin/circulars/:id', async (req: Request, res: Response, nex
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     await admissionService.deleteCircular(id);
+    await RevalidationService.invalidateContent({
+      redisPattern: 'cache:admissions:*',
+      tag: ['circulars', 'admissions'],
+      path: '/admission',
+    });
     res.json({ success: true, message: 'Circular deleted successfully' });
   } catch (error) {
     next(error);

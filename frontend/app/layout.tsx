@@ -3,8 +3,10 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { Navbar } from '@/components/navbar'
 import { ToastProvider } from '@/components/ui/custom-toast'
-import { FloatingAiChat } from '@/components/ai/floating-ai-chat'
+import { AppQueryProvider } from '@/components/providers/query-provider'
 import { WebSiteSchema, EducationalOrganizationSchema } from '@/components/seo/json-ld'
+import { FloatingAiChatClient } from '@/components/ai/floating-ai-chat-client'
+
 const rawSiteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://university-admission-assistant.vercel.app';
 const siteUrl = rawSiteUrl.replace(/\/+$/, '');
 
@@ -92,12 +94,14 @@ export default function RootLayout({
       <body className="antialiased min-h-screen flex flex-col bg-[#FAF8F5] text-slate-900 overflow-x-hidden">
         <WebSiteSchema url={siteUrl} searchUrl={`${siteUrl}/universities?search={search_term_string}`} />
         <EducationalOrganizationSchema url={siteUrl} logo={`${siteUrl}/icon.svg`} />
-        <ToastProvider>
-          <Navbar />
-          <main className="flex-1 w-full max-w-full overflow-x-clip">{children}</main>
-          <FloatingAiChat />
-          {process.env.NODE_ENV === 'production' && <Analytics />}
-        </ToastProvider>
+        <AppQueryProvider>
+          <ToastProvider>
+            <Navbar />
+            <main className="flex-1 w-full max-w-full overflow-x-clip">{children}</main>
+            <FloatingAiChatClient />
+            {process.env.NODE_ENV === 'production' && <Analytics />}
+          </ToastProvider>
+        </AppQueryProvider>
       </body>
     </html>
   )

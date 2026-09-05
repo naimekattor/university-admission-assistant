@@ -73,6 +73,69 @@ export class AiOrchestratorService {
     return this.normalizeStructuredResult(rawAiResult || {}, userQuery, roleType);
   }
 
+  public async *streamQuery(
+    request: AiOrchestratorRequest
+  ): AsyncGenerator<string, { structured: StructuredAiResponse; fullText: string }, unknown> {
+    const { roleType, userQuery, studentContext } = request;
+
+    // 1. Perform semantic RAG search in pgvector
+    let ragContextText = '';
+    try {
+      const ragDocs = await ragService.searchDocuments({
+        query: userQuery,
+        limit: 5,
+      });
+      ragContextText = ragService.formatContextForPrompt(ragDocs);
+    } catch {
+      // RAG offline fallback
+    }
+
+    // 2. Build specialized System Prompt
+    const systemPrompt = this.buildSystemPrompt(roleType, studentContext, ragContextText);
+
+    // 3. Stream real tokens if Groq is available
+    let accumulatedText = '';
+    if (groqProvider.isConfigured()) {
+      try {
+        for await (const token of groqProvider.streamText(userQuery, systemPrompt)) {
+          accumulatedText += token;
+          yield token;
+        }
+      } catch (err: any) {
+        console.warn('[AiOrchestrator] Groq live streaming error, falling back:', err.message || err);
+      }
+    }
+
+    // If streaming failed or wasn't configured, fall back to processQuery and yield chunks progressively
+    if (!accumulatedText) {
+      const structured = await this.processQuery(request);
+      const textToYield =
+        structured && typeof structured === 'object' && 'summary' in structured && typeof structured.summary === 'string'
+          ? structured.summary
+          : JSON.stringify(structured);
+      const words = textToYield.split(' ');
+      for (let i = 0; i < words.length; i += 3) {
+        const chunk = (i > 0 ? ' ' : '') + words.slice(i, i + 3).join(' ');
+        accumulatedText += chunk;
+        yield chunk;
+      }
+      return { structured, fullText: accumulatedText };
+    }
+
+    // Try parsing accumulated JSON if returned structured, or normalize standard answer
+    let parsed: any = null;
+    try {
+      const cleaned = accumulatedText.trim().replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+      const match = cleaned.match(/\{[\s\S]*\}/);
+      if (match) {
+        parsed = JSON.parse(match[0]);
+      }
+    } catch {}
+
+    const structured = this.normalizeStructuredResult(parsed || { summary: accumulatedText }, userQuery, roleType);
+    return { structured, fullText: accumulatedText };
+  }
+
   private buildSystemPrompt(roleType: AiRoleType, studentContext?: any, ragContextText?: string): string {
     const isTutor = roleType === 'tutor';
 
