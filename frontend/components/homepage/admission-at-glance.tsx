@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
+import { SocialShareBar } from '@/components/seo/social-share-bar';
 import { Search, ExternalLink, Filter, Building2, Calendar, Award, ArrowRight, CheckCircle2, Clock, FileText } from 'lucide-react';
 import { AdmissionSectionConfig, AdmissionRowItem, DEFAULT_HOMEPAGE_CONFIG } from '@/lib/homepage-types';
 import { useGsapContext } from '@/hooks/use-gsap-motion';
@@ -386,17 +387,19 @@ export function AdmissionAtGlance({ config: propConfig, admissions: propAdmissio
           ))}
         </div>
 
-        {/* ── BOTTOM VIEW ALL BUTTON ── */}
-        {rawRows.length > maxDisplay && (
-          <div className="flex justify-center pt-2">
+        {/* ── BOTTOM VIEW ALL BUTTON & SOCIAL SHARING ── */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
+          <SocialShareBar title="Bangladesh University Admission Circulars 2026 — EduGuide" />
+
+          {rawRows.length > maxDisplay && (
             <Link href="/admission">
-              <button className="px-6 py-2.5 rounded-full bg-orange-50 hover:bg-orange-100 border border-orange-200 text-[#FF5500] text-xs font-bold flex items-center gap-2 shadow-2xs hover:shadow-xs transition cursor-pointer">
+              <button className="px-5 py-2 rounded-full bg-orange-50 hover:bg-orange-100 border border-orange-200 text-[#FF5500] text-xs font-bold flex items-center gap-2 shadow-2xs hover:shadow-xs transition cursor-pointer">
                 <span>View Full Admission Table & All {rawRows.length} Circulars</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </Link>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </section>
   );

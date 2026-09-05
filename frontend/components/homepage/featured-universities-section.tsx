@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Building2, MapPin, ArrowRight, Users, Calendar } from 'lucide-react';
+import { Building2, MapPin, ArrowRight, Users, Calendar, ExternalLink } from 'lucide-react';
 import { FeaturedUniversitiesConfig } from '@/lib/homepage-types';
 import { FALLBACK_UNIVERSITIES } from '@/lib/universities-fallback';
 import { useScrollTriggerReveal } from '@/hooks/use-gsap-motion';
@@ -151,13 +151,39 @@ export function FeaturedUniversitiesSection({ config, universities = [] }: Featu
               {/* Action */}
               {(() => {
                 const targetSlug = (uni.slug || uni.shortName || uni.id || 'buet').toLowerCase().trim().replace(/[^a-z0-9]/g, '-');
+                const officialPortals: Record<string, string> = {
+                  buet: 'https://www.buet.ac.bd',
+                  du: 'https://www.du.ac.bd',
+                  kuet: 'https://www.kuet.ac.bd',
+                  ruet: 'https://www.ruet.ac.bd',
+                  cuet: 'https://www.cuet.ac.bd',
+                  medical: 'https://dghs.gov.bd',
+                };
+                const portalUrl = officialPortals[targetSlug] || uni.website;
+
                 return (
-                  <Link href={`/universities/${targetSlug}`} className="block pt-1">
-                    <button className="w-full py-1.5 px-3 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-[#FF5500] text-xs font-bold rounded-full flex items-center justify-center gap-1 transition cursor-pointer">
-                      <span>View Details</span>
+                  <div className="flex items-center gap-2 pt-1">
+                    <Link
+                      href={`/universities/${targetSlug}`}
+                      className="flex-1 py-1.5 px-3 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-[#FF5500] text-xs font-bold rounded-full flex items-center justify-center gap-1 transition cursor-pointer"
+                      title={`View ${uni.shortName || uni.name} Admission Profile`}
+                    >
+                      <span>{uni.shortName || 'University'} Profile</span>
                       <ArrowRight className="w-3 h-3" />
-                    </button>
-                  </Link>
+                    </Link>
+                    {portalUrl && (
+                      <a
+                        href={portalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 border border-slate-200/80 transition"
+                        title={`Official ${uni.shortName} Portal`}
+                        aria-label={`Official ${uni.shortName} Portal Website`}
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                  </div>
                 );
               })()}
             </div>

@@ -2,6 +2,7 @@
 
 import React, { useRef } from 'react';
 import Link from 'next/link';
+import { ExternalLink } from 'lucide-react';
 import { FooterConfig } from '@/lib/homepage-types';
 import { useScrollTriggerReveal } from '@/hooks/use-gsap-motion';
 
@@ -46,6 +47,15 @@ export function FooterSection({ config }: FooterSectionProps) {
       ],
     },
     {
+      title: 'Official Portals',
+      links: [
+        { label: 'UGC Bangladesh', url: 'https://ugc.gov.bd', external: true },
+        { label: 'Ministry of Education', url: 'https://moedu.gov.bd', external: true },
+        { label: 'DGHS Medical Portal', url: 'https://dghs.gov.bd', external: true },
+        { label: 'GST Admission System', url: 'https://gstadmission.ac.bd', external: true },
+      ],
+    },
+    {
       title: 'Platform',
       links: [
         { label: 'Pricing & Passes', url: '/pricing' },
@@ -84,21 +94,33 @@ export function FooterSection({ config }: FooterSectionProps) {
           </div>
 
           {/* Dynamic Link Groups (8 cols) */}
-          <div className="md:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-6">
+          <div className="md:col-span-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
             {navGroups.map((group, idx) => (
               <div key={idx} className="space-y-3">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 font-mono">
                   {group.title}
                 </h4>
                 <ul className="space-y-2 text-xs">
-                  {group.links.map((link, lIdx) => (
+                  {group.links.map((link: any, lIdx: number) => (
                     <li key={lIdx}>
-                      <Link
-                        href={link.url}
-                        className="text-slate-600 hover:text-[#FF5500] transition"
-                      >
-                        {link.label}
-                      </Link>
+                      {link.external ? (
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-slate-600 hover:text-[#FF5500] transition flex items-center gap-1 group"
+                        >
+                          <span className="line-clamp-1">{link.label}</span>
+                          <ExternalLink className="w-2.5 h-2.5 opacity-50 group-hover:opacity-100 shrink-0" />
+                        </a>
+                      ) : (
+                        <Link
+                          href={link.url}
+                          className="text-slate-600 hover:text-[#FF5500] transition block line-clamp-1"
+                        >
+                          {link.label}
+                        </Link>
+                      )}
                     </li>
                   ))}
                 </ul>

@@ -11,7 +11,7 @@ const siteUrl = rawSiteUrl.replace(/\/+$/, '');
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'EduGuide — Bangladesh University Admission Intelligence & Preparation',
+    default: 'EduGuide — Bangladesh University Admission & Preparation',
     template: '%s | EduGuide',
   },
   description:
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     locale: 'en_US',
     url: siteUrl,
     siteName: 'EduGuide Bangladesh',
-    title: 'EduGuide — Bangladesh University Admission Intelligence & Preparation',
+    title: 'EduGuide — Bangladesh University Admission & Preparation',
     description:
       'Official Bangladesh university admission circulars, GPA eligibility qualifier, deadlines, and smart preparation for BUET, DU, Medical, and GST 2026.',
     images: [
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'EduGuide — University Admission Intelligence Bangladesh',
+    title: 'EduGuide — Bangladesh University Admission & Preparation',
     description:
       'Official Bangladesh university admission circulars, GPA eligibility qualifier, deadlines, and smart preparation for BUET, DU, Medical, and GST 2026.',
     images: ['/icon.svg'],
