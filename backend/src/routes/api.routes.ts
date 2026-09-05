@@ -539,6 +539,11 @@ apiRouter.get('/admin/homepage/guides', async (req: Request, res: Response, next
 apiRouter.post('/admin/homepage/guides', async (req: Request, res: Response, next) => {
   try {
     const result = await homepageService.saveGuide(req.body);
+    await RevalidationService.invalidateContent({
+      redisPattern: 'cache:guides:*',
+      tag: 'guides',
+      path: '/guides',
+    }).catch(() => {});
     res.json(result);
   } catch (error) {
     next(error);
@@ -549,6 +554,11 @@ apiRouter.put('/admin/homepage/guides/:id', async (req: Request, res: Response, 
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const result = await homepageService.saveGuide({ ...req.body, id });
+    await RevalidationService.invalidateContent({
+      redisPattern: 'cache:guides:*',
+      tag: 'guides',
+      path: '/guides',
+    }).catch(() => {});
     res.json(result);
   } catch (error) {
     next(error);
@@ -559,6 +569,11 @@ apiRouter.delete('/admin/homepage/guides/:id', async (req: Request, res: Respons
   try {
     const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     const result = await homepageService.deleteGuide(id);
+    await RevalidationService.invalidateContent({
+      redisPattern: 'cache:guides:*',
+      tag: 'guides',
+      path: '/guides',
+    }).catch(() => {});
     res.json(result);
   } catch (error) {
     next(error);

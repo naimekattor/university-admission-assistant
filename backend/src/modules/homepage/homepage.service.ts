@@ -326,6 +326,9 @@ export class HomepageService {
    */
   public async ensureTables(): Promise<void> {
     try {
+      await this.ensureArticlesTable();
+      await this.ensureFaqsTable();
+
       await this.pool.query(`
         CREATE TABLE IF NOT EXISTS homepage_configs (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1422,6 +1425,7 @@ export class HomepageService {
   }
 
   public async getPublishedGuides(limit = 4): Promise<any[]> {
+    await this.ensureArticlesTable();
     const defaultGuides = [
       {
         id: 'g1',
@@ -1490,6 +1494,7 @@ export class HomepageService {
   }
 
   public async getGuideBySlug(slug: string): Promise<any | null> {
+    await this.ensureArticlesTable();
     try {
       const res = await this.pool.query(
         `SELECT a.id::text, a.title, a.slug, a.summary, a.content,
@@ -1514,6 +1519,114 @@ export class HomepageService {
       console.warn('[HomepageService] getGuideBySlug DB query error:', err?.message);
     }
     return null;
+  }
+
+  public async ensureArticlesTable(): Promise<void> {
+    try {
+      await this.pool.query(`
+        CREATE TABLE IF NOT EXISTS article_categories (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          name TEXT UNIQUE NOT NULL,
+          slug TEXT UNIQUE NOT NULL,
+          description TEXT,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS articles (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          category_id UUID REFERENCES article_categories(id) ON DELETE SET NULL,
+          title TEXT NOT NULL,
+          slug TEXT UNIQUE NOT NULL,
+          summary TEXT NOT NULL,
+          content TEXT NOT NULL,
+          reading_time_minutes INT DEFAULT 5,
+          featured_image TEXT,
+          is_published BOOLEAN DEFAULT TRUE,
+          seo_keywords JSONB,
+          related_university TEXT,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+
+        ALTER TABLE articles ADD COLUMN IF NOT EXISTS category_id UUID REFERENCES article_categories(id) ON DELETE SET NULL;
+        ALTER TABLE articles ADD COLUMN IF NOT EXISTS title TEXT;
+        ALTER TABLE articles ADD COLUMN IF NOT EXISTS slug TEXT;
+        ALTER TABLE articles ADD COLUMN IF NOT EXISTS summary TEXT;
+        ALTER TABLE articles ADD COLUMN IF NOT EXISTS content TEXT;
+        ALTER TABLE articles ADD COLUMN IF NOT EXISTS reading_time_minutes INT DEFAULT 5;
+        ALTER TABLE articles ADD COLUMN IF NOT EXISTS featured_image TEXT;
+        ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT TRUE;
+        ALTER TABLE articles ADD COLUMN IF NOT EXISTS seo_keywords JSONB;
+        ALTER TABLE articles ADD COLUMN IF NOT EXISTS related_university TEXT;
+        ALTER TABLE articles ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
+        ALTER TABLE articles ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
+
+        CREATE INDEX IF NOT EXISTS idx_articles_slug ON articles (slug);
+        CREATE INDEX IF NOT EXISTS idx_articles_published ON articles (is_published, created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_articles_category ON articles (category_id);
+      `);
+
+      // Seed default article categories if none exist
+      const { rows: existingCats } = await this.pool.query('SELECT COUNT(*) as count FROM article_categories');
+      if (parseInt(existingCats[0]?.count || '0', 10) === 0) {
+        await this.pool.query(`
+          INSERT INTO article_categories (name, slug, description) VALUES
+            ('Engineering Guide', 'engineering-guide', 'BUET, CKET and engineering university admission guides'),
+            ('Varsity Science', 'varsity-science', 'Dhaka University Ka Unit and general public varsity guides'),
+            ('Medical Guide', 'medical-guide', 'MBBS and BDS medical college admission preparation guides'),
+            ('Cluster Guide', 'cluster-guide', 'GST 24 general and STEM cluster admission updates'),
+            ('General Guide', 'general-guide', 'Comprehensive admission guidelines and strategies')
+          ON CONFLICT (slug) DO NOTHING;
+        `);
+      }
+
+      // Seed default guide articles if none exist
+      const { rows: existingArticles } = await this.pool.query('SELECT COUNT(*) as count FROM articles');
+      if (parseInt(existingArticles[0]?.count || '0', 10) === 0) {
+        await this.pool.query(`
+          INSERT INTO articles (title, slug, summary, content, reading_time_minutes, is_published, featured_image) VALUES
+            (
+              'BUET Admission Test 2026: Complete Preparation & Eligibility Guide',
+              'buet-admission-guide-2026',
+              'Everything HSC candidates need to know about BUET admission requirements, preliminary cutoff marks, seat breakdown, and preparation strategy.',
+              '<h2>BUET Admission 2026 Overview</h2><p>Bangladesh University of Engineering and Technology (BUET) is the most competitive engineering university in Bangladesh. The admission process consists of a preliminary screening based on HSC Physics, Chemistry, and Mathematics marks, followed by the written admission test.</p><h3>Eligibility Criteria</h3><ul><li>Combined GPA of 5.0 in SSC and HSC with Physics, Chemistry, and Math.</li><li>High total grade points in PCM to qualify for top 24,000 preliminary applicants.</li></ul><h3>Preparation Strategy</h3><p>Focus on deep conceptual clarity and rapid numerical problem solving. Solve BUET questions from the past 20 years.</p>',
+              8,
+              true,
+              '/images/buet-guide.jpg'
+            ),
+            (
+              'DU Ka Unit Admission Strategy: How to Score High in Physics & Chemistry',
+              'du-ka-unit-guide',
+              'Proven preparation techniques for University of Dhaka Ka Unit science admission test with past year question analysis.',
+              '<h2>Dhaka University Ka Unit Strategy</h2><p>The Ka Unit admission test evaluates Physics, Chemistry, Mathematics/Biology, and English/Bangla. High negative marking requires precision and time management.</p><h3>Core Focus Areas</h3><ul><li>Physics: Mechanics, Waves, Electromagnetism, Modern Physics</li><li>Chemistry: Organic reaction mechanisms, Chemical equilibrium, Mole concept</li></ul>',
+              6,
+              true,
+              '/images/du-guide.jpg'
+            ),
+            (
+              'Medical College Admission 2026: Biology & Chemistry High-Yield Topics',
+              'medical-admission-guide-2026',
+              'Strategic analysis of DGHS MBBS question patterns, negative marking prevention, and NCERT-equivalent revision topics.',
+              '<h2>MBBS Admission Test 2026</h2><p>DGHS conducts the national medical admission test across all public medical colleges in Bangladesh. Biology carries 30 marks, Chemistry 25 marks, Physics 20 marks, English 15 marks, and General Knowledge 10 marks.</p>',
+              7,
+              true,
+              '/images/medical-guide.jpg'
+            ),
+            (
+              'GST Cluster Admission 2026: 24 Public Universities One Exam Breakdown',
+              'gst-cluster-guide-2026',
+              'Complete guide to general, science and technology cluster admission test, subject choices, and merit score formulas.',
+              '<h2>GST Cluster Admission</h2><p>The GST cluster brings together 24 general, science and technology public universities under a unified admission exam. Score optimization and university ranking strategy are crucial for securing top subjects.</p>',
+              5,
+              true,
+              '/images/gst-guide.jpg'
+            )
+          ON CONFLICT (slug) DO NOTHING;
+        `);
+      }
+    } catch (err: any) {
+      console.warn('[HomepageService] ensureArticlesTable warning:', err?.message);
+    }
   }
 
   public async ensureFaqsTable(): Promise<void> {
@@ -1940,6 +2053,7 @@ export class HomepageService {
   }
 
   public async getAllGuides(): Promise<any[]> {
+    await this.ensureArticlesTable();
     try {
       const res = await this.pool.query(
         `SELECT a.id::text, a.title, a.slug, a.summary, a.content,
@@ -1963,39 +2077,119 @@ export class HomepageService {
   }
 
   public async saveGuide(guideData: any): Promise<{ success: boolean; data: any }> {
+    await this.ensureArticlesTable();
     try {
-      const slug = (guideData.slug || guideData.title || 'guide')
+      const title = (guideData.title || '').trim();
+      if (!title) {
+        throw new Error('Guide title is required');
+      }
+
+      let slug = (guideData.slug || title)
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)+/g, '');
+      if (!slug) slug = `guide-${Date.now()}`;
+
       const content = guideData.content || guideData.summary || 'Admission guide detailed preparation content.';
-      const summary = guideData.summary || guideData.title;
+      const summary = guideData.summary || title;
       const readingTime = Number(guideData.readingTimeMinutes) || 5;
       const isPublished = guideData.isPublished !== false;
+      const featuredImage = guideData.featuredImage || guideData.featured_image || null;
+
+      // Category upsert & linkage
+      let categoryId: string | null = null;
+      const categoryName = (guideData.category || 'General Guide').trim();
+      try {
+        const catSlug = categoryName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || 'general-guide';
+        const catRes = await this.pool.query(
+          `INSERT INTO article_categories (name, slug, description)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name
+           RETURNING id::text`,
+          [categoryName, catSlug, `${categoryName} admission articles and guides`]
+        );
+        if (catRes.rows.length > 0) {
+          categoryId = catRes.rows[0].id;
+        }
+      } catch (catErr: any) {
+        console.warn('[HomepageService] Category upsert warning:', catErr?.message);
+      }
 
       let res;
-      if (guideData.id && !guideData.id.startsWith('guide-new-') && !guideData.id.startsWith('g')) {
+      const isUuid = typeof guideData.id === 'string' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(guideData.id);
+
+      if (isUuid) {
         res = await this.pool.query(
           `UPDATE articles
            SET title = $1, slug = $2, summary = $3, content = $4, reading_time_minutes = $5,
-               is_published = $6, updated_at = NOW()
-           WHERE id = $7::uuid
+               is_published = $6, featured_image = $7,
+               category_id = COALESCE($8::uuid, category_id),
+               updated_at = NOW()
+           WHERE id = $9::uuid
            RETURNING id::text, title, slug, summary, content, reading_time_minutes as "readingTimeMinutes",
-                     is_published as "isPublished", created_at as "createdAt"`,
-          [guideData.title, slug, summary, content, readingTime, isPublished, guideData.id]
-        );
-      } else {
-        res = await this.pool.query(
-          `INSERT INTO articles (title, slug, summary, content, reading_time_minutes, is_published)
-           VALUES ($1, $2, $3, $4, $5, $6)
-           RETURNING id::text, title, slug, summary, content, reading_time_minutes as "readingTimeMinutes",
-                     is_published as "isPublished", created_at as "createdAt"`,
-          [guideData.title, slug, summary, content, readingTime, isPublished]
+                     featured_image as "featuredImage", is_published as "isPublished", created_at as "createdAt"`,
+          [title, slug, summary, content, readingTime, isPublished, featuredImage, categoryId, guideData.id]
         );
       }
 
-      console.log(`[HomepageService] Guide article '${guideData.title}' persisted to PostgreSQL database.`);
-      return { success: true, data: res.rows[0] };
+      // If not UUID or UUID update did not match any row, check if an article with same slug exists
+      if (!res || res.rowCount === 0) {
+        const existingSlugRes = await this.pool.query(
+          `SELECT id::text FROM articles WHERE LOWER(slug) = LOWER($1) LIMIT 1`,
+          [slug]
+        );
+
+        if (existingSlugRes.rows.length > 0) {
+          const existingId = existingSlugRes.rows[0].id;
+          res = await this.pool.query(
+            `UPDATE articles
+             SET title = $1, summary = $2, content = $3, reading_time_minutes = $4,
+                 is_published = $5, featured_image = $6,
+                 category_id = COALESCE($7::uuid, category_id),
+                 updated_at = NOW()
+             WHERE id = $8::uuid
+             RETURNING id::text, title, slug, summary, content, reading_time_minutes as "readingTimeMinutes",
+                       featured_image as "featuredImage", is_published as "isPublished", created_at as "createdAt"`,
+            [title, summary, content, readingTime, isPublished, featuredImage, categoryId, existingId]
+          );
+        } else {
+          // New Insert
+          try {
+            res = await this.pool.query(
+              `INSERT INTO articles (title, slug, summary, content, reading_time_minutes, is_published, featured_image, category_id)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8::uuid)
+               RETURNING id::text, title, slug, summary, content, reading_time_minutes as "readingTimeMinutes",
+                         featured_image as "featuredImage", is_published as "isPublished", created_at as "createdAt"`,
+              [title, slug, summary, content, readingTime, isPublished, featuredImage, categoryId]
+            );
+          } catch (insertErr: any) {
+            if (insertErr?.code === '23505') {
+              const uniqueSlug = `${slug}-${Date.now().toString().slice(-4)}`;
+              res = await this.pool.query(
+                `INSERT INTO articles (title, slug, summary, content, reading_time_minutes, is_published, featured_image, category_id)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8::uuid)
+                 RETURNING id::text, title, slug, summary, content, reading_time_minutes as "readingTimeMinutes",
+                           featured_image as "featuredImage", is_published as "isPublished", created_at as "createdAt"`,
+                [title, uniqueSlug, summary, content, readingTime, isPublished, featuredImage, categoryId]
+              );
+            } else {
+              throw insertErr;
+            }
+          }
+        }
+      }
+
+      console.log(`[HomepageService] Guide article '${title}' persisted to PostgreSQL database.`);
+      const row = res.rows[0];
+      return {
+        success: true,
+        data: {
+          ...row,
+          category: categoryName,
+          publishedDate: new Date(row.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        },
+      };
     } catch (err: any) {
       console.error('[HomepageService] Error saving guide article:', err?.message);
       throw err;
@@ -2003,8 +2197,17 @@ export class HomepageService {
   }
 
   public async deleteGuide(id: string): Promise<{ success: boolean; message: string }> {
+    await this.ensureArticlesTable();
     try {
-      await this.pool.query(`DELETE FROM articles WHERE id = $1::uuid`, [id]);
+      const isUuid = typeof id === 'string' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+      if (isUuid) {
+        await this.pool.query(`DELETE FROM articles WHERE id = $1::uuid`, [id]);
+      } else {
+        await this.pool.query(`DELETE FROM articles WHERE slug = $1`, [id]);
+      }
+
       console.log(`[HomepageService] Guide article ${id} deleted from PostgreSQL database.`);
       return { success: true, message: 'Guide article deleted from PostgreSQL database.' };
     } catch (err: any) {
