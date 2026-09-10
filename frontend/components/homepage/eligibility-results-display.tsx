@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef } from 'react';
 import Link from 'next/link';
 import {
   Award,
@@ -18,6 +18,9 @@ import {
   GraduationCap,
   HelpCircle,
 } from 'lucide-react';
+import { useGsapContext } from '@/hooks/use-gsap-motion';
+import { isReducedMotion } from '@/lib/animations/gsap-motion';
+import gsap from 'gsap';
 
 interface ResultItem {
   id: string;
@@ -54,6 +57,21 @@ interface EligibilityResultsDisplayProps {
 
 export function EligibilityResultsDisplay(props: EligibilityResultsDisplayProps) {
   const activeData = props.evaluationResult || props.evaluation;
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useGsapContext(
+    () => {
+      if (!rootRef.current || isReducedMotion()) return;
+      gsap.fromTo(
+        rootRef.current,
+        { opacity: 0, scale: 0.98, y: 16 },
+        { opacity: 1, scale: 1, y: 0, duration: 0.5, ease: 'power2.out' }
+      );
+    },
+    rootRef,
+    [activeData]
+  );
+
   if (!activeData || !activeData.results) {
     return null;
   }
@@ -98,7 +116,7 @@ export function EligibilityResultsDisplay(props: EligibilityResultsDisplayProps)
   const openEligibleCount = eligibleItems.length - closedEligibleCount;
 
   return (
-    <div className="space-y-6 pt-4 animate-in fade-in-50 duration-300">
+    <div ref={rootRef} className="space-y-6 pt-4">
       {/* ── HEADER SUMMARY BAR ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-3xl bg-white border border-slate-200/90 shadow-2xs">
         <div>

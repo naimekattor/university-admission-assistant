@@ -347,7 +347,7 @@ export default function AdminEligibilityPage() {
                             {r.universityLogo && (r.universityLogo.startsWith('http') || r.universityLogo.startsWith('/')) ? (
                               <img
                                 src={r.universityLogo}
-                                alt=""
+                                alt={`${r.universityShortName || 'University'} logo`}
                                 className="w-full h-full object-contain"
                                 onError={(e) => {
                                   e.currentTarget.style.display = 'none';

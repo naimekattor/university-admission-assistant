@@ -294,6 +294,160 @@ export async function autoMigrateDatabase(pool: Pool) {
       `);
     }
 
+    // 8. Ensure Articles & Guides tables (Used by Homepage Guide Section, SEO Articles & Admin Guides CMS)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS article_categories (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT UNIQUE NOT NULL,
+        slug TEXT UNIQUE NOT NULL,
+        description TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS articles (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        category_id UUID REFERENCES article_categories(id) ON DELETE SET NULL,
+        title TEXT NOT NULL,
+        slug TEXT UNIQUE NOT NULL,
+        summary TEXT NOT NULL,
+        content TEXT NOT NULL,
+        reading_time_minutes INT DEFAULT 5,
+        featured_image TEXT,
+        is_published BOOLEAN DEFAULT TRUE,
+        seo_keywords JSONB,
+        related_university TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      ALTER TABLE articles ADD COLUMN IF NOT EXISTS category_id UUID REFERENCES article_categories(id) ON DELETE SET NULL;
+      ALTER TABLE articles ADD COLUMN IF NOT EXISTS title TEXT;
+      ALTER TABLE articles ADD COLUMN IF NOT EXISTS slug TEXT;
+      ALTER TABLE articles ADD COLUMN IF NOT EXISTS summary TEXT;
+      ALTER TABLE articles ADD COLUMN IF NOT EXISTS content TEXT;
+      ALTER TABLE articles ADD COLUMN IF NOT EXISTS reading_time_minutes INT DEFAULT 5;
+      ALTER TABLE articles ADD COLUMN IF NOT EXISTS featured_image TEXT;
+      ALTER TABLE articles ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT TRUE;
+      ALTER TABLE articles ADD COLUMN IF NOT EXISTS seo_keywords JSONB;
+      ALTER TABLE articles ADD COLUMN IF NOT EXISTS related_university TEXT;
+      ALTER TABLE articles ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
+      ALTER TABLE articles ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
+
+      CREATE INDEX IF NOT EXISTS idx_articles_slug ON articles (slug);
+      CREATE INDEX IF NOT EXISTS idx_articles_published ON articles (is_published, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_articles_category ON articles (category_id);
+    `);
+
+    // Seed default article categories if none exist
+    const { rows: existingArticleCats } = await pool.query('SELECT COUNT(*) as count FROM article_categories');
+    if (parseInt(existingArticleCats[0]?.count || '0', 10) === 0) {
+      console.log('[Database Migration] Seeding initial Article Categories...');
+      await pool.query(`
+        INSERT INTO article_categories (name, slug, description) VALUES
+          ('Engineering Guide', 'engineering-guide', 'BUET, CKET and engineering university admission guides'),
+          ('Varsity Science', 'varsity-science', 'Dhaka University Ka Unit and general public varsity guides'),
+          ('Medical Guide', 'medical-guide', 'MBBS and BDS medical college admission preparation guides'),
+          ('Cluster Guide', 'cluster-guide', 'GST 24 general and STEM cluster admission updates'),
+          ('General Guide', 'general-guide', 'Comprehensive admission guidelines and strategies')
+        ON CONFLICT (slug) DO NOTHING;
+      `);
+    }
+
+    // Seed default guide articles if none exist
+    const { rows: existingArticles } = await pool.query('SELECT COUNT(*) as count FROM articles');
+    if (parseInt(existingArticles[0]?.count || '0', 10) === 0) {
+      console.log('[Database Migration] Seeding initial Guide Articles...');
+      await pool.query(`
+        INSERT INTO articles (title, slug, summary, content, reading_time_minutes, is_published, featured_image) VALUES
+          (
+            'BUET Admission Test 2026: Complete Preparation & Eligibility Guide',
+            'buet-admission-guide-2026',
+            'Everything HSC candidates need to know about BUET admission requirements, preliminary cutoff marks, seat breakdown, and preparation strategy.',
+            '<h2>BUET Admission 2026 Overview</h2><p>Bangladesh University of Engineering and Technology (BUET) is the most competitive engineering university in Bangladesh. The admission process consists of a preliminary screening based on HSC Physics, Chemistry, and Mathematics marks, followed by the written admission test.</p><h3>Eligibility Criteria</h3><ul><li>Combined GPA of 5.0 in SSC and HSC with Physics, Chemistry, and Math.</li><li>High total grade points in PCM to qualify for top 24,000 preliminary applicants.</li></ul><h3>Preparation Strategy</h3><p>Focus on deep conceptual clarity and rapid numerical problem solving. Solve BUET questions from the past 20 years.</p>',
+            8,
+            true,
+            '/images/buet-guide.jpg'
+          ),
+          (
+            'DU Ka Unit Admission Strategy: How to Score High in Physics & Chemistry',
+            'du-ka-unit-guide',
+            'Proven preparation techniques for University of Dhaka Ka Unit science admission test with past year question analysis.',
+            '<h2>Dhaka University Ka Unit Strategy</h2><p>The Ka Unit admission test evaluates Physics, Chemistry, Mathematics/Biology, and English/Bangla. High negative marking requires precision and time management.</p><h3>Core Focus Areas</h3><ul><li>Physics: Mechanics, Waves, Electromagnetism, Modern Physics</li><li>Chemistry: Organic reaction mechanisms, Chemical equilibrium, Mole concept</li></ul>',
+            6,
+            true,
+            '/images/du-guide.jpg'
+          ),
+          (
+            'Medical College Admission 2026: Biology & Chemistry High-Yield Topics',
+            'medical-admission-guide-2026',
+            'Strategic analysis of DGHS MBBS question patterns, negative marking prevention, and NCERT-equivalent revision topics.',
+            '<h2>MBBS Admission Test 2026</h2><p>DGHS conducts the national medical admission test across all public medical colleges in Bangladesh. Biology carries 30 marks, Chemistry 25 marks, Physics 20 marks, English 15 marks, and General Knowledge 10 marks.</p>',
+            7,
+            true,
+            '/images/medical-guide.jpg'
+          ),
+          (
+            'GST Cluster Admission 2026: 24 Public Universities One Exam Breakdown',
+            'gst-cluster-guide-2026',
+            'Complete guide to general, science and technology cluster admission test, subject choices, and merit score formulas.',
+            '<h2>GST Cluster Admission</h2><p>The GST cluster brings together 24 general, science and technology public universities under a unified admission exam. Score optimization and university ranking strategy are crucial for securing top subjects.</p>',
+            5,
+            true,
+            '/images/gst-guide.jpg'
+          )
+        ON CONFLICT (slug) DO NOTHING;
+      `);
+    }
+
+    // 9. Ensure FAQs and Homepage Configs tables
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS faqs (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        question TEXT NOT NULL,
+        answer TEXT NOT NULL,
+        category TEXT DEFAULT 'General',
+        "order" INTEGER DEFAULT 0,
+        is_published BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+        updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS homepage_configs (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        status TEXT NOT NULL DEFAULT 'draft',
+        version INTEGER DEFAULT 1,
+        hero_config JSONB,
+        admission_section_config JSONB,
+        eligibility_section_config JSONB,
+        deadline_section_config JSONB,
+        featured_university_ids JSONB,
+        ai_advisor_config JSONB,
+        guide_section_config JSONB,
+        preparation_config JSONB,
+        faq_config JSONB,
+        footer_config JSONB,
+        seo_config JSONB,
+        updated_by TEXT,
+        published_by TEXT,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        published_at TIMESTAMP WITH TIME ZONE
+      );
+
+      CREATE TABLE IF NOT EXISTS admission_events (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        university_id UUID REFERENCES universities(id) ON DELETE CASCADE,
+        university_name TEXT NOT NULL,
+        unit TEXT,
+        event_type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        event_date TIMESTAMP NOT NULL,
+        description TEXT,
+        source_url TEXT,
+        status TEXT DEFAULT 'upcoming',
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+    `);
+
     console.log('[Database Migration] Schema & columns successfully verified!');
   } catch (err: any) {
     console.error('[Database Migration] Error during schema verification:', err.message || err);

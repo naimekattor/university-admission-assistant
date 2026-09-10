@@ -45,6 +45,33 @@ export class GroqProvider {
     }
   }
 
+  public async *streamText(prompt: string, systemInstruction?: string): AsyncGenerator<string, void, unknown> {
+    if (!this.client) {
+      throw new Error('GROQ_API_KEY is not configured');
+    }
+
+    const messages: any[] = [];
+    if (systemInstruction) {
+      messages.push({ role: 'system', content: systemInstruction });
+    }
+    messages.push({ role: 'user', content: prompt });
+
+    const stream = await this.client.chat.completions.create({
+      model: this.getModel(),
+      messages,
+      temperature: 0.3,
+      max_tokens: 2048,
+      stream: true,
+    });
+
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta?.content || '';
+      if (delta) {
+        yield delta;
+      }
+    }
+  }
+
   public async generateStructuredResponse(
     prompt: string,
     systemInstruction?: string

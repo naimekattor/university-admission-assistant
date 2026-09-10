@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChevronLeft, Star, MapPin } from 'lucide-react';
@@ -69,6 +70,7 @@ export default function RecommendationsPage() {
   const [preferences, setPreferences] = useState<string>('');
   const [results, setResults] = useState<any[]>([]);
   const [submitted, setSubmitted] = useState(false);
+  const [failedLogos, setFailedLogos] = useState<Set<string | number>>(new Set());
 
   const handleGetRecommendations = () => {
     const marks = typeof hscMarks === 'number' ? hscMarks : 0;
@@ -168,14 +170,21 @@ export default function RecommendationsPage() {
                   <h3 className="font-semibold text-foreground mb-3">Featured Universities</h3>
                   <ul className="space-y-2 text-sm text-muted-foreground">
                     {universities.slice(0, 5).map((uni) => {
-                      const isImage = uni.logo && (uni.logo.startsWith('http') || uni.logo.startsWith('/'));
+                      const isImage = uni.logo && (uni.logo.startsWith('http') || uni.logo.startsWith('/')) && !failedLogos.has(uni.id);
                       return (
                         <li key={uni.id} className="flex items-center gap-2">
                           <span className="w-5 h-5 rounded flex items-center justify-center overflow-hidden shrink-0">
                             {isImage ? (
-                              <img src={uni.logo} alt="" className="w-full h-full object-contain" />
+                              <Image
+                                src={uni.logo}
+                                alt={`${uni.name} emblem`}
+                                width={20}
+                                height={20}
+                                className="w-full h-full object-contain"
+                                onError={() => setFailedLogos((prev) => new Set(prev).add(uni.id))}
+                              />
                             ) : (
-                              <span>{uni.logo || '🏛️'}</span>
+                              <span>{uni.logo && !uni.logo.startsWith('http') && !uni.logo.startsWith('/') ? uni.logo : '🏛️'}</span>
                             )}
                           </span>
                           <span>{uni.name}</span>
@@ -217,21 +226,18 @@ export default function RecommendationsPage() {
                         <div>
                           <div className="flex items-center gap-3 mb-2">
                             <span className="w-12 h-12 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center overflow-hidden shrink-0">
-                              {uni.logo && (uni.logo.startsWith('http') || uni.logo.startsWith('/')) ? (
-                                <img
+                              {uni.logo && (uni.logo.startsWith('http') || uni.logo.startsWith('/')) && !failedLogos.has(uni.id) ? (
+                                <Image
                                   src={uni.logo}
-                                  alt={uni.name}
+                                  alt={`${uni.name} official university logo`}
+                                  width={48}
+                                  height={48}
                                   className="w-full h-full object-contain p-1"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                    if (e.currentTarget.nextElementSibling) {
-                                      (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'block';
-                                    }
-                                  }}
+                                  onError={() => setFailedLogos((prev) => new Set(prev).add(uni.id))}
                                 />
                               ) : null}
-                              <span className={`${uni.logo && (uni.logo.startsWith('http') || uni.logo.startsWith('/')) ? 'hidden' : 'block'} text-3xl`}>
-                                {uni.logo || '🏛️'}
+                              <span className={`${uni.logo && (uni.logo.startsWith('http') || uni.logo.startsWith('/')) && !failedLogos.has(uni.id) ? 'hidden' : 'block'} text-3xl`}>
+                                {uni.logo && !uni.logo.startsWith('http') && !uni.logo.startsWith('/') ? uni.logo : '🏛️'}
                               </span>
                             </span>
                             <div>

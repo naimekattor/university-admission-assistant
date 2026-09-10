@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useRef } from 'react';
 import Link from 'next/link';
 import { BookOpen, Clock, ArrowRight } from 'lucide-react';
 import { GuideSectionConfig } from '@/lib/homepage-types';
+import { useScrollTriggerReveal } from '@/hooks/use-gsap-motion';
 
 interface GuideItem {
   id: string;
@@ -22,6 +23,9 @@ interface GuidesSectionProps {
 }
 
 export function GuidesSection({ config, guides = [] }: GuidesSectionProps) {
+  const sectionRef = useRef<HTMLElement>(null);
+  useScrollTriggerReveal(sectionRef, { y: 22 });
+
   const title = config?.title || 'Admission Guides';
   const description =
     config?.description ||
@@ -31,7 +35,7 @@ export function GuidesSection({ config, guides = [] }: GuidesSectionProps) {
   const remainingGuides = guides.slice(1);
 
   return (
-    <section id="guides" className="py-12 container mx-auto px-4 sm:px-6 lg:px-8">
+    <section ref={sectionRef} id="guides" className="py-12 container mx-auto px-4 sm:px-6 lg:px-8">
       <div className="space-y-6">
         {/* ── SECTION HEADER ── */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">

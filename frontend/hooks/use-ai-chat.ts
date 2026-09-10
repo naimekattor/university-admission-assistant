@@ -211,6 +211,73 @@ export function useAiChat({
         'sess_default';
 
       try {
+        // 1. Attempt genuine SSE streaming via /api/ai/stream
+        const sseRes = await fetch('/api/ai/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            roleType,
+            userQuery: query,
+            sessionToken: activeToken,
+            studentContext: {
+              primaryGoal: 'BUET CSE',
+              sscGpa: 5.0,
+              hscGpa: 5.0,
+              academicGroup: 'Science',
+            },
+          }),
+        });
+
+        if (sseRes.ok && sseRes.body) {
+          const reader = sseRes.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          let accumulatedText = '';
+          const msgId = `a-${Date.now()}`;
+
+          setIsLoading(false);
+          setIsStreaming(true);
+          setMessages((prev) => [...prev, { id: msgId, role: 'assistant', content: '' }]);
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const rawJson = line.slice(6).trim();
+                try {
+                  const parsed = JSON.parse(rawJson);
+                  if (parsed.chunk) {
+                    accumulatedText += parsed.chunk;
+                    setMessages((prev) =>
+                      prev.map((m) => (m.id === msgId ? { ...m, content: accumulatedText } : m))
+                    );
+                    onChunkRef.current?.();
+                  }
+                  if (parsed.finalResult) {
+                    const finalContent =
+                      parsed.finalResult.structured || parsed.finalResult.fullText || accumulatedText;
+                    setMessages((prev) =>
+                      prev.map((m) => (m.id === msgId ? { ...m, content: finalContent } : m))
+                    );
+                    onChunkRef.current?.();
+                  }
+                } catch {}
+              }
+            }
+          }
+
+          setIsStreaming(false);
+          onChunkRef.current?.();
+          return;
+        }
+
+        // 2. Fallback to standard /api/ai/query if SSE not available
         const res = await fetch('/api/ai/query', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -235,7 +302,7 @@ export function useAiChat({
           }
         }
       } catch (err) {
-        console.warn('[useAiChat] API error, falling back:', err);
+        console.warn('[useAiChat] Streaming/API error, falling back to local guidance:', err);
       }
 
       // Fallback

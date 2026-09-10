@@ -1018,7 +1018,7 @@ export default function AdminHomepageCMSPage() {
                                 <div className="flex items-center gap-2.5">
                                   <div className="w-8 h-8 rounded-xl bg-orange-50 border border-orange-200/70 flex items-center justify-center shrink-0 overflow-hidden text-sm">
                                     {isImageLogo ? (
-                                      <img src={circ.universityLogo} alt="" className="w-full h-full object-contain" />
+                                      <img src={circ.universityLogo} alt={`${circ.universityShortName || circ.universityName || 'University'} logo`} className="w-full h-full object-contain" />
                                     ) : (
                                       <span>{circ.universityLogo || '🏛️'}</span>
                                     )}

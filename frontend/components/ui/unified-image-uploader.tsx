@@ -311,7 +311,7 @@ export function UnifiedImageUploader({
           <div className={`w-full ${aspectClass} rounded-xl overflow-hidden bg-slate-100 border border-slate-200/80 relative group`}>
             <img
               src={value}
-              alt="Asset Preview"
+              alt="Uploaded asset preview"
               className="w-full h-full object-contain sm:object-cover"
               onError={(e) => {
                 e.currentTarget.src = '/placeholder.svg';

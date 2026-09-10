@@ -25,6 +25,8 @@
     "clean:qdrant": "pnpm --filter eduguide-backend clean:qdrant",
     "test:ai": "pnpm --filter eduguide-backend test:ai",
     "test:groq": "pnpm --filter eduguide-backend test:groq",
-    "test:claude": "pnpm --filter eduguide-backend test:claude"
+    "test:claude": "pnpm --filter eduguide-backend test:claude",
+    "seo": "pnpm --filter eduguide-frontend test:seo",
+    "seo:report": "pnpm --filter eduguide-frontend seo:report"
   }
 }

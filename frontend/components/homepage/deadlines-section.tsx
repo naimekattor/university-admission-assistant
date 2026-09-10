@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { Calendar, Clock, ExternalLink, ArrowRight } from 'lucide-react';
 import { DeadlineSectionConfig } from '@/lib/homepage-types';
+import { useScrollTriggerReveal } from '@/hooks/use-gsap-motion';
 
 interface DeadlineEvent {
   id: string;
@@ -24,6 +25,13 @@ interface DeadlinesSectionProps {
 }
 
 export function DeadlinesSection({ config, deadlines = [] }: DeadlinesSectionProps) {
+  const gridRef = useRef<HTMLDivElement>(null);
+  useScrollTriggerReveal(gridRef, {
+    staggerChildren: '.deadline-card',
+    y: 18,
+    stagger: 0.06,
+  });
+
   const title = config?.title || 'Upcoming Admission Deadlines';
   const description =
     config?.description ||
@@ -105,11 +113,11 @@ export function DeadlinesSection({ config, deadlines = [] }: DeadlinesSectionPro
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
             {filteredEvents.map((event) => (
               <div
                 key={event.id}
-                className="p-5 rounded-2xl border border-slate-200 bg-white hover:border-orange-300 hover:shadow-xs transition-all flex flex-col justify-between space-y-3.5"
+                className="deadline-card p-5 rounded-2xl border border-slate-200 bg-white hover:border-orange-300 hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between space-y-3.5"
               >
                 <div className="space-y-1">
                   <div className="flex items-center justify-between gap-2">

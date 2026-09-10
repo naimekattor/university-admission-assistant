@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useStudentDashboard } from '@/hooks/use-student-queries';
 import {
   Sparkles,
   BookOpen,
@@ -40,51 +41,8 @@ export default function StudentDashboardPage() {
   const targetProgram = 'Computer Science & Engineering';
   const daysRemaining = 61;
 
-  // Interactive study plan state
-  const [tasks, setTasks] = useState<DailyTask[]>([
-    {
-      id: 'p1',
-      subject: 'Physics',
-      topic: "Newton's Laws & Linear Momentum",
-      type: 'Lesson',
-      duration: '35 mins',
-      completed: true,
-      href: '/prepare/lessons/newtons-second-law-buet-guide',
-    },
-    {
-      id: 'p2',
-      subject: 'Chemistry',
-      topic: 'Organic Reaction Mechanisms & Electrophiles',
-      type: 'Lesson',
-      duration: '40 mins',
-      completed: false,
-      href: '/prepare',
-    },
-    {
-      id: 'p3',
-      subject: 'Higher Math',
-      topic: 'Calculus Differentiation 20 MCQs',
-      type: 'Practice',
-      duration: '25 mins',
-      completed: false,
-      href: '/practice',
-    },
-    {
-      id: 'p4',
-      subject: 'All Subjects',
-      topic: 'Review 5 Mistakes from Mistake Notebook',
-      type: 'Revision',
-      duration: '15 mins',
-      completed: false,
-      href: '/mistakes',
-    },
-  ]);
-
-  const toggleTask = (taskId: string) => {
-    setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, completed: !t.completed } : t))
-    );
-  };
+  // Interactive study plan state (Managed by TanStack Query)
+  const { tasks, toggleTask } = useStudentDashboard();
 
   const completedCount = tasks.filter((t) => t.completed).length;
 

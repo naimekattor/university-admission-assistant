@@ -1,14 +1,19 @@
 'use client';
 
-import React from 'react';
+import React, { useRef } from 'react';
 import Link from 'next/link';
+import { ExternalLink } from 'lucide-react';
 import { FooterConfig } from '@/lib/homepage-types';
+import { useScrollTriggerReveal } from '@/hooks/use-gsap-motion';
+import Image from 'next/image';
 
 interface FooterSectionProps {
   config?: FooterConfig;
 }
 
 export function FooterSection({ config }: FooterSectionProps) {
+  const footerRef = useRef<HTMLElement>(null);
+  useScrollTriggerReveal(footerRef, { y: 15, duration: 0.5 });
   const description =
     config?.description ||
     'EduGuide is Bangladesh’s premier data-driven university admission intelligence and preparation platform, consolidating official circulars, GPA rules, deadlines, and smart preparation in one unified place.';
@@ -43,11 +48,20 @@ export function FooterSection({ config }: FooterSectionProps) {
       ],
     },
     {
+      title: 'Official Portals',
+      links: [
+        { label: 'UGC Bangladesh', url: 'https://ugc.gov.bd', external: true },
+        { label: 'Ministry of Education', url: 'https://moedu.gov.bd', external: true },
+        { label: 'DGHS Medical Portal', url: 'https://dghs.gov.bd', external: true },
+        { label: 'GST Admission System', url: 'https://gstadmission.ac.bd', external: true },
+      ],
+    },
+    {
       title: 'Platform',
       links: [
         { label: 'Pricing & Passes', url: '/pricing' },
-        { label: 'Terms of Service', url: '#' },
-        { label: 'Privacy Policy', url: '#' },
+        { label: 'Terms of Service', url: '/terms' },
+        { label: 'Privacy Policy', url: '/privacy' },
       ],
     },
   ];
@@ -56,20 +70,23 @@ export function FooterSection({ config }: FooterSectionProps) {
     '© 2026 EduGuide Bangladesh. All rights reserved. Official admission data sourced from university circulars.';
 
   return (
-    <footer className="border-t border-slate-200 bg-white text-slate-900 mt-12">
+    <footer ref={footerRef} className="border-t border-slate-200 bg-white text-slate-900 mt-12">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 space-y-10">
         {/* ── TOP SECTION: BRAND & LINK GROUPS ── */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
           {/* Brand Info (4 cols) */}
           <div className="md:col-span-4 space-y-3.5">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-[#FF5500] text-white font-black flex items-center justify-center text-xs shadow-sm">
-                EG
-              </div>
-              <span className="font-extrabold text-xl tracking-tight text-slate-900">
-                Edu<span className="text-[#FF5500]">Guide</span>
-              </span>
+            <Link href="/" className="flex items-center gap-2 group">
+              <Image
+                src="/images/eduguide_logo.png"
+                alt="EduGuide Logo"
+                width={140}
+                height={38}
+                className="h-8 sm:h-9 w-auto object-contain"
+                priority
+              />
             </Link>
+
 
             <p className="text-xs text-slate-600 leading-relaxed max-w-sm">
               {description}
@@ -81,21 +98,33 @@ export function FooterSection({ config }: FooterSectionProps) {
           </div>
 
           {/* Dynamic Link Groups (8 cols) */}
-          <div className="md:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-6">
+          <div className="md:col-span-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
             {navGroups.map((group, idx) => (
               <div key={idx} className="space-y-3">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 font-mono">
                   {group.title}
                 </h4>
                 <ul className="space-y-2 text-xs">
-                  {group.links.map((link, lIdx) => (
+                  {group.links.map((link: any, lIdx: number) => (
                     <li key={lIdx}>
-                      <Link
-                        href={link.url}
-                        className="text-slate-600 hover:text-[#FF5500] transition"
-                      >
-                        {link.label}
-                      </Link>
+                      {link.external ? (
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-slate-600 hover:text-[#FF5500] transition flex items-center gap-1 group"
+                        >
+                          <span className="line-clamp-1">{link.label}</span>
+                          <ExternalLink className="w-2.5 h-2.5 opacity-50 group-hover:opacity-100 shrink-0" />
+                        </a>
+                      ) : (
+                        <Link
+                          href={link.url}
+                          className="text-slate-600 hover:text-[#FF5500] transition block line-clamp-1"
+                        >
+                          {link.label}
+                        </Link>
+                      )}
                     </li>
                   ))}
                 </ul>

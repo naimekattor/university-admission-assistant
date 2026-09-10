@@ -20,7 +20,8 @@
     "test:ai": "tsx scripts/test-ai-fallback.ts",
     "test:groq": "tsx scripts/test-groq-api.ts",
     "test:claude": "tsx scripts/test-claude-api.ts",
-    "ping": "tsx scripts/ping-keep-alive.ts"
+    "ping": "tsx scripts/ping-keep-alive.ts",
+    "bench:concurrency": "tsx scripts/benchmark-concurrency.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.16",
@@ -37,6 +38,7 @@
     "drizzle-orm": "^0.45.2",
     "express": "^5.2.1",
     "groq-sdk": "^1.5.0",
+    "ioredis": "^6.0.0",
     "mammoth": "^1.12.0",
     "multer": "^2.3.0",
     "node-cron": "^4.6.0",
@@ -51,6 +53,7 @@
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/ioredis": "^5.0.0",
     "@types/multer": "^2.2.0",
     "@types/node": "^24",
     "@types/node-cron": "^3.0.11",

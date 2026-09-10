@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Bot,
   Sparkles,
@@ -14,12 +15,30 @@ import {
   Flame,
 } from 'lucide-react';
 import { AiAdvisorConfig } from '@/lib/homepage-types';
+import { useGsapContext } from '@/hooks/use-gsap-motion';
+import { isReducedMotion, fadeUp, subtleFloat } from '@/lib/animations/gsap-motion';
 
 interface AiAdvisorPreviewSectionProps {
   config?: AiAdvisorConfig;
 }
 
 export function AiAdvisorPreviewSection({ config }: AiAdvisorPreviewSectionProps) {
+  const sectionRef = useRef<HTMLElement>(null);
+  const botBadgeRef = useRef<HTMLDivElement>(null);
+
+  useGsapContext(
+    () => {
+      if (isReducedMotion()) return;
+      if (sectionRef.current) {
+        fadeUp(sectionRef.current, { y: 22 });
+      }
+      if (botBadgeRef.current) {
+        subtleFloat(botBadgeRef.current, { y: 4, duration: 4 });
+      }
+    },
+    sectionRef,
+    []
+  );
   const eyebrow = config?.eyebrowBadge || 'AI ADMISSION INTELLIGENCE';
   const title = config?.title || 'Ask anything about university admission.';
   const description =
@@ -115,7 +134,7 @@ export function AiAdvisorPreviewSection({ config }: AiAdvisorPreviewSectionProps
   }
 
   return (
-    <section id="ai-advisor" className="py-12 container mx-auto px-4 sm:px-6 lg:px-8">
+    <section ref={sectionRef} id="ai-advisor" className="py-12 container mx-auto px-4 sm:px-6 lg:px-8">
       <div
         className={`rounded-3xl p-6 sm:p-10 lg:p-12 relative overflow-hidden border transition-all duration-300 ${containerBg}`}
       >
@@ -136,7 +155,7 @@ export function AiAdvisorPreviewSection({ config }: AiAdvisorPreviewSectionProps
         <div className="relative z-10 space-y-8">
           {/* ── SECTION HEADER ── */}
           <div className="text-center space-y-3 max-w-2xl mx-auto">
-            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/30 text-[#FF5500] text-xs font-bold uppercase tracking-wider font-mono shadow-2xs backdrop-blur-xs">
+            <div ref={botBadgeRef} className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/30 text-[#FF5500] text-xs font-bold uppercase tracking-wider font-mono shadow-2xs backdrop-blur-xs">
               <Bot className="w-4 h-4 text-[#FF5500]" />
               <span>{eyebrow}</span>
             </div>
@@ -236,13 +255,12 @@ export function AiAdvisorPreviewSection({ config }: AiAdvisorPreviewSectionProps
             {/* Right: Modern AI Avatar / Illustration Card (5 cols) */}
             <div className="lg:col-span-5 flex flex-col items-center justify-center relative">
               <div className="relative group w-full max-w-sm rounded-3xl overflow-hidden border border-white/20 shadow-xl p-2 bg-gradient-to-b from-white/60 to-white/20 backdrop-blur-md transition-transform duration-300 hover:scale-[1.01]">
-                <img
+                <Image
                   src={imageUrl}
-                  alt={imageAlt}
+                  alt={imageAlt || "EduGuide AI Admission Intelligence Assistant preview"}
+                  width={400}
+                  height={300}
                   className="w-full h-auto object-contain rounded-2xl max-h-[300px]"
-                  onError={(e) => {
-                    e.currentTarget.src = '/placeholder.svg';
-                  }}
                 />
 
                 {/* Floating pill badge */}

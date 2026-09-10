@@ -3,22 +3,25 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Target, Calendar, Award, Flame, ArrowRight, Play, BookOpen, CheckCircle, AlertTriangle, RefreshCw, HelpCircle, Sparkles } from 'lucide-react';
+import { useStudentDashboard, usePreparationRoadmap } from '@/hooks/use-student-queries';
+import { useEligibilityStore } from '@/lib/stores/use-eligibility-store';
 
 export default function PreparationDashboardPage() {
+  const { group } = useEligibilityStore();
   const [activeGoal, setActiveGoal] = useState('BUET CSE');
   const daysRemaining = 62;
 
-  const subjectProgress = [
+  // TanStack Query server-state hooks
+  const { tasks: todayTasks, toggleTask, isLoading: isTasksLoading } = useStudentDashboard();
+  const { data: roadmapData } = usePreparationRoadmap();
+
+  const defaultSubjectProgress = [
     { subject: 'Physics', percentage: 72, color: 'bg-amber-500', weakCount: 1 },
     { subject: 'Chemistry', percentage: 51, color: 'bg-red-500', weakCount: 3 },
     { subject: 'Higher Mathematics', percentage: 81, color: 'bg-emerald-500', weakCount: 0 },
   ];
 
-  const todayTasks = [
-    { id: 1, subject: 'Physics', topic: "Newton's Laws & Impulse", duration: '35 mins', type: 'Lesson', status: 'pending' },
-    { id: 2, subject: 'Chemistry', topic: 'Chemical Bonding & Hybridization', duration: '30 mins', type: 'Practice', status: 'pending' },
-    { id: 3, subject: 'Higher Math', topic: 'Calculus Differentiation', duration: '25 mins', type: 'Revision', status: 'completed' },
-  ];
+  const subjectProgress = roadmapData?.subjects || defaultSubjectProgress;
 
   const weakTopics = [
     { name: 'Organic Chemistry Reactions', chapter: 'Organic Chemistry', errorRate: '58% Incorrect' },
@@ -111,19 +114,36 @@ export default function PreparationDashboardPage() {
               {todayTasks.map((t) => (
                 <div key={t.id} className="p-4 bg-slate-950/80 rounded-lg border border-slate-800/80 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    {t.status === 'completed' ? (
-                      <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
-                    ) : (
-                      <div className="w-5 h-5 rounded-full border-2 border-slate-600 shrink-0" />
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => toggleTask(t.id)}
+                      className="cursor-pointer text-left focus:outline-none"
+                    >
+                      {t.completed ? (
+                        <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+                      ) : (
+                        <div className="w-5 h-5 rounded-full border-2 border-slate-600 hover:border-amber-400 transition shrink-0" />
+                      )}
+                    </button>
                     <div>
-                      <div className="text-sm font-semibold text-slate-100">{t.topic}</div>
+                      <div className={`text-sm font-semibold ${t.completed ? 'line-through text-slate-500' : 'text-slate-100'}`}>
+                        {t.topic}
+                      </div>
                       <div className="text-xs text-slate-400">{t.subject} • {t.duration}</div>
                     </div>
                   </div>
-                  <span className={`px-2.5 py-1 text-xs font-semibold rounded-md ${t.type === 'Lesson' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : t.type === 'Practice' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}`}>
-                    {t.type}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2.5 py-1 text-xs font-semibold rounded-md ${t.type === 'Lesson' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : t.type === 'Practice' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}`}>
+                      {t.type}
+                    </span>
+                    {t.href && (
+                      <Link href={t.href}>
+                        <button className="text-xs text-amber-400 hover:text-amber-300 p-1">
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </Link>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

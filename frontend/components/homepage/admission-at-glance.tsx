@@ -1,9 +1,13 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
+import { SocialShareBar } from '@/components/seo/social-share-bar';
 import { Search, ExternalLink, Filter, Building2, Calendar, Award, ArrowRight, CheckCircle2, Clock, FileText } from 'lucide-react';
 import { AdmissionSectionConfig, AdmissionRowItem, DEFAULT_HOMEPAGE_CONFIG } from '@/lib/homepage-types';
+import { useGsapContext } from '@/hooks/use-gsap-motion';
+import { isReducedMotion } from '@/lib/animations/gsap-motion';
+import gsap from 'gsap';
 
 interface AdmissionAtGlanceProps {
   config?: AdmissionSectionConfig;
@@ -11,8 +15,33 @@ interface AdmissionAtGlanceProps {
 }
 
 export function AdmissionAtGlance({ config: propConfig, admissions: propAdmissions = [] }: AdmissionAtGlanceProps) {
+  const sectionRef = useRef<HTMLElement>(null);
   const [fetchedAdmissions, setFetchedAdmissions] = useState<AdmissionRowItem[]>([]);
   const [fetchedConfig, setFetchedConfig] = useState<AdmissionSectionConfig | null>(null);
+
+  useGsapContext(
+    () => {
+      if (!sectionRef.current || isReducedMotion()) return;
+
+      gsap.fromTo(
+        sectionRef.current,
+        { opacity: 0, y: 20 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.6,
+          ease: 'power2.out',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top 85%',
+            once: true,
+          },
+        }
+      );
+    },
+    sectionRef,
+    []
+  );
 
   // Fetch directly from /api/v1/admin/circulars to ensure 100% circular-backed data
   React.useEffect(() => {
@@ -143,7 +172,7 @@ export function AdmissionAtGlance({ config: propConfig, admissions: propAdmissio
   const displayedRows = filteredAdmissions.slice(0, maxDisplay);
 
   return (
-    <section id="admission-table" className="py-12 container mx-auto px-4 sm:px-6 lg:px-8">
+    <section ref={sectionRef} id="admission-table" className="py-12 container mx-auto px-4 sm:px-6 lg:px-8">
       <div className="space-y-6">
         {/* ── SECTION HEADER ── */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -358,17 +387,19 @@ export function AdmissionAtGlance({ config: propConfig, admissions: propAdmissio
           ))}
         </div>
 
-        {/* ── BOTTOM VIEW ALL BUTTON ── */}
-        {rawRows.length > maxDisplay && (
-          <div className="flex justify-center pt-2">
+        {/* ── BOTTOM VIEW ALL BUTTON & SOCIAL SHARING ── */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
+          <SocialShareBar title="Bangladesh University Admission Circulars 2026 — EduGuide" />
+
+          {rawRows.length > maxDisplay && (
             <Link href="/admission">
-              <button className="px-6 py-2.5 rounded-full bg-orange-50 hover:bg-orange-100 border border-orange-200 text-[#FF5500] text-xs font-bold flex items-center gap-2 shadow-2xs hover:shadow-xs transition cursor-pointer">
+              <button className="px-5 py-2 rounded-full bg-orange-50 hover:bg-orange-100 border border-orange-200 text-[#FF5500] text-xs font-bold flex items-center gap-2 shadow-2xs hover:shadow-xs transition cursor-pointer">
                 <span>View Full Admission Table & All {rawRows.length} Circulars</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </Link>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </section>
   );

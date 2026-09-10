@@ -4,12 +4,15 @@ import React, { useState, useRef } from 'react';
 import { Sparkles, CheckCircle2, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { EligibilitySectionConfig } from '@/lib/homepage-types';
 import { EligibilityResultsDisplay } from './eligibility-results-display';
+import { useScrollTriggerReveal } from '@/hooks/use-gsap-motion';
 
 interface EligibilityCheckerSectionProps {
   config?: EligibilitySectionConfig;
 }
 
 export function EligibilityCheckerSection({ config }: EligibilityCheckerSectionProps) {
+  const sectionRef = useRef<HTMLElement>(null);
+  useScrollTriggerReveal(sectionRef, { y: 22 });
   const title = config?.title || 'Find Where You Qualify.';
   const description =
     config?.description ||
@@ -140,7 +143,7 @@ export function EligibilityCheckerSection({ config }: EligibilityCheckerSectionP
   };
 
   return (
-    <section id="eligibility-checker" className="py-12 container mx-auto px-4 sm:px-6 lg:px-8">
+    <section ref={sectionRef} id="eligibility-checker" className="py-12 container mx-auto px-4 sm:px-6 lg:px-8">
       <div className="space-y-6">
         {/* ── SECTION TITLE ── */}
         <div className="text-center space-y-2">

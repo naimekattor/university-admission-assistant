@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
@@ -44,6 +45,13 @@ export function AdminShell({ children, pageTitle, breadcrumbs, actions }: AdminS
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/logout', { method: 'POST' });
+    } catch {}
+    window.location.href = '/admin/login';
+  };
 
   const adminNavGroups = [
     {
@@ -117,22 +125,28 @@ export function AdminShell({ children, pageTitle, breadcrumbs, actions }: AdminS
         {/* Brand Header */}
         <div className="h-16 px-4 border-b border-slate-200/80 flex items-center justify-between">
           {!collapsed ? (
-            <Link href="/admin" className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#FF5500] text-white font-black flex items-center justify-center text-xs shadow-sm">
-                EG
-              </div>
-              <div>
-                <div className="font-extrabold text-sm leading-none text-slate-900">
-                  Edu<span className="text-[#FF5500]">Guide</span>
-                </div>
-                <div className="text-[10px] font-bold text-[#FF5500] uppercase tracking-wider font-mono">
-                  Admin Panel
-                </div>
-              </div>
+            <Link href="/admin" className="flex items-center gap-2">
+              <Image
+                src="/images/eduguide_logo.png"
+                alt="EduGuide Admin"
+                width={120}
+                height={32}
+                className="h-7 w-auto object-contain"
+                priority
+              />
+              <span className="text-[9px] font-bold text-[#FF5500] uppercase tracking-wider font-mono px-1.5 py-0.5 rounded bg-orange-50 border border-orange-200">
+                ADMIN
+              </span>
             </Link>
           ) : (
-            <div className="w-8 h-8 mx-auto rounded-lg bg-[#FF5500] text-white font-black flex items-center justify-center text-xs shadow-sm">
-              EG
+            <div className="w-8 h-8 mx-auto flex items-center justify-center overflow-hidden">
+              <Image
+                src="/images/eduguide_logo.png"
+                alt="EduGuide"
+                width={32}
+                height={32}
+                className="w-8 h-8 object-cover object-left"
+              />
             </div>
           )}
           <button
@@ -178,8 +192,8 @@ export function AdminShell({ children, pageTitle, breadcrumbs, actions }: AdminS
           ))}
         </div>
 
-        {/* Footer / Exit to Public App */}
-        <div className="p-3 border-t border-slate-200/80">
+        {/* Footer / Exit to Public App & Sign Out */}
+        <div className="p-3 border-t border-slate-200/80 space-y-1">
           <Link
             href="/"
             target="_blank"
@@ -188,7 +202,7 @@ export function AdminShell({ children, pageTitle, breadcrumbs, actions }: AdminS
               collapsed && 'justify-center px-2'
             )}
           >
-            <Globe className="w-4 h-4 text-slate-500" />
+            <Globe className="w-4 h-4 text-slate-500 shrink-0" />
             {!collapsed && (
               <div className="flex items-center justify-between flex-1">
                 <span>View Public Site</span>
@@ -196,6 +210,16 @@ export function AdminShell({ children, pageTitle, breadcrumbs, actions }: AdminS
               </div>
             )}
           </Link>
+          <button
+            onClick={handleLogout}
+            className={cn(
+              'w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 transition cursor-pointer',
+              collapsed && 'justify-center px-2'
+            )}
+          >
+            <LogOut className="w-4 h-4 shrink-0" />
+            {!collapsed && <span>Sign Out</span>}
+          </button>
         </div>
       </aside>
 
@@ -209,10 +233,16 @@ export function AdminShell({ children, pageTitle, breadcrumbs, actions }: AdminS
           <aside className="relative w-64 bg-white border-r border-slate-200 flex flex-col h-full z-50 p-4 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-[#FF5500] text-white font-black flex items-center justify-center text-xs">
-                  EG
-                </div>
-                <span className="font-extrabold text-sm text-slate-900">EduGuide Admin</span>
+                <Image
+                  src="/images/eduguide_logo.png"
+                  alt="EduGuide Admin"
+                  width={115}
+                  height={30}
+                  className="h-7 w-auto object-contain"
+                />
+                <span className="text-[9px] font-bold text-[#FF5500] uppercase tracking-wider font-mono px-1.5 py-0.5 rounded bg-orange-50 border border-orange-200">
+                  ADMIN
+                </span>
               </div>
               <button
                 onClick={() => setMobileOpen(false)}
@@ -248,6 +278,27 @@ export function AdminShell({ children, pageTitle, breadcrumbs, actions }: AdminS
                   })}
                 </div>
               ))}
+            </div>
+
+            <div className="pt-3 border-t border-slate-200 space-y-1">
+              <Link
+                href="/"
+                target="_blank"
+                className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-[#FF5500] hover:bg-orange-50/50 transition"
+              >
+                <div className="flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-slate-500" />
+                  <span>View Public Site</span>
+                </div>
+                <ExternalLink className="w-3 h-3 text-slate-400" />
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Sign Out</span>
+              </button>
             </div>
           </aside>
         </div>

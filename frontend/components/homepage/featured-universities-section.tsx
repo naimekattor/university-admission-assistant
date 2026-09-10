@@ -1,9 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import { Building2, MapPin, ArrowRight, Users, Calendar } from 'lucide-react';
+import Image from 'next/image';
+import { Building2, MapPin, ArrowRight, Users, Calendar, ExternalLink } from 'lucide-react';
 import { FeaturedUniversitiesConfig } from '@/lib/homepage-types';
+import { FALLBACK_UNIVERSITIES } from '@/lib/universities-fallback';
+import { useScrollTriggerReveal } from '@/hooks/use-gsap-motion';
 
 interface FeaturedUniversitiesSectionProps {
   config?: FeaturedUniversitiesConfig;
@@ -12,6 +15,15 @@ interface FeaturedUniversitiesSectionProps {
 
 export function FeaturedUniversitiesSection({ config, universities = [] }: FeaturedUniversitiesSectionProps) {
   const [allUnis, setAllUnis] = useState<any[]>([]);
+  const [failedLogos, setFailedLogos] = useState<Record<string, boolean>>({});
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  useScrollTriggerReveal(gridRef, {
+    staggerChildren: '.university-card',
+    y: 20,
+    stagger: 0.07,
+    start: 'top 85%',
+  });
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -30,7 +42,8 @@ export function FeaturedUniversitiesSection({ config, universities = [] }: Featu
 
   const displayedUniversities = useMemo(() => {
     const selectedIds = config?.selectedUniversityIds || [];
-    const source = allUnis.length > 0 ? allUnis : universities;
+    const baseSource = allUnis.length > 0 ? allUnis : universities;
+    const source = baseSource.length > 0 ? baseSource : FALLBACK_UNIVERSITIES;
 
     if (selectedIds.length > 0 && source.length > 0) {
       const selected = source.filter((u) => {
@@ -44,7 +57,7 @@ export function FeaturedUniversitiesSection({ config, universities = [] }: Featu
       });
       if (selected.length > 0) return selected;
     }
-    return universities.length > 0 ? universities : allUnis.slice(0, 8);
+    return source.slice(0, 8);
   }, [config?.selectedUniversityIds, universities, allUnis]);
 
   const title = config?.title || 'Explore Universities';
@@ -78,33 +91,33 @@ export function FeaturedUniversitiesSection({ config, universities = [] }: Featu
         </div>
 
         {/* ── UNIVERSITIES GRID ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           {displayedUniversities.map((uni) => {
             const isImageLogo = uni.logo && (uni.logo.startsWith('http') || uni.logo.startsWith('/'));
             return (
             <div
               key={uni.id}
-              className="p-5 rounded-2xl border border-slate-200 bg-white hover:border-orange-300 hover:shadow-xs transition-all flex flex-col justify-between space-y-3.5"
+              className="university-card p-5 rounded-2xl border border-slate-200 bg-white hover:border-orange-300 hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between space-y-3.5"
             >
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center p-1 overflow-hidden shrink-0">
-                    {isImageLogo ? (
-                      <img
+                    {isImageLogo && !failedLogos[uni.id] ? (
+                      <Image
                         src={uni.logo}
-                        alt={uni.shortName || uni.name}
+                        alt={`${uni.name || uni.shortName} official logo`}
+                        width={40}
+                        height={40}
                         className="w-full h-full object-contain"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                          if (e.currentTarget.nextElementSibling) {
-                            (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'block';
-                          }
+                        onError={() => {
+                          setFailedLogos((prev) => ({ ...prev, [uni.id]: true }));
                         }}
                       />
-                    ) : null}
-                    <span className={`${isImageLogo ? 'hidden' : 'block'} text-lg`}>
-                      {uni.logo || '🏛️'}
-                    </span>
+                    ) : (
+                      <span className="text-lg">
+                        {uni.logo && !isImageLogo ? uni.logo : '🏛️'}
+                      </span>
+                    )}
                   </div>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
                     {uni.status || 'Upcoming'}
@@ -136,12 +149,43 @@ export function FeaturedUniversitiesSection({ config, universities = [] }: Featu
               </div>
 
               {/* Action */}
-              <Link href="/universities" className="block pt-1">
-                <button className="w-full py-1.5 px-3 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-[#FF5500] text-xs font-bold rounded-full flex items-center justify-center gap-1 transition cursor-pointer">
-                  <span>View Details</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              </Link>
+              {(() => {
+                const targetSlug = (uni.slug || uni.shortName || uni.id || 'buet').toLowerCase().trim().replace(/[^a-z0-9]/g, '-');
+                const officialPortals: Record<string, string> = {
+                  buet: 'https://www.buet.ac.bd',
+                  du: 'https://www.du.ac.bd',
+                  kuet: 'https://www.kuet.ac.bd',
+                  ruet: 'https://www.ruet.ac.bd',
+                  cuet: 'https://www.cuet.ac.bd',
+                  medical: 'https://dghs.gov.bd',
+                };
+                const portalUrl = officialPortals[targetSlug] || uni.website;
+
+                return (
+                  <div className="flex items-center gap-2 pt-1">
+                    <Link
+                      href={`/universities/${targetSlug}`}
+                      className="flex-1 py-1.5 px-3 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-[#FF5500] text-xs font-bold rounded-full flex items-center justify-center gap-1 transition cursor-pointer"
+                      title={`View ${uni.shortName || uni.name} Admission Profile`}
+                    >
+                      <span>{uni.shortName || 'University'} Profile</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                    {portalUrl && (
+                      <a
+                        href={portalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 border border-slate-200/80 transition"
+                        title={`Official ${uni.shortName} Portal`}
+                        aria-label={`Official ${uni.shortName} Portal Website`}
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
             );
           })}

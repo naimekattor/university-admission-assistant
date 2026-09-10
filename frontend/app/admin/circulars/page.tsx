@@ -556,7 +556,7 @@ export default function AdminCircularsPage() {
                             {c.universityLogo && (c.universityLogo.startsWith('http') || c.universityLogo.startsWith('/')) ? (
                               <img
                                 src={c.universityLogo}
-                                alt=""
+                                alt={`${c.universityShortName || 'University'} logo`}
                                 className="w-full h-full object-contain"
                                 onError={(e) => {
                                   e.currentTarget.style.display = 'none';
